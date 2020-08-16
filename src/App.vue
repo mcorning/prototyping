@@ -13,35 +13,38 @@
       </div>
 
       <v-spacer></v-spacer>
-
-      <!-- <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
+      <v-btn
+        v-for="link in links"
+        :key="`${link.label}-header-link`"
         text
+        rounded
+        :to="link.url"
+        >{{ link.label }}</v-btn
       >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn> -->
     </v-app-bar>
-
     <v-main>
-      <LocalContactTracing />
+      <router-view></router-view>
     </v-main>
   </v-app>
 </template>
 
 <script>
-import LocalContactTracing from './components/LocalContactTracing';
-
 export default {
   name: 'App',
 
-  components: {
-    LocalContactTracing,
-  },
+  components: {},
 
   data: () => ({
-    //
+    links: [
+      {
+        label: 'Room',
+        url: '/room',
+      },
+      {
+        label: 'Visitor',
+        url: '/visitor',
+      },
+    ],
   }),
 };
 </script>
