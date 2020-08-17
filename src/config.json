@@ -1,0 +1,10 @@
+{
+    "yourId": "Tao",
+    "roomId": "Home",
+    "defaultVue": "visitor",
+    "manager": "Taolette",
+    "rooms": [
+        "Home",
+        "Cafe"
+    ]
+}

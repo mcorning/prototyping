@@ -6,9 +6,20 @@
         >Record each you visit. If you go into quarantine, Alert
         Rooms</v-card-subtitle
       >
-      <v-card-text
-        ><v-text-field label="Your ID" v-model="yourId"></v-text-field>
-        <v-text-field label="Room ID" v-model="roomId"></v-text-field>
+      <v-card-text>
+        <v-row dense>
+          <v-col cols="6">
+            <v-text-field label="Your ID" v-model="yourId"></v-text-field
+          ></v-col>
+
+          <v-col cols="6">
+            <v-select
+              v-model="roomId"
+              :items="rooms"
+              label="Room ID"
+            ></v-select> </v-col
+        ></v-row>
+        {{ socketId }}
       </v-card-text>
       <v-card-text>
         <v-list dense>
@@ -19,25 +30,35 @@
                 <v-icon>mdi-account-check</v-icon>
               </v-list-item-icon>
               <v-list-item-content>
-                <v-list-item-title v-text="name.room"></v-list-item-title>
+                <v-list-item-title
+                  v-text="`${name.room}:  ${visitedDate(name.sentTime)}`"
+                ></v-list-item-title>
               </v-list-item-content>
             </v-list-item>
           </v-list-item-group>
         </v-list>
       </v-card-text>
       <v-card-actions>
-        <v-btn @click="checkin">Checkin</v-btn>
+        <v-btn @click="checkin">Room Checkin</v-btn>
+        <v-btn @click="checkout">Room Checkout</v-btn>
         <v-btn @click="alertRooms">Alert Rooms</v-btn>
+        <v-btn @click="removeVisitor">Leave LCT</v-btn>
       </v-card-actions>
     </v-card>
   </v-container>
 </template>
 
 <script>
+import config from '@/config.json';
+import moment from 'moment';
+
 import io from 'socket.io-client';
 const socket = io('http://localhost:3000');
 socket.on('alert', (msg) => {
-  alert(msg);
+  alert('alert', msg);
+});
+socket.on('entered', () => {
+  console.log('entered Room');
 });
 
 export default {
@@ -49,6 +70,10 @@ export default {
   },
 
   data: () => ({
+    visitFormat: 'ddd, MMM DD, HH:mm',
+
+    socketId: '',
+    rooms: [],
     messages: [],
     yourId: 'Tao',
     roomId: 'Home',
@@ -90,11 +115,18 @@ export default {
       },
     ],
   }),
+
   methods: {
+    visitedDate(date) {
+      let x = moment(new Date(date)).format(this.visitFormat);
+      // let x = moment(date).format(this.visitFormat);
+      return x;
+    },
     handleMessage(msg) {
       this.messages.push(msg);
       if (msg.message == 'Alert') {
-        alert(msg);
+        let alertMsg = `A fellow visitor to ${msg.room} is in quarantine at ${msg.sentTime}`;
+        alert(`handleMessage:`, alertMsg);
       }
     },
     checkin() {
@@ -106,20 +138,86 @@ export default {
       };
       this.messages.push(msg);
 
-      socket.emit('new message', msg);
+      this.visit(msg);
     },
+
+    checkout() {
+      let msg = {
+        visitor: this.yourId,
+        room: this.roomId,
+        message: 'Check-out',
+        sentTime: new Date().toISOString(),
+      };
+      this.messages.push(msg);
+
+      this.leave(msg);
+    },
+
+    removeVisitor() {
+      // the server will remove this socket
+      socket.emit('removeVisitor');
+    },
+
     alertRooms() {
-      socket.emit('new message', {
+      socket.emit('newMessage', {
         visitor: this.yourId,
         room: this.roomId,
         message: 'alert',
         sentTime: new Date().toISOString(),
       });
     },
+
+    visit(msg) {
+      socket.emit(
+        'visit',
+        {
+          roomId: this.roomId,
+          yourId: this.yourId,
+          message: msg,
+          sentTime: new Date().toISOString(),
+        },
+        function(msg) {
+          alert('Visit returned:\n' + msg.msg + '\nSocketId:' + msg.socketId);
+          console.log('returned socketId:', msg.socketId);
+        }
+      );
+    },
+
+    leave(msg) {
+      socket.emit(
+        'leave',
+        {
+          roomId: this.roomId,
+          yourId: this.yourId,
+          message: msg,
+          sentTime: new Date().toISOString(),
+        },
+        function(msg) {
+          alert('Visit:\n' + msg.msg);
+          this.socketId = msg.socketId;
+        }
+      );
+    },
   },
-  created() {
-    socket.emit('add user', 'Visitor');
-    socket.on('new message', (msg) => this.handleMessage(msg));
+
+  watch: {
+    roomId() {
+      socket.emit('leave', this.yourId, function(msg) {
+        alert('RoomId chagned:', msg);
+      });
+      this.visit('Changed rooms');
+    },
+  },
+
+  mounted() {
+    this.yourId = config.yourId;
+    this.roomId = config.roomId;
+    this.rooms = config.rooms;
+    socket.on('newNessage', (msg) => this.handleMessage(msg));
+    socket.on('addedRoom', (msg) => {
+      this.rooms.push(msg.roomId);
+      alert('Rooms available:', msg.numRooms);
+    });
   },
 };
 </script>

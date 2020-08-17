@@ -1,17 +1,25 @@
+import config from '@/config.json';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-// import Home from '../views/Home.vue';
+import Home from '../views/Home.vue';
 import Visitor from '@/components/Visitor.vue';
 import Room from '@/components/Room.vue';
 
 Vue.use(VueRouter);
 
 const routes = [
-  // {
-  //   path: '/home',
-  //   name: 'Home',
-  //   component: Visitor,
-  // },
+  {
+    path: '/home',
+    name: 'Home',
+    component: Visitor,
+  },
+  {
+    path: '/',
+    // redirect: 'visitor',
+    redirect: config.defaultVue,
+    name: 'redir',
+    component: Home,
+  },
   {
     path: '/visitor',
     name: 'Visitor',
@@ -38,5 +46,4 @@ const router = new VueRouter({
   base: process.env.BASE_URL,
   routes,
 });
-
 export default router;

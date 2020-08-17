@@ -6,6 +6,8 @@
         >Monitor Visitors and alert them as necessary</v-card-subtitle
       >
       <v-card-text>
+        ><v-text-field label="Your ID" v-model="yourId"></v-text-field>
+
         <v-text-field label="Room ID" v-model="roomId"></v-text-field>
       </v-card-text>
       <v-row>
@@ -30,7 +32,7 @@
           </v-card-text>
         </v-col>
         <v-col cols="6">
-          <v-card-text>
+          <v-card-text v-if="listUniqueVisitors">
             <v-subheader>Unique Visitors Today</v-subheader>
 
             <v-list dense max-height="2" height="2">
@@ -64,13 +66,15 @@
       </v-card-text>
       <v-card-actions>
         <v-btn @click="alertVisitors">Alert Visitors</v-btn>
-        <v-btn @click="monitorVisitors">Monitor Visitors</v-btn>
+        <v-btn @click="leave">Leave LCT</v-btn>
       </v-card-actions>
     </v-card>
   </v-container>
 </template>
 
 <script>
+import config from '@/config.json';
+
 import moment from 'moment';
 
 import io from 'socket.io-client';
@@ -86,6 +90,7 @@ export default {
   },
 
   data: () => ({
+    listUniqueVisitors: false,
     visitFormat: 'ddd, MMM DD, HH:mm',
     messageHeaders: [
       { text: 'Visitor', value: 'visitor' },
@@ -98,8 +103,8 @@ export default {
     ],
     alerts: [],
     messages: [],
-    yourId: 'Tao',
-    roomId: 'Home',
+    yourId: '',
+    roomId: '',
     importantLinks: [
       {
         text: 'Documentation',
@@ -147,31 +152,29 @@ export default {
     handleMessage(msg) {
       if (msg.message == 'alert') {
         this.alerts.push(msg);
-        alert(msg);
+        alert('New message:', msg);
         return;
       }
       this.messages.push(msg);
     },
-    monitorVisitors() {
-      socket.emit('new message', {
-        visitor: this.yourId,
-        room: this.roomId,
-        message: 'Check-in',
-        sentTime: new Date().toISOString(),
-      });
-    },
+
     alertVisitors() {
-      socket.emit('new message', {
+      socket.emit('newMessage', {
         visitor: this.yourId,
         room: this.roomId,
         message: 'Alert',
         sentTime: new Date().toISOString(),
       });
     },
+    leave() {
+      socket.emit('close');
+    },
   },
-  created() {
-    socket.emit('add user', 'Visitor');
-    socket.on('new message', (msg) => this.handleMessage(msg));
+  mounted() {
+    this.yourId = config.yourId;
+    this.roomId = config.roomId;
+    socket.emit('open', config.roomId, (msg) => alert(JSON.stringify(msg)));
+    socket.on('newMessage', (msg) => this.handleMessage(msg));
   },
 };
 </script>
