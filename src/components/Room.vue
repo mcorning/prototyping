@@ -14,6 +14,17 @@
               label="Room ID"
             ></v-select>
           </v-col>
+          <v-col cols="4">
+            <v-btn
+              :color="closed ? 'success' : 'warning'"
+              fab
+              dark
+              @click="check"
+            >
+              <v-icon>{{ btnType }}</v-icon>
+            </v-btn>
+            <span class="pl-3">{{ closed ? 'Open Room' : 'Close Room' }}</span>
+          </v-col>
           <v-col cols="6">
             <v-text-field
               label="Room Manager ID"
@@ -23,16 +34,24 @@
         </v-row>
       </v-card-text>
       <v-row>
-        <v-col cols="6">
+        <v-col cols="12">
           <v-card-text>
             <v-subheader
-              >Today's Visitor Log - count:{{ messages.length }} (unique visits:
-              {{ uniqueVisitorNames.length }})</v-subheader
-            >
-
+              ><span
+                >Today's Visitor Log - {{ entered }} visits [{{
+                  uniqueVisitorNames.length
+                }}
+                unique visitor(s)]</span
+              >
+              <v-checkbox
+                class="pl-10"
+                label="See all visits"
+                @change="toggleVisits"
+              ></v-checkbox>
+            </v-subheader>
             <v-data-table
               :headers="messageHeaders"
-              :items="messages"
+              :items="visits"
               item-key="id"
               dense
               class="elevation-1"
@@ -76,13 +95,17 @@
           </template>
         </v-data-table>
       </v-card-text>
-      <v-card-actions>
+      <!-- <v-card-actions>
         <v-btn @click="open">Open Room</v-btn>
         <v-btn @click="close">Close Room</v-btn>
-      </v-card-actions>
+      </v-card-actions> -->
       <v-card-actions>
-        <v-btn @click="alertVisitors">Alert Visitors</v-btn>
-        <v-btn @click="leave">Leave LCT</v-btn>
+        <span class="pr-3">Alert Rooms </span>
+        <v-btn color="error" fab dark large>
+          <v-icon x-large>mdi-alert</v-icon>
+        </v-btn>
+        <!-- <v-btn @click="alertVisitors">Alert Visitors</v-btn>
+        <v-btn @click="leave">Leave LCT</v-btn> -->
       </v-card-actions>
     </v-card>
   </v-container>
@@ -102,20 +125,44 @@ export default {
   name: 'LctRoom',
   components: {},
   computed: {
+    entered() {
+      return this.messages.filter((v) => v.message == 'Entered').length;
+    },
+    departed() {
+      return this.messages.filter((v) => v.message == 'Departed').length;
+    },
+
+    visits() {
+      const allRoomVisits = this.messages.filter((v) => this.roomId == v.room);
+      return allRoomVisits.filter((v) => {
+        let y = this.isBetween(v.sentTime);
+        return y;
+      });
+    },
+
     uniqueVisitorNames() {
       return Array.from(new Set(this.messages.map((v) => v.visitor)));
+    },
+    btnType() {
+      return this.closed ? 'mdi-door-open' : 'mdi-door-closed-lock';
     },
   },
 
   data: () => ({
+    daysBack: 0,
+    today: 'YYYY-MM-DD',
+    closed: true,
+
     rooms: [],
     managerId: '',
     listUniqueVisitors: false,
-    visitFormat: 'ddd, MMM DD, HH:mm',
+    visitFormat: 'HH:mm, ddd, MMM DD  YYYY ',
     messageHeaders: [
       { text: 'Visitor', value: 'visitor' },
-      { text: 'SocketId', value: 'socketId' },
+      { text: 'Purpose', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
+      { text: 'Room', value: 'room' },
+      { text: 'SocketId', value: 'socketId' },
     ],
     alertHeaders: [
       { text: 'Date of Alert', value: 'sentTime' },
@@ -164,32 +211,27 @@ export default {
     ],
   }),
   methods: {
-    open() {
-      socket.emit('open', this.roomId, (msg) => {
-        alert(msg.msg);
-        const message = {
-          roomId: this.roomId,
-          yourId: '',
-          message: 'Opened',
-          sentTime: new Date().toISOString(),
-          socketId: '',
-        };
-        message.socketId = msg.socketId;
-        axios.post('rooms', message);
-      });
+    check() {
+      let msg = {
+        visitor: '',
+        room: this.roomId,
+        message: this.checkedOut ? 'Opened' : 'Closed',
+        sentTime: new Date().toISOString(),
+      };
+      let data = {
+        event: this.closed ? 'open' : 'close',
+        message: msg,
+      };
+      this.postMessage(data);
+      this.closed = !this.closed;
     },
-    close() {
-      socket.emit('close', this.roomId, (msg) => {
-        alert(msg.msg);
-        const message = {
-          roomId: this.roomId,
-          yourId: '',
-          message: 'Closed',
-          sentTime: new Date().toISOString(),
-          socketId: '',
-        };
-        message.socketId = msg.socketId;
-        axios.post('rooms', message);
+
+    // called by check-in
+    postMessage(data) {
+      socket.emit(data.event, data.message, function(ack) {
+        data.message.socketId = ack.socketId;
+        // cache the message
+        axios.post('rooms', data.message);
       });
     },
 
@@ -198,6 +240,7 @@ export default {
       return x;
     },
     handleMessage(msg) {
+      console.log(new Date(), msg);
       this.messages.push(msg);
 
       if (msg.message == 'alert') {
@@ -218,13 +261,49 @@ export default {
     leave() {
       socket.emit('removeRoom');
     },
+
+    isToday(date) {
+      let x = moment(date).format(this.today);
+      let y = moment()
+        .add(-this.daysBack, 'day')
+        .format(this.today);
+      return x == y;
+    },
+
+    isBetween(date) {
+      let visit = moment(date);
+
+      let past = moment()
+        .add(-this.daysBack, 'day')
+        .format('YYYY-MM-DD');
+      let tomorrow = moment()
+        .add(1, 'day')
+        .format('YYYY-MM-DD');
+      let test = visit.isBetween(past, tomorrow);
+      return test;
+    },
+
+    toggleVisits() {
+      this.daysBack = !this.daysBack ? 14 : 0;
+    },
   },
-  mounted() {
+
+  async created() {
+    try {
+      const res = await axios.get(`messages`);
+      console.log(res);
+      this.messages = res.data;
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  async mounted() {
     this.yourId = config.yourId;
     this.roomId = config.roomId;
     this.managerId = config.managerId;
     this.rooms = config.rooms;
-    this.open();
+    this.check();
     // check-X to disambiguate the server event handler, enter/leaveRoom
     socket.on('check-in', (msg) => this.handleMessage(msg));
     socket.on('check-out', (msg) => this.handleMessage(msg));

@@ -20,9 +20,8 @@
             ></v-select>
           </v-col>
           <v-col cols="2">
-            <!-- <v-btn icon="mdi-account-check" @click="checkin"></v-btn> -->
             <v-btn
-              :color="checkedIn ? 'warning' : 'success'"
+              :color="checkedOut ? 'success' : 'warning'"
               fab
               dark
               @click="check"
@@ -35,18 +34,17 @@
       <v-card-text>
         <v-list dense>
           <v-subheader>Visits</v-subheader>
-          <v-list-item-group v-model="visits" color="primary">
-            <v-list-item v-for="(name, i) in messages" :key="i">
-              <v-list-item-icon>
-                <v-icon>mdi-account-check</v-icon>
-              </v-list-item-icon>
-              <v-list-item-content>
-                <v-list-item-title
-                  v-text="`${name.room}:  ${visitedDate(name.sentTime)}`"
-                ></v-list-item-title>
-              </v-list-item-content>
-            </v-list-item>
-          </v-list-item-group>
+          <v-data-table
+            :headers="messageHeaders"
+            :items="messages"
+            item-key="id"
+            dense
+            class="elevation-1"
+          >
+            <template v-slot:item.sentTime="{ item }">
+              {{ visitedDate(item.sentTime) }}
+            </template>
+          </v-data-table>
         </v-list>
       </v-card-text>
       <v-card-actions>
@@ -84,13 +82,20 @@ export default {
   },
 
   data: () => ({
-    visitFormat: 'ddd, MMM DD, HH:mm',
-    checkedIn: false,
+    visitFormat: 'HH:mm, ddd, MMM DD',
+    checkedOut: true,
     socketId: '',
     rooms: [],
     messages: [],
     yourId: 'Tao',
     roomId: 'Home',
+    messageHeaders: [
+      { text: 'Room', value: 'room' },
+      { text: 'Visitor', value: 'visitor' },
+      { text: 'Purpose', value: 'message' },
+      { text: 'Sent  ', value: 'sentTime' },
+      { text: 'SocketId', value: 'socketId' },
+    ],
     importantLinks: [
       {
         text: 'Documentation',
@@ -131,84 +136,55 @@ export default {
   }),
 
   methods: {
-    enterRoom(msg) {
-      const message = {
-        roomId: this.roomId,
-        yourId: this.yourId,
-        message: msg,
-        sentTime: new Date().toISOString(),
-        socketId: '',
-      };
-      socket.emit('enterRoom', message, function(msg) {
-        console.info(new Date(), msg);
-        message.socketId = msg.socketId;
-        axios.post('messages', message);
-      });
+    async getMessages() {
+      try {
+        const res = await axios.get(`http://localhost:3003/messages`);
+
+        this.messages = res.data;
+      } catch (e) {
+        console.error(e);
+      }
     },
 
-    leaveRoom(msg) {
-      socket.emit(
-        'leaveRoom',
-        {
-          roomId: this.roomId,
-          yourId: this.yourId,
-          message: msg,
-          sentTime: new Date().toISOString(),
-        },
-        function(msg) {
-          let alertMsg = `${msg}
-          
-          
-                Source: Visitor.leaveOrg()`;
-          alert(alertMsg);
-        }
-      );
+    async check() {
+      let msg = {
+        visitor: this.yourId,
+        room: this.roomId,
+        message: this.checkedOut ? 'Entered' : 'Departed',
+        sentTime: new Date().toISOString(),
+      };
+      let data = {
+        event: this.checkedOut ? 'enterRoom' : 'leaveRoom',
+        message: msg,
+      };
+      await this.postMessage(data);
+
+      this.checkedOut = !this.checkedOut;
+    },
+
+    // called by check-in
+    async postMessage(data) {
+      socket.emit(data.event, data.message, async function(ack) {
+        data.message.socketId = ack.socketId;
+        // cache the message
+        await axios.post('messages', data.message);
+      });
+
+      // display while axios works
+      this.messages.push(data.message);
     },
 
     visitedDate(date) {
       let x = moment(new Date(date)).format(this.visitFormat);
-      // let x = moment(date).format(this.visitFormat);
       return x;
     },
+
     handleMessage(msg) {
       this.messages.push(msg);
       if (msg.message == 'Alert') {
         let alertMsg = `A fellow visitor to ${msg.room} is in quarantine at ${msg.sentTime}`;
         alert(`handleMessage:`, alertMsg);
       }
-    },
-    check() {
-      if (this.checkedIn) {
-        this.checkout();
-      } else {
-        this.checkin();
-      }
-    },
-
-    checkin() {
-      let msg = {
-        visitor: this.yourId,
-        room: this.roomId,
-        message: 'Enter',
-        sentTime: new Date().toISOString(),
-      };
-      this.messages.push(msg);
-
-      this.enterRoom(msg);
-      this.checkedIn = true;
-    },
-
-    checkout() {
-      let msg = {
-        visitor: this.yourId,
-        room: this.roomId,
-        message: 'leaveRoom',
-        sentTime: new Date().toISOString(),
-      };
-      this.messages.push(msg);
-
-      this.leaveRoom(msg);
-      this.checkedIn = false;
     },
 
     removeVisitor() {
@@ -231,17 +207,10 @@ export default {
       socket.emit('leaveRoom', this.yourId, function(msg) {
         alert('RoomId chagned:', msg);
       });
-      this.enterRoom('Changed rooms');
     },
   },
   async created() {
-    try {
-      const res = await axios.get(`http://localhost:3003/messages`);
-
-      this.messages = res.data;
-    } catch (e) {
-      console.error(e);
-    }
+    await this.getMessages();
   },
 
   mounted() {
