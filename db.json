@@ -1,0 +1,21 @@
+{
+  "messages": [],
+  "rooms": [
+    {
+      "roomId": "Home",
+      "yourId": "",
+      "message": "Opened",
+      "sentTime": "2020-08-19T01:38:15.870Z",
+      "socketId": "48J0xHkPywJovHLyAAAB",
+      "id": 1
+    },
+    {
+      "roomId": "Cafe",
+      "yourId": "",
+      "message": "Opened",
+      "sentTime": "2020-08-19T01:38:32.678Z",
+      "socketId": "48J0xHkPywJovHLyAAAB",
+      "id": 2
+    }
+  ]
+}

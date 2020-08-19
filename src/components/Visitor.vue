@@ -12,14 +12,25 @@
             <v-text-field label="Your ID" v-model="yourId"></v-text-field
           ></v-col>
 
-          <v-col cols="6">
+          <v-col cols="4">
             <v-select
               v-model="roomId"
               :items="rooms"
               label="Room ID"
-            ></v-select> </v-col
-        ></v-row>
-        {{ socketId }}
+            ></v-select>
+          </v-col>
+          <v-col cols="2">
+            <!-- <v-btn icon="mdi-account-check" @click="checkin"></v-btn> -->
+            <v-btn
+              :color="checkedIn ? 'warning' : 'success'"
+              fab
+              dark
+              @click="check"
+            >
+              <v-icon>mdi-account-check</v-icon>
+            </v-btn>
+          </v-col>
+        </v-row>
       </v-card-text>
       <v-card-text>
         <v-list dense>
@@ -39,10 +50,14 @@
         </v-list>
       </v-card-text>
       <v-card-actions>
-        <v-btn @click="checkin">Room Checkin</v-btn>
-        <v-btn @click="checkout">Room Checkout</v-btn>
-        <v-btn @click="alertRooms">Alert Rooms</v-btn>
-        <v-btn @click="removeVisitor">Leave LCT</v-btn>
+        <!-- <v-btn @click="checkin">Room Checkin</v-btn> -->
+        <!-- <v-btn @click="checkout">Room Checkout</v-btn> -->
+        <!-- <v-btn @click="alertRooms">Alert Rooms</v-btn> -->
+        <span class="pr-3">Alert Rooms </span>
+        <v-btn color="error" fab dark>
+          <v-icon>mdi-alert</v-icon>
+        </v-btn>
+        <!-- <v-btn @click="removeVisitor">Leave LCT</v-btn> -->
       </v-card-actions>
     </v-card>
   </v-container>
@@ -51,14 +66,13 @@
 <script>
 import config from '@/config.json';
 import moment from 'moment';
+import axios from 'axios';
+axios.defaults.baseURL = 'http://localhost:3003/';
 
 import io from 'socket.io-client';
 const socket = io('http://localhost:3000');
 socket.on('alert', (msg) => {
   alert('alert', msg);
-});
-socket.on('entered', () => {
-  console.log('entered Room');
 });
 
 export default {
@@ -71,7 +85,7 @@ export default {
 
   data: () => ({
     visitFormat: 'ddd, MMM DD, HH:mm',
-
+    checkedIn: false,
     socketId: '',
     rooms: [],
     messages: [],
@@ -117,6 +131,40 @@ export default {
   }),
 
   methods: {
+    enterRoom(msg) {
+      const message = {
+        roomId: this.roomId,
+        yourId: this.yourId,
+        message: msg,
+        sentTime: new Date().toISOString(),
+        socketId: '',
+      };
+      socket.emit('enterRoom', message, function(msg) {
+        console.info(new Date(), msg);
+        message.socketId = msg.socketId;
+        axios.post('messages', message);
+      });
+    },
+
+    leaveRoom(msg) {
+      socket.emit(
+        'leaveRoom',
+        {
+          roomId: this.roomId,
+          yourId: this.yourId,
+          message: msg,
+          sentTime: new Date().toISOString(),
+        },
+        function(msg) {
+          let alertMsg = `${msg}
+          
+          
+                Source: Visitor.leaveOrg()`;
+          alert(alertMsg);
+        }
+      );
+    },
+
     visitedDate(date) {
       let x = moment(new Date(date)).format(this.visitFormat);
       // let x = moment(date).format(this.visitFormat);
@@ -129,28 +177,38 @@ export default {
         alert(`handleMessage:`, alertMsg);
       }
     },
+    check() {
+      if (this.checkedIn) {
+        this.checkout();
+      } else {
+        this.checkin();
+      }
+    },
+
     checkin() {
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
-        message: 'Check-in',
+        message: 'Enter',
         sentTime: new Date().toISOString(),
       };
       this.messages.push(msg);
 
-      this.visit(msg);
+      this.enterRoom(msg);
+      this.checkedIn = true;
     },
 
     checkout() {
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
-        message: 'Check-out',
+        message: 'leaveRoom',
         sentTime: new Date().toISOString(),
       };
       this.messages.push(msg);
 
-      this.leave(msg);
+      this.leaveRoom(msg);
+      this.checkedIn = false;
     },
 
     removeVisitor() {
@@ -166,58 +224,38 @@ export default {
         sentTime: new Date().toISOString(),
       });
     },
-
-    visit(msg) {
-      socket.emit(
-        'visit',
-        {
-          roomId: this.roomId,
-          yourId: this.yourId,
-          message: msg,
-          sentTime: new Date().toISOString(),
-        },
-        function(msg) {
-          alert('Visit returned:\n' + msg.msg + '\nSocketId:' + msg.socketId);
-          console.log('returned socketId:', msg.socketId);
-        }
-      );
-    },
-
-    leave(msg) {
-      socket.emit(
-        'leave',
-        {
-          roomId: this.roomId,
-          yourId: this.yourId,
-          message: msg,
-          sentTime: new Date().toISOString(),
-        },
-        function(msg) {
-          alert('Visit:\n' + msg.msg);
-          this.socketId = msg.socketId;
-        }
-      );
-    },
   },
 
   watch: {
     roomId() {
-      socket.emit('leave', this.yourId, function(msg) {
+      socket.emit('leaveRoom', this.yourId, function(msg) {
         alert('RoomId chagned:', msg);
       });
-      this.visit('Changed rooms');
+      this.enterRoom('Changed rooms');
     },
+  },
+  async created() {
+    try {
+      const res = await axios.get(`http://localhost:3003/messages`);
+
+      this.messages = res.data;
+    } catch (e) {
+      console.error(e);
+    }
   },
 
   mounted() {
     this.yourId = config.yourId;
     this.roomId = config.roomId;
     this.rooms = config.rooms;
-    socket.on('newNessage', (msg) => this.handleMessage(msg));
-    socket.on('addedRoom', (msg) => {
-      this.rooms.push(msg.roomId);
-      alert('Rooms available:', msg.numRooms);
+    socket.on('enterRoom', (roomId) => {
+      console.log('Entered Room', roomId);
     });
+    socket.on('leaveRoom', (msg) => this.handleMessage(msg));
+    // socket.on('addRoom', (msg) => {
+    //   this.rooms.push(msg.roomId);
+    //   alert('Rooms available:', msg.numRooms);
+    // });
   },
 };
 </script>

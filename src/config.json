@@ -1,8 +1,8 @@
 {
     "yourId": "Tao",
     "roomId": "Home",
+    "managerId": "Taolette",
     "defaultVue": "visitor",
-    "manager": "Taolette",
     "rooms": [
         "Home",
         "Cafe"
