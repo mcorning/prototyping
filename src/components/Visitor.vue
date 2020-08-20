@@ -32,6 +32,9 @@
               checkedOut ? 'Check-in' : 'Check-out'
             }}</span>
           </v-col>
+          <v-col>
+            <v-btn @click="test">Test</v-btn>
+          </v-col>
         </v-row>
       </v-card-text>
       <v-card-text>
@@ -109,7 +112,7 @@ socket.on('alert', (msg) => {
   alert('alert', msg);
 });
 socket.on('exposureAlert', (msg) => {
-  alert('Exposure Alert', msg);
+  alert('Exposure Alert\nExposure Dates:\n' + JSON.stringify(msg));
 });
 
 export default {
@@ -192,6 +195,25 @@ export default {
   }),
 
   methods: {
+    getRandomInt(max) {
+      return Math.floor(Math.random() * Math.floor(max));
+    },
+    async test() {
+      let msg = {
+        visitor: this.yourId,
+        room: this.roomId,
+        message: 'Entered',
+        sentTime: moment()
+          .add(-this.getRandomInt(3), 'day')
+          .toISOString(),
+      };
+      let data = {
+        event: 'enterRoom',
+        message: msg,
+      };
+      await this.postMessage(data);
+    },
+
     async getMessages() {
       try {
         const res = await axios.get(`http://localhost:3003/messages`);
@@ -249,12 +271,14 @@ export default {
     },
 
     alertRooms() {
+      const exposureDates = this.messages.map((v) => v.sentTime);
+      console.log(exposureDates);
       socket.emit(
-        'alert',
+        'alertRooms',
         {
           visitor: this.yourId,
           room: this.roomId,
-          message: 'alert',
+          message: exposureDates,
           sentTime: new Date().toISOString(),
         },
         function(msg) {
