@@ -1,4 +1,6 @@
 {
+    "dataUrl": "http://localhost:3003/",
+    "socketUrl": "http://localhost:3000",
     "yourId": "Tao",
     "roomId": "Home",
     "managerId": "Taolette",

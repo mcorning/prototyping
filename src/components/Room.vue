@@ -7,14 +7,14 @@
       >
       <v-card-text>
         <v-row dense>
-          <v-col cols="6">
+          <v-col cols="6" class="col-md-4">
             <v-select
               v-model="roomId"
               :items="rooms"
               label="Room ID"
             ></v-select>
           </v-col>
-          <v-col cols="4">
+          <v-col cols="6" class="col-md-8">
             <v-btn
               :color="closed ? 'success' : 'warning'"
               fab
@@ -25,7 +25,7 @@
             </v-btn>
             <span class="pl-3">{{ closed ? 'Open Room' : 'Close Room' }}</span>
           </v-col>
-          <v-col cols="6">
+          <v-col cols="6" v-if="hasRoomManager">
             <v-text-field
               label="Room Manager ID"
               v-model="managerId"
@@ -36,18 +36,31 @@
       <v-row>
         <v-col cols="12">
           <v-card-text>
-            <v-subheader
-              ><span
-                >Today's Visitor Log - {{ entered }} visits [{{
-                  uniqueVisitorNames.length
-                }}
-                unique visitor(s)]</span
-              >
-              <v-checkbox
-                class="pl-10"
-                label="See all visits"
-                @change="toggleVisits"
-              ></v-checkbox>
+            <v-subheader>
+              <v-row align="center" justify="space-between">
+                <v-col cols="auto">
+                  <span
+                    >Today's Visitor Log - {{ entered }} visits [{{
+                      uniqueVisitorNames.length
+                    }}
+                    unique visitor(s)]</span
+                  ></v-col
+                >
+                <v-col>
+                  <v-checkbox
+                    label="See all visits"
+                    @change="toggleVisits"
+                  ></v-checkbox
+                ></v-col>
+                <v-col cols="auto">
+                  <v-icon
+                    class="pr-9"
+                    label="Refresh messages"
+                    @click="getMessages()"
+                    >mdi-email-sync-outline</v-icon
+                  ></v-col
+                >
+              </v-row>
             </v-subheader>
             <v-data-table
               :headers="messageHeaders"
@@ -58,6 +71,11 @@
             >
               <template v-slot:item.sentTime="{ item }">
                 {{ visitedDate(item.sentTime) }}
+              </template>
+              <template v-slot:item.action="{ item }">
+                <v-icon @click="deleteMessage(item.id)">
+                  mdi-delete
+                </v-icon>
               </template>
             </v-data-table>
           </v-card-text>
@@ -100,7 +118,7 @@
         <v-btn @click="close">Close Room</v-btn>
       </v-card-actions> -->
       <v-card-actions>
-        <span class="pr-3">Alert Rooms </span>
+        <span class="pr-3">Alert Visitors </span>
         <v-btn color="error" fab dark large>
           <v-icon x-large>mdi-alert</v-icon>
         </v-btn>
@@ -108,36 +126,47 @@
         <v-btn @click="leave">Leave LCT</v-btn> -->
       </v-card-actions>
     </v-card>
+    <v-system-bar color="secondary">
+      <v-icon small>mdi-transit-connection-variant </v-icon>
+      <span>Socket URL:{{ socketUrl }}</span>
+
+      <v-spacer></v-spacer>
+      <span>Data URL:{{ dataUrl }}</span>
+
+      <v-spacer></v-spacer>
+      <v-checkbox v-model="hasRoomManager" label="RM" small>
+        {{ hasRoomManager }}</v-checkbox
+      >
+    </v-system-bar>
   </v-container>
 </template>
 
 <script>
 import config from '@/config.json';
 import axios from 'axios';
-axios.defaults.baseURL = 'http://localhost:3003/';
+axios.defaults.baseURL = config.dataUrl;
 
 import moment from 'moment';
 
 import io from 'socket.io-client';
-const socket = io('http://localhost:3000');
-
+const socket = io(config.socketUrl);
+socket.on('exposureAlert', (msg) => {
+  alert('Exposure Alert', msg);
+});
 export default {
   name: 'LctRoom',
   components: {},
   computed: {
     entered() {
-      return this.messages.filter((v) => v.message == 'Entered').length;
+      return this.visits.filter((v) => v.message == 'Entered').length;
     },
     departed() {
-      return this.messages.filter((v) => v.message == 'Departed').length;
+      return this.visits.filter((v) => v.message == 'Departed').length;
     },
 
     visits() {
       const allRoomVisits = this.messages.filter((v) => this.roomId == v.room);
-      return allRoomVisits.filter((v) => {
-        let y = this.isBetween(v.sentTime);
-        return y;
-      });
+      return allRoomVisits.filter((v) => this.isBetween(v.sentTime));
     },
 
     uniqueVisitorNames() {
@@ -149,6 +178,10 @@ export default {
   },
 
   data: () => ({
+    dataUrl: config.dataUrl,
+    socketUrl: config.socketUrl,
+
+    hasRoomManager: false,
     daysBack: 0,
     today: 'YYYY-MM-DD',
     closed: true,
@@ -158,11 +191,14 @@ export default {
     listUniqueVisitors: false,
     visitFormat: 'HH:mm, ddd, MMM DD  YYYY ',
     messageHeaders: [
+      { text: 'Id', value: 'id' },
+
       { text: 'Visitor', value: 'visitor' },
       { text: 'Purpose', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
       { text: 'Room', value: 'room' },
       { text: 'SocketId', value: 'socketId' },
+      { text: 'Delete', value: 'action' },
     ],
     alertHeaders: [
       { text: 'Date of Alert', value: 'sentTime' },
@@ -286,16 +322,25 @@ export default {
     toggleVisits() {
       this.daysBack = !this.daysBack ? 14 : 0;
     },
+
+    async getMessages() {
+      try {
+        const res = await axios.get(`messages`);
+        console.log(res);
+        this.messages = res.data;
+      } catch (e) {
+        console.error(e);
+      }
+    },
+
+    deleteMessage(id) {
+      let url = `${this.dataUrl}messages/${id}`;
+      axios.delete(url).catch((e) => console.log(e.message));
+    },
   },
 
   async created() {
-    try {
-      const res = await axios.get(`messages`);
-      console.log(res);
-      this.messages = res.data;
-    } catch (e) {
-      console.error(e);
-    }
+    await this.getMessages();
   },
 
   async mounted() {
@@ -307,6 +352,7 @@ export default {
     // check-X to disambiguate the server event handler, enter/leaveRoom
     socket.on('check-in', (msg) => this.handleMessage(msg));
     socket.on('check-out', (msg) => this.handleMessage(msg));
+    socket.on('exposureAlert', (msg) => this.handleMessage(msg));
   },
 };
 </script>

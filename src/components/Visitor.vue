@@ -8,7 +8,7 @@
       >
       <v-card-text>
         <v-row dense>
-          <v-col cols="6">
+          <v-col cols="4">
             <v-text-field label="Your ID" v-model="yourId"></v-text-field
           ></v-col>
 
@@ -19,30 +19,58 @@
               label="Room ID"
             ></v-select>
           </v-col>
-          <v-col cols="2">
+          <v-col cols="3">
             <v-btn
               :color="checkedOut ? 'success' : 'warning'"
               fab
               dark
               @click="check"
             >
-              <v-icon>mdi-account-check</v-icon>
+              <v-icon>{{ btnType }}</v-icon>
             </v-btn>
+            <span class="pl-3">{{
+              checkedOut ? 'Check-in' : 'Check-out'
+            }}</span>
           </v-col>
         </v-row>
       </v-card-text>
       <v-card-text>
         <v-list dense>
-          <v-subheader>Visits</v-subheader>
+          <v-row align="center" dense>
+            <v-col>
+              <span
+                >{{ daysBack == 0 ? 'Today' : 'All' }} {{ entered }} visits
+              </span></v-col
+            >
+            <v-col cols="6">
+              <v-checkbox
+                label="See all visits"
+                @change="toggleVisits"
+              ></v-checkbox
+            ></v-col>
+            <v-col cols="2">
+              <v-icon
+                class="pr-9"
+                label="Refresh messages"
+                @click="getMessages()"
+                >mdi-email-sync-outline</v-icon
+              ></v-col
+            >
+          </v-row>
           <v-data-table
             :headers="messageHeaders"
-            :items="messages"
+            :items="visits"
             item-key="id"
             dense
             class="elevation-1"
           >
             <template v-slot:item.sentTime="{ item }">
               {{ visitedDate(item.sentTime) }}
+            </template>
+            <template v-slot:item.action="{ item }">
+              <v-icon @click="deleteMessage(item.id)">
+                mdi-delete
+              </v-icon>
             </template>
           </v-data-table>
         </v-list>
@@ -52,12 +80,20 @@
         <!-- <v-btn @click="checkout">Room Checkout</v-btn> -->
         <!-- <v-btn @click="alertRooms">Alert Rooms</v-btn> -->
         <span class="pr-3">Alert Rooms </span>
-        <v-btn color="error" fab dark>
+        <v-btn color="error" fab dark @click="alertRooms">
           <v-icon>mdi-alert</v-icon>
         </v-btn>
         <!-- <v-btn @click="removeVisitor">Leave LCT</v-btn> -->
       </v-card-actions>
     </v-card>
+    <v-system-bar color="secondary">
+      <v-icon small>mdi-transit-connection-variant </v-icon>
+      <span>Socket URL:{{ socketUrl }}</span>
+
+      <v-spacer></v-spacer>
+      <span>Data URL:{{ dataUrl }}</span>
+      <v-spacer></v-spacer>
+    </v-system-bar>
   </v-container>
 </template>
 
@@ -65,23 +101,41 @@
 import config from '@/config.json';
 import moment from 'moment';
 import axios from 'axios';
-axios.defaults.baseURL = 'http://localhost:3003/';
+axios.defaults.baseURL = config.dataUrl;
 
 import io from 'socket.io-client';
-const socket = io('http://localhost:3000');
+const socket = io(config.socketUrl);
 socket.on('alert', (msg) => {
   alert('alert', msg);
+});
+socket.on('exposureAlert', (msg) => {
+  alert('Exposure Alert', msg);
 });
 
 export default {
   name: 'LctVisitor',
   computed: {
     visits() {
-      return this.messages.length;
+      const allRoomVisits = this.messages.filter((v) => this.roomId == v.room);
+      // return allRoomVisits;
+      return allRoomVisits.filter((v) => this.isBetween(v.sentTime));
+    },
+    entered() {
+      return this.visits.filter((v) => v.message == 'Entered').length;
+    },
+    departed() {
+      return this.visits.filter((v) => v.message == 'Departed').length;
+    },
+    btnType() {
+      return this.checkedOut ? 'mdi-account-plus' : 'mdi-account-minus';
     },
   },
 
   data: () => ({
+    daysBack: 0,
+
+    dataUrl: config.dataUrl,
+    socketUrl: config.socketUrl,
     visitFormat: 'HH:mm, ddd, MMM DD',
     checkedOut: true,
     socketId: '',
@@ -90,11 +144,13 @@ export default {
     yourId: 'Tao',
     roomId: 'Home',
     messageHeaders: [
+      { text: 'Id', value: 'id' },
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Purpose', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
-      { text: 'SocketId', value: 'socketId' },
+      // { text: 'SocketId', value: 'socketId' },
+      { text: 'Delete', value: 'action' },
     ],
     importantLinks: [
       {
@@ -193,20 +249,58 @@ export default {
     },
 
     alertRooms() {
-      socket.emit('newMessage', {
-        visitor: this.yourId,
-        room: this.roomId,
-        message: 'alert',
-        sentTime: new Date().toISOString(),
-      });
+      socket.emit(
+        'alert',
+        {
+          visitor: this.yourId,
+          room: this.roomId,
+          message: 'alert',
+          sentTime: new Date().toISOString(),
+        },
+        function(msg) {
+          alert('Alerted Rooms:', msg);
+        }
+      );
+    },
+    deleteMessage(id) {
+      let url = `${this.dataUrl}messages/${id}`;
+      axios
+        .delete(url)
+        .then(
+          this.getMessages().then(() =>
+            console.log('messages after delete', this.messages)
+          )
+        )
+        .catch((e) => console.log(e.message));
+    },
+
+    isBetween(date) {
+      let visit = moment(date);
+
+      let past = moment()
+        .add(-this.daysBack, 'day')
+        .format('YYYY-MM-DD');
+      let tomorrow = moment()
+        .add(1, 'day')
+        .format('YYYY-MM-DD');
+      let test = visit.isBetween(past, tomorrow);
+      return test;
+    },
+
+    toggleVisits() {
+      this.daysBack = !this.daysBack ? 14 : 0;
     },
   },
 
   watch: {
     roomId() {
-      socket.emit('leaveRoom', this.yourId, function(msg) {
-        alert('RoomId chagned:', msg);
-      });
+      if (!this.checkedOut) {
+        if (confirm('Should i check you out of', this.roomId, '?')) {
+          socket.emit('leaveRoom', this.yourId, function(msg) {
+            alert('Checked out of:', msg);
+          });
+        }
+      }
     },
   },
   async created() {
