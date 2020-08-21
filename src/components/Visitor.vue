@@ -38,6 +38,17 @@
             }}</span>
           </v-col>
         </v-row>
+        <v-card-actions>
+          <!-- <v-btn @click="checkin">Room Checkin</v-btn> -->
+          <!-- <v-btn @click="checkout">Room Checkout</v-btn> -->
+          <!-- <v-btn @click="alertRooms">Alert Rooms</v-btn> -->
+          <!-- <span class="pr-3">Alert Rooms </span> -->
+          <v-btn color="error" block dark @click="alertRooms">
+            Alert Rooms
+            <v-icon>mdi-alert</v-icon>
+          </v-btn>
+          <!-- <v-btn @click="removeVisitor">Leave LCT</v-btn> -->
+        </v-card-actions>
       </v-card-text>
       <v-card-text>
         <v-list dense>
@@ -49,22 +60,16 @@
             >
             <v-col cols="6">
               <v-checkbox
+                :value="allVisits"
                 label="See all visits"
                 @change="toggleVisits"
               ></v-checkbox
             ></v-col>
-            <v-col cols="2">
-              <!-- <v-icon
-                class="pr-9"
-                label="Refresh messages"
-                @click="getMessages()"
-                >mdi-email-sync-outline</v-icon
-              > -->
-            </v-col>
           </v-row>
           <v-data-table
             :headers="messageHeaders"
             :items="visits"
+            multi-sort
             item-key="id"
             dense
             class="elevation-1"
@@ -80,16 +85,6 @@
           </v-data-table>
         </v-list>
       </v-card-text>
-      <v-card-actions>
-        <!-- <v-btn @click="checkin">Room Checkin</v-btn> -->
-        <!-- <v-btn @click="checkout">Room Checkout</v-btn> -->
-        <!-- <v-btn @click="alertRooms">Alert Rooms</v-btn> -->
-        <span class="pr-3">Alert Rooms </span>
-        <v-btn color="error" fab dark @click="alertRooms">
-          <v-icon>mdi-alert</v-icon>
-        </v-btn>
-        <!-- <v-btn @click="removeVisitor">Leave LCT</v-btn> -->
-      </v-card-actions>
     </v-card>
     <v-system-bar color="secondary">
       <v-icon small>mdi-transit-connection-variant </v-icon>
@@ -99,7 +94,7 @@
       >
 
       <v-spacer></v-spacer>
-      <span>Managed Room{{ managedRoom }}</span>
+      <span>Room Manager: {{ managedRoom }}</span>
       <v-spacer></v-spacer>
       <v-btn small text @click="test">Test</v-btn>
     </v-system-bar>
@@ -131,6 +126,10 @@ socket.on('exposureAlert', (msg) => {
 export default {
   name: 'LctVisitor',
   computed: {
+    allVisits() {
+      return this.daysBack != 0;
+    },
+
     messages: {
       get() {
         return Message.all();
@@ -270,6 +269,7 @@ export default {
       return Math.floor(Math.random() * Math.floor(max));
     },
     async test() {
+      this.daysBack = 14;
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
