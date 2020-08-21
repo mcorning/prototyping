@@ -8,11 +8,11 @@
       <v-card-text>
         <v-row dense>
           <v-col cols="6" class="col-md-4">
-            <v-select
+            <v-combobox
               v-model="roomId"
               :items="rooms"
-              label="Room ID"
-            ></v-select>
+              label="My Room"
+            ></v-combobox>
           </v-col>
           <v-col cols="6" class="col-md-8">
             <v-btn
@@ -28,7 +28,7 @@
           <v-col cols="6" v-if="hasRoomManager">
             <v-text-field
               label="Room Manager ID"
-              v-model="managerId"
+              v-model="managedRoom"
             ></v-text-field
           ></v-col>
         </v-row>
@@ -52,14 +52,6 @@
                     @change="toggleVisits"
                   ></v-checkbox
                 ></v-col>
-                <v-col cols="auto">
-                  <v-icon
-                    class="pr-9"
-                    label="Refresh messages"
-                    @click="getMessages()"
-                    >mdi-email-sync-outline</v-icon
-                  ></v-col
-                >
               </v-row>
             </v-subheader>
             <v-data-table
@@ -118,8 +110,8 @@
         <v-btn @click="close">Close Room</v-btn>
       </v-card-actions> -->
       <v-card-actions>
-        <span class="pr-3">Alert Visitors </span>
-        <v-btn color="error" fab dark large>
+        <span class="pr-3">Alert Room's Visitors </span>
+        <v-btn color="error" fab dark>
           <v-icon x-large>mdi-alert</v-icon>
         </v-btn>
         <!-- <v-btn @click="alertVisitors">Alert Visitors</v-btn>
@@ -131,7 +123,7 @@
       <span>Socket URL:{{ socketUrl }}</span>
 
       <v-spacer></v-spacer>
-      <span>Data URL:{{ dataUrl }}</span>
+      <span>Room Manager: {{ managedRoom }}</span>
 
       <v-spacer></v-spacer>
       <v-checkbox v-model="hasRoomManager" label="RM" small>
@@ -143,8 +135,6 @@
 
 <script>
 import config from '@/config.json';
-import axios from 'axios';
-axios.defaults.baseURL = config.dataUrl;
 
 import moment from 'moment';
 
@@ -153,20 +143,76 @@ const socket = io(config.socketUrl);
 socket.on('exposureAlert', (msg) => {
   alert('Exposure Alert', msg);
 });
+
+import Message from '@/models/Message';
+import Name from '@/models/Name';
+import Room from '@/models/Room';
+import State from '@/models/State';
+
 export default {
   name: 'LctRoom',
   components: {},
   computed: {
-    entered() {
-      return this.visits.filter((v) => v.message == 'Entered').length;
+    state: {
+      get() {
+        let s = State.query().first();
+        return s;
+      },
+      set(newVal) {
+        console.log(newVal);
+      },
     },
-    departed() {
-      return this.visits.filter((v) => v.message == 'Departed').length;
+
+    rooms() {
+      return Room.all().map((v) => v.roomId);
+    },
+    roomId: {
+      get() {
+        return this.state?.roomId;
+      },
+      set(newVal) {
+        // static changeRoomId function on State model
+        State.changeRoomId(newVal);
+        // static update function on Room model
+        Room.update(newVal).catch((e) => console.log(e));
+      },
+    },
+    managedRoom: {
+      get() {
+        return this.state?.managerId;
+      },
+      set(newVal) {
+        State.updateManagerId(newVal);
+      },
+    },
+
+    allVisits() {
+      return this.daysBack != 0;
+    },
+    messages: {
+      get() {
+        return Message.all();
+      },
+      set(newVal) {
+        // static update function on Message model
+        Message.update(newVal);
+      },
     },
 
     visits() {
-      const allRoomVisits = this.messages.filter((v) => this.roomId == v.room);
-      return allRoomVisits.filter((v) => this.isBetween(v.sentTime));
+      let allVisits = this.messages.filter((v) => this.isBetween(v.sentTime));
+      if (this.daysBack == 0) {
+        return allVisits.filter((v) => this.roomId == v.room);
+      }
+      return allVisits;
+    },
+
+    entered() {
+      return this.visits.filter((v) => v.message == 'Entered').length;
+    },
+
+    departed() {
+      return this.visits.filter((v) => v.message == 'Departed').length;
     },
 
     uniqueVisitorNames() {
@@ -178,7 +224,6 @@ export default {
   },
 
   data: () => ({
-    dataUrl: config.dataUrl,
     socketUrl: config.socketUrl,
 
     hasRoomManager: false,
@@ -186,18 +231,15 @@ export default {
     today: 'YYYY-MM-DD',
     closed: true,
 
-    rooms: [],
-    managerId: '',
     listUniqueVisitors: false,
     visitFormat: 'HH:mm, ddd, MMM DD  YYYY ',
     messageHeaders: [
-      { text: 'Id', value: 'id' },
-
+      // { text: 'Id', value: 'id' },
       { text: 'Visitor', value: 'visitor' },
-      { text: 'Purpose', value: 'message' },
+      { text: 'Message', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
       { text: 'Room', value: 'room' },
-      { text: 'SocketId', value: 'socketId' },
+      // { text: 'SocketId', value: 'socketId' },
       { text: 'Delete', value: 'action' },
     ],
     alertHeaders: [
@@ -205,69 +247,21 @@ export default {
       { text: 'Visitor', value: 'visitor' },
     ],
     alerts: [],
-    messages: [],
     yourId: '',
-    roomId: '',
-    importantLinks: [
-      {
-        text: 'Documentation',
-        href: 'https://vuetifyjs.com',
-      },
-      {
-        text: 'Chat',
-        href: 'https://community.vuetifyjs.com',
-      },
-      {
-        text: 'Made with Vuetify',
-        href: 'https://madewithvuejs.com/vuetify',
-      },
-      {
-        text: 'Twitter',
-        href: 'https://twitter.com/vuetifyjs',
-      },
-      {
-        text: 'Articles',
-        href: 'https://medium.com/vuetify',
-      },
-    ],
-    whatsNext: [
-      {
-        text: 'Explore components',
-        href: 'https://vuetifyjs.com/components/api-explorer',
-      },
-      {
-        text: 'Select a layout',
-        href: 'https://vuetifyjs.com/getting-started/pre-made-layouts',
-      },
-      {
-        text: 'Frequently Asked Questions',
-        href:
-          'https://vuetifyjs.com/getting-started/frequently-asked-questions',
-      },
-    ],
   }),
   methods: {
-    check() {
+    async check() {
       let msg = {
-        visitor: '',
+        visitor: this.yourId,
         room: this.roomId,
-        message: this.checkedOut ? 'Opened' : 'Closed',
+        message: this.checkedOut ? 'Entered' : 'Departed',
         sentTime: new Date().toISOString(),
       };
-      let data = {
-        event: this.closed ? 'open' : 'close',
-        message: msg,
-      };
-      this.postMessage(data);
-      this.closed = !this.closed;
-    },
+      this.messages = msg;
 
-    // called by check-in
-    postMessage(data) {
-      socket.emit(data.event, data.message, function(ack) {
-        data.message.socketId = ack.socketId;
-        // cache the message
-        axios.post('rooms', data.message);
+      let event = this.checkedOut ? 'enterRoom' : 'leaveRoom';
+      socket.emit(event, msg, async function(ack) {
+        msg.socketId = ack.socketId;
       });
     },
 
@@ -323,36 +317,23 @@ export default {
       this.daysBack = !this.daysBack ? 14 : 0;
     },
 
-    async getMessages() {
-      try {
-        const res = await axios.get(`messages`);
-        console.log(res);
-        this.messages = res.data;
-      } catch (e) {
-        console.error(e);
-      }
-    },
-
     deleteMessage(id) {
-      let url = `${this.dataUrl}messages/${id}`;
-      axios.delete(url).catch((e) => console.log(e.message));
+      Message.delete(id);
     },
   },
 
-  async created() {
-    await this.getMessages();
-  },
+  async created() {},
 
   async mounted() {
-    this.yourId = config.yourId;
-    this.roomId = config.roomId;
-    this.managerId = config.managerId;
-    this.rooms = config.rooms;
     this.check();
     // check-X to disambiguate the server event handler, enter/leaveRoom
     socket.on('check-in', (msg) => this.handleMessage(msg));
     socket.on('check-out', (msg) => this.handleMessage(msg));
     socket.on('exposureAlert', (msg) => this.handleMessage(msg));
+    await Room.$fetch();
+    await Name.$fetch();
+    await State.$fetch();
+    await Message.$fetch();
   },
 };
 </script>

@@ -945,6 +945,41 @@
       "sentTime": "2020-08-20T19:03:34.896Z",
       "socketId": "FV_OMcYk0aE8erJMAAAy",
       "id": 125
+    },
+    {
+      "visitor": "",
+      "message": "Closed",
+      "sentTime": "2020-08-21T21:15:15.842Z",
+      "socketId": "LkzYpEmjugO4Vb0BAAAM",
+      "id": 126
+    },
+    {
+      "visitor": "",
+      "message": "Closed",
+      "sentTime": "2020-08-21T21:16:11.225Z",
+      "socketId": "LkzYpEmjugO4Vb0BAAAM",
+      "id": 127
+    },
+    {
+      "visitor": "",
+      "message": "Closed",
+      "sentTime": "2020-08-21T21:30:50.137Z",
+      "socketId": "LkzYpEmjugO4Vb0BAAAM",
+      "id": 128
+    },
+    {
+      "visitor": "",
+      "message": "Closed",
+      "sentTime": "2020-08-21T21:53:11.882Z",
+      "socketId": "LcjbjD8uhljnZ-JZAAAV",
+      "id": 129
+    },
+    {
+      "visitor": "",
+      "message": "Closed",
+      "sentTime": "2020-08-21T22:04:37.306Z",
+      "socketId": "1KriGUzquXTzEaQtAAAZ",
+      "id": 130
     }
   ]
 }

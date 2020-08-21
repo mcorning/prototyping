@@ -39,15 +39,10 @@
           </v-col>
         </v-row>
         <v-card-actions>
-          <!-- <v-btn @click="checkin">Room Checkin</v-btn> -->
-          <!-- <v-btn @click="checkout">Room Checkout</v-btn> -->
-          <!-- <v-btn @click="alertRooms">Alert Rooms</v-btn> -->
-          <!-- <span class="pr-3">Alert Rooms </span> -->
           <v-btn color="error" block dark @click="alertRooms">
             Alert Rooms
             <v-icon>mdi-alert</v-icon>
           </v-btn>
-          <!-- <v-btn @click="removeVisitor">Leave LCT</v-btn> -->
         </v-card-actions>
       </v-card-text>
       <v-card-text>
@@ -104,8 +99,6 @@
 <script>
 import config from '@/config.json';
 import moment from 'moment';
-// import axios from 'axios';
-// axios.defaults.baseURL = config.dataUrl;
 
 import io from 'socket.io-client';
 const socket = io(config.socketUrl);
@@ -114,7 +107,6 @@ import Message from '@/models/Message';
 import Name from '@/models/Name';
 import Room from '@/models/Room';
 import State from '@/models/State';
-// import DataRepository from '@/store/repository.js';
 
 socket.on('alert', (msg) => {
   alert('alert', msg);
@@ -139,6 +131,7 @@ export default {
         Message.update(newVal);
       },
     },
+
     yourId: {
       get() {
         return this.state?.yourId;
@@ -215,52 +208,13 @@ export default {
     visitFormat: 'HH:mm, ddd, MMM DD',
     checkedOut: true,
     socketId: '',
-    // messages: [],
     messageHeaders: [
-      { text: 'Id', value: 'id' },
+      // { text: 'Id', value: 'id' },
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
-      // { text: 'SocketId', value: 'socketId' },
       { text: 'Delete', value: 'action' },
-    ],
-    importantLinks: [
-      {
-        text: 'Documentation',
-        href: 'https://vuetifyjs.com',
-      },
-      {
-        text: 'Chat',
-        href: 'https://community.vuetifyjs.com',
-      },
-      {
-        text: 'Made with Vuetify',
-        href: 'https://madewithvuejs.com/vuetify',
-      },
-      {
-        text: 'Twitter',
-        href: 'https://twitter.com/vuetifyjs',
-      },
-      {
-        text: 'Articles',
-        href: 'https://medium.com/vuetify',
-      },
-    ],
-    whatsNext: [
-      {
-        text: 'Explore components',
-        href: 'https://vuetifyjs.com/components/api-explorer',
-      },
-      {
-        text: 'Select a layout',
-        href: 'https://vuetifyjs.com/getting-started/pre-made-layouts',
-      },
-      {
-        text: 'Frequently Asked Questions',
-        href:
-          'https://vuetifyjs.com/getting-started/frequently-asked-questions',
-      },
     ],
   }),
 
@@ -301,8 +255,6 @@ export default {
     },
 
     alertRooms() {
-      // make a pivot table from messages:
-      // group by room include day of entered message
       console.log(this.messages);
       let visits = this.messages
         .map((v) => {
@@ -312,8 +264,6 @@ export default {
         })
         .filter((v) => v);
       console.log('entered', visits);
-      // const exposureDates = this.messages.map((v) => v.sentTime);
-      // console.log(exposureDates);
       socket.emit(
         'alertRooms',
         {
@@ -391,17 +341,7 @@ export default {
       }
     },
   },
-  async created() {
-    // let s = await DataRepository.getState();
-    // console.log('created() Fetched state', s);
-    // this.state = s;
-    // this.yourId = this.state.yourId;
-    // this.roomId = this.state.roomId;
-    // const res = await axios.get(`http://localhost:3003/messages`);
-    // console.log(res.data);
-    // this.messages = res.data;
-    // this.$cookies.set('HttpOnly;Secure;SameSite=Strict'); // add ,"expiring time"?
-  },
+  async created() {},
 
   async mounted() {
     socket.on('enterRoom', (roomId) => {
@@ -410,7 +350,6 @@ export default {
     socket.on('leaveRoom', (msg) => this.handleMessage(msg));
     socket.on('connect', async () => {
       this.socketServerOnline = true;
-      // await this.getMessages();
     });
     await Room.$fetch();
     await Name.$fetch();
