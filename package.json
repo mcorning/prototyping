@@ -10,6 +10,7 @@
     "dataWatch": "json-server --watch db.json"
   },
   "dependencies": {
+    "@vuex-orm/core": "^0.36.3",
     "axios": "^0.19.2",
     "core-js": "^3.6.5",
     "moment": "^2.27.0",
@@ -18,7 +19,8 @@
     "vue": "^2.6.11",
     "vue-router": "^3.2.0",
     "vuetify": "^2.2.11",
-    "vuex": "^3.4.0"
+    "vuex": "^3.4.0",
+    "vuex-orm-localforage": "^0.3.2"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",

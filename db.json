@@ -4,65 +4,81 @@
       "visitor": "Tao",
       "room": "Home",
       "message": "Entered",
-      "sentTime": "2020-08-19T01:12:00.961Z",
-      "socketId": "IwSqK4iJgyb-xC9FAAAy",
+      "sentTime": "2020-08-18T18:58:36.627Z",
+      "socketId": "f6u4sd_GBKFmBqxcAAAq",
       "id": 1
     },
     {
       "visitor": "Tao",
       "room": "Home",
       "message": "Entered",
-      "sentTime": "2020-08-20T01:13:38.550Z",
-      "socketId": "IwSqK4iJgyb-xC9FAAAy",
+      "sentTime": "2020-08-19T19:07:29.887Z",
+      "socketId": "RNqclZBGItMsCu_MAAAB",
       "id": 2
     },
     {
-      "visitor": "Tao",
+      "visitor": "Tao2",
       "room": "Home",
       "message": "Entered",
-      "sentTime": "2020-08-18T01:15:05.264Z",
-      "socketId": "IwSqK4iJgyb-xC9FAAAy",
+      "sentTime": "2020-08-19T19:08:40.721Z",
+      "socketId": "RNqclZBGItMsCu_MAAAB",
       "id": 3
     },
     {
-      "visitor": "Tao",
+      "visitor": "Tao2",
       "room": "Home",
       "message": "Entered",
-      "sentTime": "2020-08-19T01:15:29.655Z",
-      "socketId": "IwSqK4iJgyb-xC9FAAAy",
+      "sentTime": "2020-08-20T19:09:14.338Z",
+      "socketId": "RNqclZBGItMsCu_MAAAB",
       "id": 4
     },
     {
       "visitor": "Tao2",
       "room": "Home",
       "message": "Entered",
-      "sentTime": "2020-08-20T01:24:42.268Z",
-      "socketId": "2omfGTVPliHcyq-2AAAI",
+      "sentTime": "2020-08-20T19:09:17.458Z",
+      "socketId": "RNqclZBGItMsCu_MAAAB",
       "id": 5
     },
     {
-      "visitor": "Tao2",
+      "visitor": "Tao",
       "room": "Home",
-      "message": "Departed",
-      "sentTime": "2020-08-20T01:26:03.971Z",
-      "socketId": "nc8hN-N9C3npvhWWAAAM",
+      "message": "Entered",
+      "sentTime": "2020-08-20T19:16:49.634Z",
+      "socketId": "EE-Tf4WsKLedWhriAAAI",
       "id": 6
     },
     {
       "visitor": "Tao2",
-      "room": "Home",
+      "room": "Cafe",
       "message": "Entered",
-      "sentTime": "2020-08-20T01:26:04.688Z",
-      "socketId": "nc8hN-N9C3npvhWWAAAM",
+      "sentTime": "2020-08-20T19:26:30.157Z",
+      "socketId": "iktWf5rJW7ESN8yfAAAE",
       "id": 7
     },
     {
       "visitor": "Tao",
       "room": "Home",
       "message": "Entered",
-      "sentTime": "2020-08-20T01:26:30.052Z",
-      "socketId": "vGmTxwdg1FzIOpFBAAAO",
+      "sentTime": "2020-08-20T20:20:18.012Z",
+      "socketId": "LNgy8U7GeRfHAFl2AAAm",
       "id": 8
+    },
+    {
+      "visitor": "Tao",
+      "room": "Home",
+      "message": "Departed",
+      "sentTime": "2020-08-20T20:20:23.546Z",
+      "socketId": "LNgy8U7GeRfHAFl2AAAm",
+      "id": 9
+    },
+    {
+      "visitor": "Tao",
+      "room": "Home",
+      "message": "Entered",
+      "sentTime": "2020-08-20T20:20:24.602Z",
+      "socketId": "LNgy8U7GeRfHAFl2AAAm",
+      "id": 10
     }
   ],
   "rooms": [
@@ -921,6 +937,14 @@
       "sentTime": "2020-08-20T00:58:17.972Z",
       "socketId": "7RQHC4oelUIqMZefAAAR",
       "id": 124
+    },
+    {
+      "visitor": "",
+      "room": "Home",
+      "message": "Closed",
+      "sentTime": "2020-08-20T19:03:34.896Z",
+      "socketId": "FV_OMcYk0aE8erJMAAAy",
+      "id": 125
     }
   ]
 }

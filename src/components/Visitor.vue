@@ -9,15 +9,20 @@
       <v-card-text>
         <v-row dense>
           <v-col cols="4">
-            <v-text-field label="Your ID" v-model="yourId"></v-text-field
-          ></v-col>
+            <v-combobox
+              v-model="yourId"
+              :items="names"
+              label="Your ID"
+              hint="Make this unique and pseudonymous"
+            ></v-combobox>
+          </v-col>
 
           <v-col cols="4">
-            <v-select
+            <v-combobox
               v-model="roomId"
               :items="rooms"
-              label="Room ID"
-            ></v-select>
+              label="Visit Room"
+            ></v-combobox>
           </v-col>
           <v-col cols="3">
             <v-btn
@@ -31,9 +36,6 @@
             <span class="pl-3">{{
               checkedOut ? 'Check-in' : 'Check-out'
             }}</span>
-          </v-col>
-          <v-col>
-            <v-btn @click="test">Test</v-btn>
           </v-col>
         </v-row>
       </v-card-text>
@@ -52,13 +54,13 @@
               ></v-checkbox
             ></v-col>
             <v-col cols="2">
-              <v-icon
+              <!-- <v-icon
                 class="pr-9"
                 label="Refresh messages"
                 @click="getMessages()"
                 >mdi-email-sync-outline</v-icon
-              ></v-col
-            >
+              > -->
+            </v-col>
           </v-row>
           <v-data-table
             :headers="messageHeaders"
@@ -91,11 +93,15 @@
     </v-card>
     <v-system-bar color="secondary">
       <v-icon small>mdi-transit-connection-variant </v-icon>
-      <span>Socket URL:{{ socketUrl }}</span>
+      <span
+        >Socket URL:{{ socketUrl }}:
+        {{ socketServerOnline ? 'online' : 'offline' }}</span
+      >
 
       <v-spacer></v-spacer>
-      <span>Data URL:{{ dataUrl }}</span>
+      <span>Managed Room{{ managedRoom }}</span>
       <v-spacer></v-spacer>
+      <v-btn small text @click="test">Test</v-btn>
     </v-system-bar>
   </v-container>
 </template>
@@ -103,11 +109,18 @@
 <script>
 import config from '@/config.json';
 import moment from 'moment';
-import axios from 'axios';
-axios.defaults.baseURL = config.dataUrl;
+// import axios from 'axios';
+// axios.defaults.baseURL = config.dataUrl;
 
 import io from 'socket.io-client';
 const socket = io(config.socketUrl);
+
+import Message from '@/models/Message';
+import Name from '@/models/Name';
+import Room from '@/models/Room';
+import State from '@/models/State';
+// import DataRepository from '@/store/repository.js';
+
 socket.on('alert', (msg) => {
   alert('alert', msg);
 });
@@ -118,10 +131,71 @@ socket.on('exposureAlert', (msg) => {
 export default {
   name: 'LctVisitor',
   computed: {
+    messages: {
+      get() {
+        return Message.all();
+      },
+      set(newVal) {
+        // static update function on Message model
+        Message.update(newVal);
+      },
+    },
+    yourId: {
+      get() {
+        return this.state?.yourId;
+      },
+      set(newVal) {
+        // static changeYourId function on State model
+        State.changeYourId(newVal);
+        // static update function on Name model
+        Name.update(newVal).catch((e) => console.log(e));
+      },
+    },
+
+    roomId: {
+      get() {
+        return this.state?.roomId;
+      },
+      set(newVal) {
+        // static changeRoomId function on State model
+        State.changeRoomId(newVal);
+        // static update function on Room model
+        Room.update(newVal).catch((e) => console.log(e));
+      },
+    },
+
+    managedRoom: {
+      get() {
+        return this.state?.managerId;
+      },
+      set(newVal) {
+        State.updateManagerId(newVal);
+      },
+    },
+    state: {
+      get() {
+        let s = State.query().first();
+        return s;
+      },
+      set(newVal) {
+        console.log(newVal);
+      },
+    },
+
+    rooms() {
+      return Room.all().map((v) => v.roomId);
+    },
+
+    names() {
+      return Name.all().map((v) => v.yourId);
+    },
+
     visits() {
-      const allRoomVisits = this.messages.filter((v) => this.roomId == v.room);
-      // return allRoomVisits;
-      return allRoomVisits.filter((v) => this.isBetween(v.sentTime));
+      let allVisits = this.messages.filter((v) => this.isBetween(v.sentTime));
+      if (this.daysBack == 0) {
+        return allVisits.filter((v) => this.roomId == v.room);
+      }
+      return allVisits;
     },
     entered() {
       return this.visits.filter((v) => v.message == 'Entered').length;
@@ -136,16 +210,13 @@ export default {
 
   data: () => ({
     daysBack: 0,
-
+    socketServerOnline: false,
     dataUrl: config.dataUrl,
     socketUrl: config.socketUrl,
     visitFormat: 'HH:mm, ddd, MMM DD',
     checkedOut: true,
     socketId: '',
-    rooms: [],
-    messages: [],
-    yourId: 'Tao',
-    roomId: 'Home',
+    // messages: [],
     messageHeaders: [
       { text: 'Id', value: 'id' },
       { text: 'Room', value: 'room' },
@@ -214,14 +285,12 @@ export default {
       await this.postMessage(data);
     },
 
-    async getMessages() {
-      try {
-        const res = await axios.get(`http://localhost:3003/messages`);
-
-        this.messages = res.data;
-      } catch (e) {
-        console.error(e);
+    socketServerIsOffline() {
+      if (!socket.connected) {
+        alert('Socket server is offline');
+        return false;
       }
+      return true;
     },
 
     async check() {
@@ -244,12 +313,9 @@ export default {
     async postMessage(data) {
       socket.emit(data.event, data.message, async function(ack) {
         data.message.socketId = ack.socketId;
-        // cache the message
-        await axios.post('messages', data.message);
       });
-
-      // display while axios works
-      this.messages.push(data.message);
+      // cache the message
+      this.messages = data.message;
     },
 
     visitedDate(date) {
@@ -258,7 +324,7 @@ export default {
     },
 
     handleMessage(msg) {
-      this.messages.push(msg);
+      this.messages = msg;
       if (msg.message == 'Alert') {
         let alertMsg = `A fellow visitor to ${msg.room} is in quarantine at ${msg.sentTime}`;
         alert(`handleMessage:`, alertMsg);
@@ -286,16 +352,8 @@ export default {
         }
       );
     },
-    deleteMessage(id) {
-      let url = `${this.dataUrl}messages/${id}`;
-      axios
-        .delete(url)
-        .then(
-          this.getMessages().then(() =>
-            console.log('messages after delete', this.messages)
-          )
-        )
-        .catch((e) => console.log(e.message));
+    async deleteMessage(id) {
+      Message.delete(id);
     },
 
     isBetween(date) {
@@ -328,21 +386,30 @@ export default {
     },
   },
   async created() {
-    await this.getMessages();
+    // let s = await DataRepository.getState();
+    // console.log('created() Fetched state', s);
+    // this.state = s;
+    // this.yourId = this.state.yourId;
+    // this.roomId = this.state.roomId;
+    // const res = await axios.get(`http://localhost:3003/messages`);
+    // console.log(res.data);
+    // this.messages = res.data;
+    // this.$cookies.set('HttpOnly;Secure;SameSite=Strict'); // add ,"expiring time"?
   },
 
-  mounted() {
-    this.yourId = config.yourId;
-    this.roomId = config.roomId;
-    this.rooms = config.rooms;
+  async mounted() {
     socket.on('enterRoom', (roomId) => {
       console.log('Entered Room', roomId);
     });
     socket.on('leaveRoom', (msg) => this.handleMessage(msg));
-    // socket.on('addRoom', (msg) => {
-    //   this.rooms.push(msg.roomId);
-    //   alert('Rooms available:', msg.numRooms);
-    // });
+    socket.on('connect', async () => {
+      this.socketServerOnline = true;
+      // await this.getMessages();
+    });
+    await Room.$fetch();
+    await Name.$fetch();
+    await State.$fetch();
+    await Message.$fetch();
   },
 };
 </script>
