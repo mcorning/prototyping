@@ -20,7 +20,7 @@ export default class Message extends Model {
       data: {
         visitor: visitor,
         room: room,
-        dates: message,
+        message: message,
         sentTime: sentTime,
       },
     });

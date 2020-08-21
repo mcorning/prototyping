@@ -220,7 +220,7 @@ export default {
       { text: 'Id', value: 'id' },
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
-      { text: 'Purpose', value: 'message' },
+      { text: 'Message', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
       // { text: 'SocketId', value: 'socketId' },
       { text: 'Delete', value: 'action' },
@@ -265,10 +265,7 @@ export default {
   }),
 
   methods: {
-    getRandomInt(max) {
-      return Math.floor(Math.random() * Math.floor(max));
-    },
-    async test() {
+    test() {
       this.daysBack = 14;
       let msg = {
         visitor: this.yourId,
@@ -278,19 +275,12 @@ export default {
           .add(-this.getRandomInt(3), 'day')
           .toISOString(),
       };
-      let data = {
-        event: 'enterRoom',
-        message: msg,
-      };
-      await this.postMessage(data);
-    },
-
-    socketServerIsOffline() {
-      if (!socket.connected) {
-        alert('Socket server is offline');
-        return false;
-      }
-      return true;
+      // cache the message
+      this.messages = msg;
+      console.log(this.messages);
+      socket.emit('enterRoom', msg, async function(ack) {
+        msg.socketId = ack.socketId;
+      });
     },
 
     async check() {
@@ -300,22 +290,54 @@ export default {
         message: this.checkedOut ? 'Entered' : 'Departed',
         sentTime: new Date().toISOString(),
       };
-      let data = {
-        event: this.checkedOut ? 'enterRoom' : 'leaveRoom',
-        message: msg,
-      };
-      await this.postMessage(data);
+      this.messages = msg;
+
+      let event = this.checkedOut ? 'enterRoom' : 'leaveRoom';
+      socket.emit(event, msg, async function(ack) {
+        msg.socketId = ack.socketId;
+      });
 
       this.checkedOut = !this.checkedOut;
     },
 
-    // called by check-in
-    async postMessage(data) {
-      socket.emit(data.event, data.message, async function(ack) {
-        data.message.socketId = ack.socketId;
-      });
-      // cache the message
-      this.messages = data.message;
+    alertRooms() {
+      // make a pivot table from messages:
+      // group by room include day of entered message
+      console.log(this.messages);
+      let visits = this.messages
+        .map((v) => {
+          if (v.message.toLowerCase() == 'entered') {
+            return [v.room, v.sentTime];
+          }
+        })
+        .filter((v) => v);
+      console.log('entered', visits);
+      // const exposureDates = this.messages.map((v) => v.sentTime);
+      // console.log(exposureDates);
+      socket.emit(
+        'alertRooms',
+        {
+          visitor: this.yourId,
+          room: '',
+          message: visits,
+          sentTime: new Date().toISOString(),
+        },
+        function(msg) {
+          alert('Server acknowledges your Room Alerts:', msg);
+        }
+      );
+    },
+
+    getRandomInt(max) {
+      return Math.floor(Math.random() * Math.floor(max));
+    },
+
+    socketServerIsOffline() {
+      if (!socket.connected) {
+        alert('Socket server is offline');
+        return false;
+      }
+      return true;
     },
 
     visitedDate(date) {
@@ -336,22 +358,6 @@ export default {
       socket.emit('removeVisitor');
     },
 
-    alertRooms() {
-      const exposureDates = this.messages.map((v) => v.sentTime);
-      console.log(exposureDates);
-      socket.emit(
-        'alertRooms',
-        {
-          visitor: this.yourId,
-          room: this.roomId,
-          message: exposureDates,
-          sentTime: new Date().toISOString(),
-        },
-        function(msg) {
-          alert('Server acknowledges your Room Alerts:', msg);
-        }
-      );
-    },
     async deleteMessage(id) {
       Message.delete(id);
     },
