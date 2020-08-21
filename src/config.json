@@ -1,5 +1,6 @@
 {
     "dataUrl": "http://localhost:3003/",
     "socketUrl": "http://localhost:3000",
+    "ngrokUrl": "http://71bd0336bacc.ngrok.io",
     "defaultVue": "visitor"
 }

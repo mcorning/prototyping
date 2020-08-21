@@ -224,7 +224,7 @@ export default {
   },
 
   data: () => ({
-    socketUrl: config.socketUrl,
+    socketUrl: config.ngrokUrl,
 
     hasRoomManager: false,
     daysBack: 0,

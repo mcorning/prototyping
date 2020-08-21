@@ -18,11 +18,11 @@
           </v-col>
 
           <v-col cols="4">
-            <v-combobox
+            <v-select
               v-model="roomId"
               :items="rooms"
               label="Visit Room"
-            ></v-combobox>
+            ></v-select>
           </v-col>
           <v-col cols="3">
             <v-btn
@@ -40,8 +40,8 @@
         </v-row>
         <v-card-actions>
           <v-btn color="error" block dark @click="alertRooms">
-            Alert Rooms
-            <v-icon>mdi-alert</v-icon>
+            Alert
+            <v-icon>mdi-alert</v-icon> Rooms
           </v-btn>
         </v-card-actions>
       </v-card-text>
@@ -204,7 +204,7 @@ export default {
     daysBack: 0,
     socketServerOnline: false,
     dataUrl: config.dataUrl,
-    socketUrl: config.socketUrl,
+    socketUrl: config.ngrokUrl,
     visitFormat: 'HH:mm, ddd, MMM DD',
     checkedOut: true,
     socketId: '',
