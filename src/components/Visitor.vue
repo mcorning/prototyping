@@ -120,7 +120,7 @@ socket.on('alert', (msg) => {
   alert('alert', msg);
 });
 socket.on('exposureAlert', (msg) => {
-  alert('Exposure Alert\nExposure Dates:\n' + JSON.stringify(msg));
+  alert('Exposure Alert\n' + JSON.stringify(msg));
 });
 
 export default {
@@ -348,7 +348,7 @@ export default {
           sentTime: new Date().toISOString(),
         },
         function(msg) {
-          alert('Alerted Rooms:', msg);
+          alert('Server acknowledges your Room Alerts:', msg);
         }
       );
     },
