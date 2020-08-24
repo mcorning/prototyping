@@ -83,11 +83,9 @@
     </v-card>
     <v-system-bar color="secondary">
       <v-icon small>mdi-transit-connection-variant </v-icon>
-      <span
-        >Socket URL:{{ socketUrl }}:
-        {{ socketServerOnline ? 'online' : 'offline' }}</span
-      >
-
+      <span>Server:{{ socketUrl }}</span>
+      <v-spacer></v-spacer>
+      <span>Socket: {{ socketInfo }}{{ socketId }}</span>
       <v-spacer></v-spacer>
       <span>Room Manager: {{ managedRoom }}</span>
       <v-spacer></v-spacer>
@@ -118,6 +116,9 @@ socket.on('exposureAlert', (msg) => {
 export default {
   name: 'LctVisitor',
   computed: {
+    socketInfo() {
+      return socket.id;
+    },
     allVisits() {
       return this.daysBack != 0;
     },
@@ -204,12 +205,12 @@ export default {
     daysBack: 0,
     socketServerOnline: false,
     dataUrl: config.dataUrl,
-    socketUrl: config.ngrokUrl,
-    visitFormat: 'HH:mm, ddd, MMM DD',
+    socketUrl: config.socketUrl,
+    // socketUrl: config.ngrokUrl,
+    visitFormat: 'at HH:mm on ddd, MMM DD',
     checkedOut: true,
     socketId: '',
     messageHeaders: [
-      // { text: 'Id', value: 'id' },
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
@@ -219,6 +220,11 @@ export default {
   }),
 
   methods: {
+    emit(payload) {
+      console.log('payload :>> ', payload);
+      socket.emit(payload.event, payload.message);
+    },
+
     test() {
       this.daysBack = 14;
       let msg = {
@@ -232,8 +238,9 @@ export default {
       // cache the message
       this.messages = msg;
       console.log(this.messages);
-      socket.emit('enterRoom', msg, async function(ack) {
-        msg.socketId = ack.socketId;
+      this.emit({
+        event: 'enterRoom',
+        message: msg,
       });
     },
 
@@ -263,7 +270,7 @@ export default {
           }
         })
         .filter((v) => v);
-      console.log('entered', visits);
+      console.log('Exposure visits:', visits);
       socket.emit(
         'alertRooms',
         {
@@ -328,12 +335,16 @@ export default {
     toggleVisits() {
       this.daysBack = !this.daysBack ? 14 : 0;
     },
+    checkConnection(socket) {
+      console.log('socketServerOnline :>> ', this.socketServerOnline);
+      console.log('socket.id :>> ', socket.id);
+    },
   },
 
   watch: {
     roomId() {
       if (!this.checkedOut) {
-        if (confirm('Should i check you out of', this.roomId, '?')) {
+        if (prompt('Should i check you out of', this.roomId, '?')) {
           socket.emit('leaveRoom', this.yourId, function(msg) {
             alert('Checked out of:', msg);
           });
@@ -348,8 +359,9 @@ export default {
       console.log('Entered Room', roomId);
     });
     socket.on('leaveRoom', (msg) => this.handleMessage(msg));
-    socket.on('connect', async () => {
-      this.socketServerOnline = true;
+    let self = this;
+    socket.on('connect', function() {
+      self.socketId = socket.id;
     });
     await Room.$fetch();
     await Name.$fetch();

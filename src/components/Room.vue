@@ -19,7 +19,7 @@
               :color="closed ? 'success' : 'warning'"
               fab
               dark
-              @click="check"
+              @click="act"
             >
               <v-icon>{{ btnType }}</v-icon>
             </v-btn>
@@ -105,23 +105,18 @@
           </template>
         </v-data-table>
       </v-card-text>
-      <!-- <v-card-actions>
-        <v-btn @click="open">Open Room</v-btn>
-        <v-btn @click="close">Close Room</v-btn>
-      </v-card-actions> -->
       <v-card-actions>
         <span class="pr-3">Alert Room's Visitors </span>
         <v-btn color="error" fab dark>
           <v-icon x-large>mdi-alert</v-icon>
         </v-btn>
-        <!-- <v-btn @click="alertVisitors">Alert Visitors</v-btn>
-        <v-btn @click="leave">Leave LCT</v-btn> -->
       </v-card-actions>
     </v-card>
     <v-system-bar color="secondary">
       <v-icon small>mdi-transit-connection-variant </v-icon>
-      <span>Socket URL:{{ socketUrl }}</span>
-
+      <span>Server:{{ socketUrl }}</span>
+      <v-spacer></v-spacer>
+      <span>Socket: {{ socketInfo }}{{ socketId }}</span>
       <v-spacer></v-spacer>
       <span>Room Manager: {{ managedRoom }}</span>
 
@@ -153,6 +148,10 @@ export default {
   name: 'LctRoom',
   components: {},
   computed: {
+    socketInfo() {
+      return socket.id;
+    },
+
     state: {
       get() {
         let s = State.query().first();
@@ -224,22 +223,21 @@ export default {
   },
 
   data: () => ({
-    socketUrl: config.ngrokUrl,
-
+    socketUrl: config.socketUrl,
+    socketId: '',
     hasRoomManager: false,
     daysBack: 0,
     today: 'YYYY-MM-DD',
     closed: true,
 
     listUniqueVisitors: false,
-    visitFormat: 'HH:mm, ddd, MMM DD  YYYY ',
+    visitFormat: 'at HH:mm on ddd, MMM DD',
     messageHeaders: [
-      // { text: 'Id', value: 'id' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
       { text: 'Room', value: 'room' },
-      // { text: 'SocketId', value: 'socketId' },
+      { text: 'SocketId', value: 'socketId' },
       { text: 'Delete', value: 'action' },
     ],
     alertHeaders: [
@@ -250,34 +248,22 @@ export default {
     yourId: '',
   }),
   methods: {
-    async check() {
+    act() {
       let msg = {
-        visitor: this.yourId,
         room: this.roomId,
-        message: this.checkedOut ? 'Entered' : 'Departed',
+        message: this.closed ? 'Opened' : 'Closed',
         sentTime: new Date().toISOString(),
       };
       this.messages = msg;
 
-      let event = this.checkedOut ? 'enterRoom' : 'leaveRoom';
-      socket.emit(event, msg, async function(ack) {
-        msg.socketId = ack.socketId;
-      });
+      let event = this.closed ? 'openRoom' : 'closeRoom';
+      socket.emit(event, msg, (msg) => alert(msg));
+      this.closed = !this.closed;
     },
 
     visitedDate(date) {
       let x = moment(new Date(date)).format(this.visitFormat);
       return x;
-    },
-    handleMessage(msg) {
-      console.log(new Date(), msg);
-      this.messages.push(msg);
-
-      if (msg.message == 'alert') {
-        this.alerts.push(msg);
-        alert('New message:', msg);
-        return;
-      }
     },
 
     alertVisitors() {
@@ -287,9 +273,6 @@ export default {
         message: 'Alert',
         sentTime: new Date().toISOString(),
       });
-    },
-    leave() {
-      socket.emit('removeRoom');
     },
 
     isToday(date) {
@@ -320,13 +303,27 @@ export default {
     deleteMessage(id) {
       Message.delete(id);
     },
+
+    handleMessage(msg) {
+      console.info('Room sees socket.id :>> ', socket.id),
+        socket.room,
+        socket.visitor;
+      console.info(new Date(), msg);
+      this.messages.push(msg);
+
+      if (msg.message == 'alert') {
+        this.alerts.push(msg);
+        alert('New message:', msg);
+        return;
+      }
+    },
   },
 
   async created() {},
 
   async mounted() {
-    this.check();
     // check-X to disambiguate the server event handler, enter/leaveRoom
+    socket.on('message', (msg) => alert(msg));
     socket.on('check-in', (msg) => this.handleMessage(msg));
     socket.on('check-out', (msg) => this.handleMessage(msg));
     socket.on('exposureAlert', (msg) => this.handleMessage(msg));
@@ -334,6 +331,11 @@ export default {
     await Name.$fetch();
     await State.$fetch();
     await Message.$fetch();
+
+    let self = this;
+    socket.on('connect', function() {
+      self.socketId = socket.id;
+    });
   },
 };
 </script>
