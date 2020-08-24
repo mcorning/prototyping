@@ -30,4 +30,8 @@ export default class Message extends Model {
     let p = await this.$delete(val);
     return p;
   }
+  static async deleteAll() {
+    let p = await this.$deleteAll();
+    return p;
+  }
 }

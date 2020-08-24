@@ -99,7 +99,12 @@ import config from '@/config.json';
 import moment from 'moment';
 
 import io from 'socket.io-client';
-const socket = io(config.socketUrl);
+let socket;
+connect();
+
+function connect() {
+  socket = io(config.socketUrl);
+}
 
 import Message from '@/models/Message';
 import Name from '@/models/Name';
@@ -221,6 +226,12 @@ export default {
 
   methods: {
     emit(payload) {
+      if (!socket.connected) {
+        if (!confirm('Your socket is disconnected. Reconnect now? ')) {
+          return;
+        }
+        connect();
+      }
       console.log('payload :>> ', payload);
       socket.emit(payload.event, payload.message);
     },
@@ -254,9 +265,7 @@ export default {
       this.messages = msg;
 
       let event = this.checkedOut ? 'enterRoom' : 'leaveRoom';
-      socket.emit(event, msg, async function(ack) {
-        msg.socketId = ack.socketId;
-      });
+      socket.emit(event, msg);
 
       this.checkedOut = !this.checkedOut;
     },
@@ -315,8 +324,22 @@ export default {
       socket.emit('removeVisitor');
     },
 
-    async deleteMessage(id) {
-      Message.delete(id);
+    deleteMessage(id) {
+      console.log('deleting', id);
+      if (this.daysBack == 0) {
+        socket.disconnect();
+        Message.delete(id);
+        alert(
+          socket.connected
+            ? 'Socket still connected'
+            : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
+        );
+      } else {
+        socket.emit('disconnectAll');
+
+        alert('All sockets disconnected. Refesh to reconnect this socket.');
+        Message.deleteAll();
+      }
     },
 
     isBetween(date) {
@@ -334,6 +357,9 @@ export default {
 
     toggleVisits() {
       this.daysBack = !this.daysBack ? 14 : 0;
+      if (this.daysBack != 0) {
+        socket.emit('listAllSockets');
+      }
     },
     checkConnection(socket) {
       console.log('socketServerOnline :>> ', this.socketServerOnline);
@@ -345,6 +371,7 @@ export default {
     roomId() {
       if (!this.checkedOut) {
         if (prompt('Should i check you out of', this.roomId, '?')) {
+          this.checkedOut = !this.checkedOut;
           socket.emit('leaveRoom', this.yourId, function(msg) {
             alert('Checked out of:', msg);
           });
@@ -355,11 +382,15 @@ export default {
   async created() {},
 
   async mounted() {
+    // so we can reference this, as necessary
+
+    let self = this;
+    socket.on('message', (msg) => alert(msg));
+
     socket.on('enterRoom', (roomId) => {
       console.log('Entered Room', roomId);
     });
     socket.on('leaveRoom', (msg) => this.handleMessage(msg));
-    let self = this;
     socket.on('connect', function() {
       self.socketId = socket.id;
     });

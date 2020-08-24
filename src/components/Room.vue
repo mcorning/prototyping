@@ -301,7 +301,13 @@ export default {
     },
 
     deleteMessage(id) {
-      Message.delete(id);
+      if (this.daysBack == 0) {
+        socket.disconnect();
+        Message.delete(id);
+      } else {
+        socket.emit('disconnectAll');
+        this.messages = [];
+      }
     },
 
     handleMessage(msg) {
@@ -322,7 +328,9 @@ export default {
   async created() {},
 
   async mounted() {
-    // check-X to disambiguate the server event handler, enter/leaveRoom
+    // so we can reference this, as necessary
+    let self = this;
+    // check-X to disambiguate the server event handler, enterRoom/leaveRoom
     socket.on('message', (msg) => alert(msg));
     socket.on('check-in', (msg) => this.handleMessage(msg));
     socket.on('check-out', (msg) => this.handleMessage(msg));
@@ -332,7 +340,6 @@ export default {
     await State.$fetch();
     await Message.$fetch();
 
-    let self = this;
     socket.on('connect', function() {
       self.socketId = socket.id;
     });
