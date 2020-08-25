@@ -1,6 +1,6 @@
 <template>
   <v-container>
-    <v-card dark>
+    <v-card>
       <v-card-title>Room Control</v-card-title>
       <v-card-subtitle
         >Monitor Visitors and alert them as necessary</v-card-subtitle
@@ -134,7 +134,15 @@ import config from '@/config.json';
 import moment from 'moment';
 
 import io from 'socket.io-client';
-const socket = io(config.socketUrl);
+let socket;
+connect();
+
+function connect() {
+  socket = io(config.socketUrl);
+}
+
+// socket.on('message', (msg) => alert(msg));
+
 socket.on('exposureAlert', (msg) => {
   alert('Exposure Alert', msg);
 });
@@ -248,6 +256,17 @@ export default {
     yourId: '',
   }),
   methods: {
+    emit(payload) {
+      if (!socket.connected) {
+        if (!confirm('Your socket is disconnected. Reconnect now? ')) {
+          return;
+        }
+        connect();
+      }
+      console.log('payload :>> ', payload);
+      socket.emit(payload.event, payload.message, payload.ack);
+    },
+
     act() {
       let msg = {
         room: this.roomId,
@@ -257,7 +276,7 @@ export default {
       this.messages = msg;
 
       let event = this.closed ? 'openRoom' : 'closeRoom';
-      socket.emit(event, msg, (msg) => alert(msg));
+      this.emit({ event: event, message: msg, ack: (msg) => alert(msg) });
       this.closed = !this.closed;
     },
 
@@ -267,11 +286,15 @@ export default {
     },
 
     alertVisitors() {
-      socket.emit('newMessage', {
-        visitor: this.yourId,
-        room: this.roomId,
-        message: 'Alert',
-        sentTime: new Date().toISOString(),
+      // needs work
+      this.emit({
+        event: 'alertVisitors',
+        message: {
+          visitor: this.yourId,
+          room: this.roomId,
+          message: 'Alert',
+          sentTime: new Date().toISOString(),
+        },
       });
     },
 
@@ -301,28 +324,35 @@ export default {
     },
 
     deleteMessage(id) {
+      console.log('deleting', id);
       if (this.daysBack == 0) {
         socket.disconnect();
         Message.delete(id);
+        alert(
+          socket.connected
+            ? 'Socket still connected'
+            : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
+        );
       } else {
-        socket.emit('disconnectAll');
-        this.messages = [];
+        this.emit({ event: 'disconnectAll' });
+        alert('All sockets disconnected. Refesh to reconnect this socket.');
+        Message.deleteAll();
       }
     },
 
-    handleMessage(msg) {
-      console.info('Room sees socket.id :>> ', socket.id),
-        socket.room,
-        socket.visitor;
-      console.info(new Date(), msg);
-      this.messages.push(msg);
+    // handleMessage(msg) {
+    //   console.info('Room sees socket.id :>> ', socket.id),
+    //     socket.room,
+    //     socket.visitor;
+    //   console.info(new Date(), msg);
+    //   this.messages.push(msg);
 
-      if (msg.message == 'alert') {
-        this.alerts.push(msg);
-        alert('New message:', msg);
-        return;
-      }
-    },
+    //   if (msg.message == 'alert') {
+    //     this.alerts.push(msg);
+    //     alert('New message:', msg);
+    //     return;
+    //   }
+    // },
   },
 
   async created() {},
@@ -331,7 +361,6 @@ export default {
     // so we can reference this, as necessary
     let self = this;
     // check-X to disambiguate the server event handler, enterRoom/leaveRoom
-    socket.on('message', (msg) => alert(msg));
     socket.on('check-in', (msg) => this.handleMessage(msg));
     socket.on('check-out', (msg) => this.handleMessage(msg));
     socket.on('exposureAlert', (msg) => this.handleMessage(msg));

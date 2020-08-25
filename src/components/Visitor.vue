@@ -3,7 +3,7 @@
     <v-card dark>
       <v-card-title>Your Travel Diary</v-card-title>
       <v-card-subtitle
-        >Record each you visit. If you go into quarantine, Alert
+        >Lag each Room you visit. If you go into quarantine, Alert
         Rooms</v-card-subtitle
       >
       <v-card-text>
@@ -67,6 +67,7 @@
             multi-sort
             item-key="id"
             dense
+            :items-per-page="5"
             class="elevation-1"
           >
             <template v-slot:item.sentTime="{ item }">
@@ -91,6 +92,22 @@
       <v-spacer></v-spacer>
       <v-btn small text @click="test">Test</v-btn>
     </v-system-bar>
+    <v-card>
+      <v-card-title>Audit Trail</v-card-title>
+      <v-data-table
+        :headers="logHeaders"
+        :items="cons"
+        multi-sort
+        item-key="id"
+        dense
+        :items-per-page="5"
+        class="elevation-1"
+      >
+        <template v-slot:item.sentTime="{ item }">
+          {{ visitedDate(item.sentTime) }}
+        </template>
+      </v-data-table>
+    </v-card>
   </v-container>
 </template>
 
@@ -106,17 +123,17 @@ function connect() {
   socket = io(config.socketUrl);
 }
 
+// socket.on('alert', (msg) => {
+//   alert('alert', msg);
+// });
+socket.on('exposureAlert', (msg) => {
+  alert('Exposure Alert\n' + JSON.stringify(msg));
+});
+
 import Message from '@/models/Message';
 import Name from '@/models/Name';
 import Room from '@/models/Room';
 import State from '@/models/State';
-
-socket.on('alert', (msg) => {
-  alert('alert', msg);
-});
-socket.on('exposureAlert', (msg) => {
-  alert('Exposure Alert\n' + JSON.stringify(msg));
-});
 
 export default {
   name: 'LctVisitor',
@@ -207,12 +224,13 @@ export default {
   },
 
   data: () => ({
+    cons: [],
     daysBack: 0,
     socketServerOnline: false,
     dataUrl: config.dataUrl,
     socketUrl: config.socketUrl,
     // socketUrl: config.ngrokUrl,
-    visitFormat: 'at HH:mm on ddd, MMM DD',
+    visitFormat: 'HH:mm on ddd, MMM DD',
     checkedOut: true,
     socketId: '',
     messageHeaders: [
@@ -221,6 +239,10 @@ export default {
       { text: 'Message', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
       { text: 'Delete', value: 'action' },
+    ],
+    logHeaders: [
+      { text: 'Message', value: 'message' },
+      { text: 'Sent  ', value: 'sentTime' },
     ],
   }),
 
@@ -233,7 +255,11 @@ export default {
         connect();
       }
       console.log('payload :>> ', payload);
-      socket.emit(payload.event, payload.message);
+      this.cons.push({
+        sentTime: new Date(),
+        message: `payload: ${JSON.stringify(payload)}`,
+      }),
+        socket.emit(payload.event, payload.message, payload.ack);
     },
 
     test() {
@@ -249,13 +275,16 @@ export default {
       // cache the message
       this.messages = msg;
       console.log(this.messages);
-      this.emit({
-        event: 'enterRoom',
-        message: msg,
-      });
+      let m = `Messages (including test): ${this.messages}`;
+      this.cons.push({ sentTime: new Date(), message: m }),
+        this.emit({
+          event: 'enterRoom',
+          message: msg,
+        });
     },
 
-    async check() {
+    check() {
+      let cons = this.cons;
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
@@ -265,13 +294,35 @@ export default {
       this.messages = msg;
 
       let event = this.checkedOut ? 'enterRoom' : 'leaveRoom';
-      socket.emit(event, msg);
+      // socket.emit(event, msg, function(ack) {
+      //   cons.push({
+      //     sentTime: new Date(),
+      //     message: ack,
+      //   });
+      // });
+      this.emit({
+        event: event,
+        message: msg,
+        ack: function(ack) {
+          cons.push({
+            sentTime: new Date(),
+            message: ack,
+          });
+        },
+      });
 
       this.checkedOut = !this.checkedOut;
+      if (this.checkedOut) {
+        this.cons.push({
+          sentTime: new Date(),
+          message: `You checked out of ${this.roomId}`,
+        });
+      }
     },
 
     alertRooms() {
       console.log(this.messages);
+
       let visits = this.messages
         .map((v) => {
           if (v.message.toLowerCase() == 'entered') {
@@ -279,31 +330,37 @@ export default {
           }
         })
         .filter((v) => v);
-      console.log('Exposure visits:', visits);
-      socket.emit(
-        'alertRooms',
-        {
+      let m = `Exposure visits: ${visits}`;
+      this.cons.push({ sentTime: new Date(), message: m });
+
+      // socket.emit(
+      //   'alertRooms',
+      //   {
+      //     visitor: this.yourId,
+      //     room: '',
+      //     message: visits,
+      //     sentTime: new Date().toISOString(),
+      //   },
+      //   function(msg) {
+      //     alert('Server acknowledges your Room Alerts:', msg);
+      //   }
+
+      this.emit({
+        event: 'alertRooms',
+        message: {
           visitor: this.yourId,
           room: '',
           message: visits,
           sentTime: new Date().toISOString(),
         },
-        function(msg) {
+        ack: function(msg) {
           alert('Server acknowledges your Room Alerts:', msg);
-        }
-      );
+        },
+      });
     },
 
     getRandomInt(max) {
       return Math.floor(Math.random() * Math.floor(max));
-    },
-
-    socketServerIsOffline() {
-      if (!socket.connected) {
-        alert('Socket server is offline');
-        return false;
-      }
-      return true;
     },
 
     visitedDate(date) {
@@ -311,21 +368,23 @@ export default {
       return x;
     },
 
-    handleMessage(msg) {
-      this.messages = msg;
-      if (msg.message == 'Alert') {
-        let alertMsg = `A fellow visitor to ${msg.room} is in quarantine at ${msg.sentTime}`;
-        alert(`handleMessage:`, alertMsg);
-      }
-    },
+    // handleMessage(msg) {
+    //   this.messages = msg;
+    //   if (msg.message == 'Alert') {
+    //     let alertMsg = `A fellow visitor to ${msg.room} is in quarantine at ${msg.sentTime}`;
+    //     alert(`handleMessage:`, alertMsg);
+    //   }
+    // },
 
     removeVisitor() {
       // the server will remove this socket
-      socket.emit('removeVisitor');
+      this.emit({ event: 'removeVisitor' });
     },
 
     deleteMessage(id) {
       console.log('deleting', id);
+      let m = `Deleting: ${id}`;
+      this.cons.push({ sentTime: new Date(), message: m });
       if (this.daysBack == 0) {
         socket.disconnect();
         Message.delete(id);
@@ -335,8 +394,7 @@ export default {
             : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
         );
       } else {
-        socket.emit('disconnectAll');
-
+        this.emit({ event: 'disconnectAll' });
         alert('All sockets disconnected. Refesh to reconnect this socket.');
         Message.deleteAll();
       }
@@ -356,24 +414,33 @@ export default {
     },
 
     toggleVisits() {
+      let cons = this.cons;
       this.daysBack = !this.daysBack ? 14 : 0;
       if (this.daysBack != 0) {
-        socket.emit('listAllSockets');
+        this.emit({
+          event: 'listAllSockets',
+          message: null,
+          ack: function(ack) {
+            cons.push({ sentTime: new Date(), message: ack });
+          },
+        });
       }
-    },
-    checkConnection(socket) {
-      console.log('socketServerOnline :>> ', this.socketServerOnline);
-      console.log('socket.id :>> ', socket.id);
     },
   },
 
   watch: {
     roomId() {
       if (!this.checkedOut) {
-        if (prompt('Should i check you out of', this.roomId, '?')) {
+        if (confirm('Should i check you out of', this.roomId, '?')) {
+          let cons = this.cons;
           this.checkedOut = !this.checkedOut;
-          socket.emit('leaveRoom', this.yourId, function(msg) {
-            alert('Checked out of:', msg);
+          this.emit({
+            event: 'leaveRoom',
+            message: this.yourId,
+            ack: function(ack) {
+              let m = `Checked out of: ${ack}`;
+              cons.push({ sentTime: new Date(), message: m });
+            },
           });
         }
       }
@@ -385,12 +452,15 @@ export default {
     // so we can reference this, as necessary
 
     let self = this;
-    socket.on('message', (msg) => alert(msg));
-
-    socket.on('enterRoom', (roomId) => {
-      console.log('Entered Room', roomId);
+    let cons = this.cons;
+    socket.on('message', function(msg) {
+      cons.push({ sentTime: new Date(), message: msg });
     });
-    socket.on('leaveRoom', (msg) => this.handleMessage(msg));
+
+    // socket.on('enterRoom', (roomId) => {
+    //   console.log('Entered Room', roomId);
+    //   this.cons.push(`Entered Room: ${roomId}`);
+    // });
     socket.on('connect', function() {
       self.socketId = socket.id;
     });
