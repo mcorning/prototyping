@@ -39,7 +39,7 @@
           </v-col>
         </v-row>
         <v-card-actions>
-          <v-btn color="error" block dark @click="alertRooms">
+          <v-btn color="error" block dark @click="warnRooms">
             Alert
             <v-icon>mdi-alert</v-icon> Rooms
           </v-btn>
@@ -127,7 +127,7 @@ function connect() {
 //   alert('alert', msg);
 // });
 socket.on('exposureAlert', (msg) => {
-  alert('Exposure Alert\n' + JSON.stringify(msg));
+  alert(msg);
 });
 
 import Message from '@/models/Message';
@@ -234,6 +234,7 @@ export default {
     checkedOut: true,
     socketId: '',
     messageHeaders: [
+      { text: 'ID', value: 'id' },
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
@@ -320,21 +321,49 @@ export default {
       }
     },
 
-    alertRooms() {
-      console.log(this.messages);
-
-      let visits = this.messages
-        .map((v) => {
-          if (v.message.toLowerCase() == 'entered') {
-            return [v.room, v.sentTime];
+    // Visitor groups all messages by Room.
+    // Visitor iterates list sending an alertRoom event to socket.io server for each Room.
+    // Alert payload contains all the dates for that Room.
+    // Server relays message to each Room.
+    warnRooms() {
+      console.log(this.visits);
+      let roomSet = new Set(this.messages.map((v) => v.room));
+      roomSet.forEach((room) => {
+        try {
+          let visits = this.messages.filter(
+            (v) => v.room == room && v.message.toLowerCase() == 'entered'
+          );
+          console.log('room :>> ', room);
+          console.log('visits :>> ', visits);
+          if (visits.length) {
+            this.emit({
+              event: 'exposureWarning',
+              message: {
+                room: room,
+                message: visits, // an array of dates
+                sentTime: new Date().toISOString(),
+              },
+              ack: function(ack) {
+                alert(ack);
+              },
+            });
+          } else {
+            alert(`${room} has no visits among its messages.`);
           }
-        })
-        .filter((v) => v);
-      let m = `Exposure visits: ${visits}`;
-      this.cons.push({ sentTime: new Date(), message: m });
+          // get array of dates for this room
+          // room.visits = this.messages.map((v) => {
+          //   console.log('v.room,v.message :>> ', v.room, v.message);
+          //   if (v.room == room && v.message.toLowerCase() == 'entered') {
+          //     return v.sentTime;
+          //   }
+          // });
+        } catch (error) {
+          console.log('error :>> ', error);
+        }
+      });
 
       // socket.emit(
-      //   'alertRooms',
+      //   'warnRooms',
       //   {
       //     visitor: this.yourId,
       //     room: '',
@@ -344,19 +373,6 @@ export default {
       //   function(msg) {
       //     alert('Server acknowledges your Room Alerts:', msg);
       //   }
-
-      this.emit({
-        event: 'alertRooms',
-        message: {
-          visitor: this.yourId,
-          room: '',
-          message: visits,
-          sentTime: new Date().toISOString(),
-        },
-        ack: function(msg) {
-          alert('Server acknowledges your Room Alerts:', msg);
-        },
-      });
     },
 
     getRandomInt(max) {

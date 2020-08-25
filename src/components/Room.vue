@@ -231,6 +231,7 @@ export default {
   },
 
   data: () => ({
+    occupancy: 1, // assuming a person opens the Room
     socketUrl: config.socketUrl,
     socketId: '',
     hasRoomManager: false,
@@ -285,19 +286,6 @@ export default {
       return x;
     },
 
-    alertVisitors() {
-      // needs work
-      this.emit({
-        event: 'alertVisitors',
-        message: {
-          visitor: this.yourId,
-          room: this.roomId,
-          message: 'Alert',
-          sentTime: new Date().toISOString(),
-        },
-      });
-    },
-
     isToday(date) {
       let x = moment(date).format(this.today);
       let y = moment()
@@ -340,19 +328,64 @@ export default {
       }
     },
 
-    // handleMessage(msg) {
-    //   console.info('Room sees socket.id :>> ', socket.id),
-    //     socket.room,
-    //     socket.visitor;
-    //   console.info(new Date(), msg);
-    //   this.messages.push(msg);
+    onCheckOut(msg) {
+      ++this.occupancy;
 
-    //   if (msg.message == 'alert') {
-    //     this.alerts.push(msg);
-    //     alert('New message:', msg);
-    //     return;
-    //   }
-    // },
+      this.cons.push(
+        'Room sees socket.id :>> ',
+        socket.id,
+        socket.room,
+        socket.visitor
+      );
+      this.cons.push(new Date(), msg);
+      this.messages.push(msg);
+    },
+
+    onCheckin(msg) {
+      --this.occupancy;
+      this.cons.push(
+        'Room sees socket.id :>> ',
+        socket.id,
+        socket.room,
+        socket.visitor
+      );
+      this.cons.push(new Date(), msg);
+      this.messages.push(msg);
+    },
+
+    // Server forwarded from Visitor a Room occupied on given dates
+    // Visitor sends this alert for each occupied Room
+    // This function replies to server for each visitor that occpied the Room on those dates
+    // visits: {visitor, [dates]}
+    onNotifyRoom(message) {
+      let visits = message.message;
+
+      // map over the dates
+      visits.map((visit) => {
+        // from all cached messages, get Visitor(s) on each exposure date
+        let visitors = this.messages.map((message) => {
+          if (
+            message.sentTime == visit.sentTime &&
+            message.message.toLowerCase() == 'entered'
+          )
+            return message.visitor;
+        });
+        // now map over visitors for this date, and emit alertVisitor for each exposed visit
+        visitors.map((visitor) => {
+          this.emit({
+            event: 'alertVisitor',
+            message: {
+              visitor: visitor,
+              message: `You may have been exposed to Covid on ${visit}`,
+              sentTime: new Date().toISOString(),
+            },
+            function(ack) {
+              this.cons.push(ack);
+            },
+          });
+        });
+      });
+    },
   },
 
   async created() {},
@@ -361,9 +394,9 @@ export default {
     // so we can reference this, as necessary
     let self = this;
     // check-X to disambiguate the server event handler, enterRoom/leaveRoom
-    socket.on('check-in', (msg) => this.handleMessage(msg));
-    socket.on('check-out', (msg) => this.handleMessage(msg));
-    socket.on('exposureAlert', (msg) => this.handleMessage(msg));
+    socket.on('check-in', (msg) => this.onCheckOut(msg)); // decrements occupancy
+    socket.on('check-out', (msg) => this.onCheckin(msg)); // increments occupancy
+    socket.on('notifyRoom', (msg) => this.onNotifyRoom(msg));
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
