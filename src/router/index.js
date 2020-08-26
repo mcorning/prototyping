@@ -1,11 +1,21 @@
-import config from '@/config.json';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Home from '../views/Home.vue';
 import Visitor from '@/components/Visitor.vue';
 import Room from '@/components/Room.vue';
+// import State from '@/models/State';
 
 Vue.use(VueRouter);
+
+// this fails, and i don't know how to fix it
+// resorting to manual override
+// async function getDefaultVue() {
+//   let fetched = await State.$fetch();
+//   if (fetched.state?.length) {
+//     let state = fetched.state[0];
+//     return state.defaultVue;
+//   }
+// }
 
 const routes = [
   {
@@ -15,8 +25,8 @@ const routes = [
   },
   {
     path: '/',
-    // redirect: 'visitor',
-    redirect: config.defaultVue,
+    redirect: 'visitor',
+    // redirect: getDefaultVue(),
     name: 'redir',
     component: Home,
   },

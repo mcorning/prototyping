@@ -5,7 +5,6 @@
       <v-card-subtitle
         >Monitor Visitors and alert them as necessary</v-card-subtitle
       >
-      <v-btn @click="testSocket">Test</v-btn>
       <v-card-text>
         <v-row dense>
           <v-col cols="6" class="col-md-4">
@@ -120,6 +119,9 @@
       <v-spacer></v-spacer>
       <span class="small">Socket: {{ socketId }}</span>
       <v-spacer></v-spacer>
+      <span>Build: {{ ver }}</span>
+      <v-spacer></v-spacer>
+      <v-btn @click="testSocket" text><v-icon>mdi-test-tube</v-icon></v-btn>
       <v-spacer></v-spacer>
       <span class="small">Room Manager: {{ managedRoom }}</span>
       <v-spacer></v-spacer>
@@ -231,6 +233,7 @@ export default {
   },
 
   data: () => ({
+    ver: config.ver,
     isConnected: false,
     cons: [],
 

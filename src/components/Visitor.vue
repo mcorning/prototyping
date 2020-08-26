@@ -90,9 +90,9 @@
       <v-spacer></v-spacer>
       <span>Socket: {{ socketId }}</span>
       <v-spacer></v-spacer>
-      <span>Room Manager: {{ managedRoom }}</span>
+      <span>Build: {{ ver }}</span>
       <v-spacer></v-spacer>
-      <v-btn small text @click="test">Test</v-btn>
+      <v-btn @click="testSocket" text><v-icon>mdi-test-tube</v-icon></v-btn>
     </v-system-bar>
     <v-card>
       <v-card-title>Audit Trail</v-card-title>
@@ -209,7 +209,7 @@ export default {
 
   data: () => ({
     isConnected: false,
-
+    ver: config.ver,
     cons: [],
     daysBack: 0,
     socketServerOnline: false,
@@ -220,7 +220,6 @@ export default {
     checkedOut: true,
     socketId: '',
     messageHeaders: [
-      { text: 'ID', value: 'id' },
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
@@ -234,6 +233,17 @@ export default {
   }),
 
   sockets: {
+    // socket.io reserved events
+    connect() {
+      this.isConnected = true;
+      this.socketId = this.$socket.id;
+    },
+
+    disconnect() {
+      this.isConnected = false;
+      alert('The server disconnected your socket.');
+    },
+    // end socket.io reserved events
     exposureAlert(alert) {
       alert(alert);
     },
@@ -355,7 +365,7 @@ export default {
     // helper methods
     log(msg) {
       this.cons.push({
-        sentTime: moment().format(this.visitedDate),
+        sentTime: moment().format(this.visitFormat),
         message: msg,
       });
     },
@@ -448,7 +458,6 @@ export default {
   async created() {},
 
   async mounted() {
-    this.toggleVisits();
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();

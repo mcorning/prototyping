@@ -28,6 +28,12 @@ export default class State extends Model {
     });
     return p;
   }
+  static async updateDefaultVue(val) {
+    let p = await this.$update({
+      data: { id: 0, defaultVue: val },
+    });
+    return p;
+  }
 
   static async updateManagerId(val) {
     let p = await this.$update({
