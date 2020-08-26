@@ -165,6 +165,7 @@ export default {
   components: {},
   computed: {
     socketId() {
+      // using this.isConnected is a way to bind changes in this.$socket to reactive data
       return this.isConnected ? this.$socket.id : 'not connected';
     },
 
@@ -276,7 +277,6 @@ export default {
     // socket.io reserved events
     connect() {
       this.isConnected = true;
-      // this.toggleVisits();
     },
 
     disconnect() {
@@ -400,7 +400,7 @@ export default {
       this.emit({
         event: event,
         message: msg,
-        ack: (msg) => alert(msg.message),
+        ack: (ack) => alert(ack.message),
       });
       this.closed = !this.closed;
     },

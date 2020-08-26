@@ -1,5 +1,10 @@
 <template>
   <v-container>
+    <v-system-bar color="secondary">
+      <span>Build: {{ ver }}</span>
+      <v-spacer></v-spacer>
+      <span class="small">Room Manager: {{ managedRoom }}</span>
+    </v-system-bar>
     <v-card dark>
       <v-card-title>Your Travel Diary</v-card-title>
       <v-card-subtitle
@@ -31,7 +36,7 @@
               :color="checkedOut ? 'success' : 'warning'"
               fab
               dark
-              @click="check"
+              @click="act"
             >
               <v-icon>{{ btnType }}</v-icon>
             </v-btn>
@@ -86,11 +91,9 @@
     </v-card>
     <v-system-bar color="secondary">
       <v-icon small>mdi-transit-connection-variant </v-icon>
-      <span>Server:{{ socketUrl }}</span>
+      <span class="small">Server:{{ socketUrl }}</span>
       <v-spacer></v-spacer>
-      <span>Socket: {{ socketId }}</span>
-      <v-spacer></v-spacer>
-      <span>Build: {{ ver }}</span>
+      <span class="small">Socket: {{ socketId }}</span>
       <v-spacer></v-spacer>
       <v-btn @click="testSocket" text><v-icon>mdi-test-tube</v-icon></v-btn>
     </v-system-bar>
@@ -125,6 +128,10 @@ import State from '@/models/State';
 export default {
   name: 'LctVisitor',
   computed: {
+    socketId() {
+      return this.isConnected ? this.$socket.id : 'not connected';
+    },
+
     allVisits() {
       return this.daysBack != 0;
     },
@@ -218,7 +225,6 @@ export default {
     // socketUrl: config.ngrokUrl,
     visitFormat: 'HH:mm on ddd, MMM DD',
     checkedOut: true,
-    socketId: '',
     messageHeaders: [
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
@@ -236,7 +242,6 @@ export default {
     // socket.io reserved events
     connect() {
       this.isConnected = true;
-      this.socketId = this.$socket.id;
     },
 
     disconnect() {
@@ -250,9 +255,8 @@ export default {
   },
 
   methods: {
-    connect() {
+    connectToServer() {
       this.$socket.connect();
-      this.socketId = this$socket.id;
       this.isConnected = true;
     },
 
@@ -261,7 +265,7 @@ export default {
         if (!confirm('Your socket is disconnected. Reconnect now? ')) {
           return;
         }
-        this.connect();
+        this.connectToServer();
       }
       this.log('payload :>> ' + payload);
       this.log(`payload: ${JSON.stringify(payload)}`);
@@ -289,7 +293,7 @@ export default {
         });
     },
 
-    check() {
+    act() {
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
@@ -303,17 +307,12 @@ export default {
       this.emit({
         event: event,
         message: msg,
-        ack: function(ack) {
-          this.log(ack);
-        },
+        ack: (ack) => this.log(ack.message),
       });
 
       this.checkedOut = !this.checkedOut;
       if (this.checkedOut) {
-        this.cons.push({
-          sentTime: new Date(),
-          message: `You checked out of ${this.roomId}`,
-        });
+        this.log(`You checked out of ${this.roomId}`);
       }
     },
 
@@ -445,7 +444,7 @@ export default {
   watch: {
     roomId() {
       if (!this.checkedOut) {
-        if (confirm('Should i check you out of', this.roomId, '?')) {
+        if (confirm('Should i act you out of', this.roomId, '?')) {
           let cons = this.cons;
           this.checkedOut = !this.checkedOut;
           this.emit({
@@ -463,6 +462,9 @@ export default {
   async created() {},
 
   async mounted() {
+    if (!this.isConnected) {
+      this.connectToServer();
+    }
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
