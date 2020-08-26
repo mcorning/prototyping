@@ -1,5 +1,14 @@
 <template>
   <v-container>
+    <v-system-bar color="secondary">
+      <span>Build: {{ ver }}</span>
+      <v-spacer></v-spacer>
+      <span class="small">Room Manager: {{ managedRoom }}</span>
+      <v-spacer></v-spacer>
+      <v-checkbox v-model="hasRoomManager" label="RM" small>
+        {{ hasRoomManager }}</v-checkbox
+      >
+    </v-system-bar>
     <v-card>
       <v-card-title>Room Control</v-card-title>
       <v-card-subtitle
@@ -10,6 +19,7 @@
           <v-col cols="6" class="col-md-4">
             <v-combobox
               v-model="roomId"
+              @change="changeRoom"
               :items="rooms"
               label="My Room"
             ></v-combobox>
@@ -119,15 +129,7 @@
       <v-spacer></v-spacer>
       <span class="small">Socket: {{ socketId }}</span>
       <v-spacer></v-spacer>
-      <span>Build: {{ ver }}</span>
-      <v-spacer></v-spacer>
       <v-btn @click="testSocket" text><v-icon>mdi-test-tube</v-icon></v-btn>
-      <v-spacer></v-spacer>
-      <span class="small">Room Manager: {{ managedRoom }}</span>
-      <v-spacer></v-spacer>
-      <v-checkbox v-model="hasRoomManager" label="RM" small>
-        {{ hasRoomManager }}</v-checkbox
-      >
     </v-system-bar>
     <v-card>
       <v-card-title>Audit Trail</v-card-title>
@@ -162,6 +164,10 @@ export default {
   name: 'LctRoom',
   components: {},
   computed: {
+    socketId() {
+      return this.isConnected ? this.$socket.id : 'not connected';
+    },
+
     state: {
       get() {
         let s = State.query().first();
@@ -239,7 +245,6 @@ export default {
 
     occupancy: 1, // assuming a person opens the Room
     socketUrl: config.socketUrl,
-    socketId: '',
     hasRoomManager: false,
     daysBack: 0,
     today: 'YYYY-MM-DD',
@@ -271,8 +276,7 @@ export default {
     // socket.io reserved events
     connect() {
       this.isConnected = true;
-      this.socketId = this.$socket.id;
-      this.toggleVisits();
+      // this.toggleVisits();
     },
 
     disconnect() {
@@ -331,12 +335,54 @@ export default {
 
   methods: {
     // main methods
+    changeRoom() {
+      let self = this;
+      let msg = {
+        room: this.roomId,
+        message: 'Closed',
+        sentTime: new Date().toISOString(),
+      };
+      this.emit({
+        event: 'closeRoom',
+        message: msg,
+        ack: function(ack) {
+          self.closed = ack.error.length;
+          let msg = `${ack.message}  ${ack.error}`;
+          alert(msg);
+          self.log('Started app, and opened Room');
+        },
+      });
+
+      this.connectToServer();
+
+      msg = {
+        room: this.roomId,
+        message: 'Opened',
+        sentTime: new Date().toISOString(),
+      };
+      this.emit({
+        event: 'openRoom',
+        message: msg,
+        ack: function(ack) {
+          self.closed = ack.error.length;
+          let msg = `${ack.message}  ${ack.error}`;
+          alert(msg);
+          self.log('Started app, and opened Room');
+        },
+      });
+    },
+
+    connectToServer() {
+      this.$socket.connect();
+      this.isConnected = true;
+    },
+
     emit(payload) {
       if (!this.isConnected) {
         if (!confirm('Your socket is disconnected. Reconnect now? ')) {
           return;
         }
-        // connect();
+        this.connectToServer();
       }
       console.log('payload :>> ', payload);
       this.$socket.emit(payload.event, payload.message, payload.ack);
@@ -351,39 +397,23 @@ export default {
       this.messages = msg;
 
       let event = this.closed ? 'openRoom' : 'closeRoom';
-      this.emit({ event: event, message: msg, ack: (msg) => alert(msg) });
+      this.emit({
+        event: event,
+        message: msg,
+        ack: (msg) => alert(msg.message),
+      });
       this.closed = !this.closed;
     },
 
     toggleVisits() {
-      // used in socket.io event handlers
-      let self = this;
-
       this.daysBack = !this.daysBack ? 14 : 0;
-      if (this.daysBack != 0) {
-        let msg = {
-          room: this.roomId,
-          message: 'Opened',
-          sentTime: new Date().toISOString(),
-        };
-        this.emit({
-          event: 'openRoom',
-          message: msg,
-          ack: function(ack) {
-            self.closed = ack.error.length;
-            let msg = `${ack.message}  ${ack.error}`;
-            alert(msg);
-            self.log('Started app, and opened Room');
-          },
-        });
-      }
     },
     // end main methods
 
     // helper methods
     log(msg) {
       this.cons.push({
-        sentTime: moment().format(this.visitFormat),
+        sentTime: moment(),
         message: msg,
       });
     },
@@ -394,10 +424,10 @@ export default {
     },
 
     pingServer() {
+      console.log('this.isConnected :>> ', this.isConnected);
       // Send the "pingServer" event to the server.
-      this.$socket.emit('pingServer', this.roomId, function(ack) {
-        console.log(ack);
-      });
+      // Note: using arrow function doesn't require ua to use a proxy for this.
+      this.$socket.emit('pingServer', this.roomId, (ack) => this.log(ack));
     },
 
     visitedDate(date) {
@@ -448,6 +478,9 @@ export default {
   async created() {},
 
   async mounted() {
+    if (!this.isConnected) {
+      this.connectToServer();
+    }
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();

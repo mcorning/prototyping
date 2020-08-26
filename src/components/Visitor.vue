@@ -250,13 +250,18 @@ export default {
   },
 
   methods: {
+    connect() {
+      this.$socket.connect();
+      this.socketId = this$socket.id;
+      this.isConnected = true;
+    },
+
     emit(payload) {
       if (!this.isConnected) {
         if (!confirm('Your socket is disconnected. Reconnect now? ')) {
           return;
         }
-        alert('how do i reconnect with vue-socket.io?');
-        //connect();
+        this.connect();
       }
       this.log('payload :>> ' + payload);
       this.log(`payload: ${JSON.stringify(payload)}`);
