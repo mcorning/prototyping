@@ -5,6 +5,7 @@
       <v-card-subtitle
         >Monitor Visitors and alert them as necessary</v-card-subtitle
       >
+      <v-btn @click="testSocket">Test</v-btn>
       <v-card-text>
         <v-row dense>
           <v-col cols="6" class="col-md-4">
@@ -48,6 +49,7 @@
                 >
                 <v-col>
                   <v-checkbox
+                    :value="allVisits"
                     label="See all visits"
                     @change="toggleVisits"
                   ></v-checkbox
@@ -114,17 +116,33 @@
     </v-card>
     <v-system-bar color="secondary">
       <v-icon small>mdi-transit-connection-variant </v-icon>
-      <span>Server:{{ socketUrl }}</span>
+      <span class="small">Server:{{ socketUrl }}</span>
       <v-spacer></v-spacer>
-      <span>Socket: {{ socketInfo }}{{ socketId }}</span>
+      <span class="small">Socket: {{ socketId }}</span>
       <v-spacer></v-spacer>
-      <span>Room Manager: {{ managedRoom }}</span>
-
+      <v-spacer></v-spacer>
+      <span class="small">Room Manager: {{ managedRoom }}</span>
       <v-spacer></v-spacer>
       <v-checkbox v-model="hasRoomManager" label="RM" small>
         {{ hasRoomManager }}</v-checkbox
       >
     </v-system-bar>
+    <v-card>
+      <v-card-title>Audit Trail</v-card-title>
+      <v-data-table
+        :headers="logHeaders"
+        :items="cons"
+        multi-sort
+        item-key="id"
+        dense
+        :items-per-page="5"
+        class="elevation-1"
+      >
+        <template v-slot:item.sentTime="{ item }">
+          {{ visitedDate(item.sentTime) }}
+        </template>
+      </v-data-table>
+    </v-card>
   </v-container>
 </template>
 
@@ -132,20 +150,6 @@
 import config from '@/config.json';
 
 import moment from 'moment';
-
-import io from 'socket.io-client';
-let socket;
-connect();
-
-function connect() {
-  socket = io(config.socketUrl);
-}
-
-// socket.on('message', (msg) => alert(msg));
-
-socket.on('exposureAlert', (msg) => {
-  alert('Exposure Alert', msg);
-});
 
 import Message from '@/models/Message';
 import Name from '@/models/Name';
@@ -156,10 +160,6 @@ export default {
   name: 'LctRoom',
   components: {},
   computed: {
-    socketInfo() {
-      return socket.id;
-    },
-
     state: {
       get() {
         let s = State.query().first();
@@ -231,6 +231,9 @@ export default {
   },
 
   data: () => ({
+    isConnected: false,
+    cons: [],
+
     occupancy: 1, // assuming a person opens the Room
     socketUrl: config.socketUrl,
     socketId: '',
@@ -240,7 +243,7 @@ export default {
     closed: true,
 
     listUniqueVisitors: false,
-    visitFormat: 'at HH:mm on ddd, MMM DD',
+    visitFormat: 'HH:mm on ddd, MMM DD',
     messageHeaders: [
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
@@ -249,6 +252,10 @@ export default {
       { text: 'SocketId', value: 'socketId' },
       { text: 'Delete', value: 'action' },
     ],
+    logHeaders: [
+      { text: 'Message', value: 'message' },
+      { text: 'Sent  ', value: 'sentTime' },
+    ],
     alertHeaders: [
       { text: 'Date of Alert', value: 'sentTime' },
       { text: 'Visitor', value: 'visitor' },
@@ -256,16 +263,80 @@ export default {
     alerts: [],
     yourId: '',
   }),
+
+  sockets: {
+    // socket.io reserved events
+    connect() {
+      this.isConnected = true;
+      this.socketId = this.$socket.id;
+      this.toggleVisits();
+    },
+
+    disconnect() {
+      this.isConnected = false;
+    },
+    // end socket.io reserved events
+
+    // Visitor routine events
+    checkIn(msg) {
+      ++this.occupancy;
+      this.log(`Room count is now ${this.occupancy}`);
+      this.messages.push(msg);
+    },
+
+    checkOut(msg) {
+      --this.occupancy;
+      this.log(`Room count is now ${this.occupancy}`);
+      this.messages.push(msg);
+    },
+    //
+
+    // Room event handler
+
+    // Server forwarded from Visitor a Room occupied on given dates
+    // Visitor sends this alert for each occupied Room
+    // This function replies to server for each visitor that occpied the Room on those dates
+    notifyRoom(visits, ack) {
+      // map over the dates
+      visits.map((visit) => {
+        // from all cached messages, get Visitor(s) on each exposure date
+        let visitors = this.messages.map((message) => {
+          if (
+            message.sentTime == visit.sentTime &&
+            message.message.toLowerCase() == 'entered'
+          )
+            return message.visitor;
+        });
+        // now map over visitors for this date, and emit alertVisitor for each exposed visit
+        visitors.map((visitor) => {
+          this.emit({
+            event: 'alertVisitor',
+            message: {
+              visitor: visitor,
+              message: `You may have been exposed to Covid on ${visit}`,
+              sentTime: new Date().toISOString(),
+            },
+            function(ack) {
+              this.log(ack);
+            },
+          });
+        });
+      });
+      if (ack) ack('alert sent');
+    },
+  },
+
   methods: {
+    // main methods
     emit(payload) {
-      if (!socket.connected) {
+      if (!this.isConnected) {
         if (!confirm('Your socket is disconnected. Reconnect now? ')) {
           return;
         }
-        connect();
+        // connect();
       }
       console.log('payload :>> ', payload);
-      socket.emit(payload.event, payload.message, payload.ack);
+      this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
     act() {
@@ -279,6 +350,51 @@ export default {
       let event = this.closed ? 'openRoom' : 'closeRoom';
       this.emit({ event: event, message: msg, ack: (msg) => alert(msg) });
       this.closed = !this.closed;
+    },
+
+    toggleVisits() {
+      // used in socket.io event handlers
+      let self = this;
+
+      this.daysBack = !this.daysBack ? 14 : 0;
+      if (this.daysBack != 0) {
+        let msg = {
+          room: this.roomId,
+          message: 'Opened',
+          sentTime: new Date().toISOString(),
+        };
+        this.emit({
+          event: 'openRoom',
+          message: msg,
+          ack: function(ack) {
+            self.closed = ack.error.length;
+            let msg = `${ack.message}  ${ack.error}`;
+            alert(msg);
+            self.log('Started app, and opened Room');
+          },
+        });
+      }
+    },
+    // end main methods
+
+    // helper methods
+    log(msg) {
+      this.cons.push({
+        sentTime: moment().format(this.visitFormat),
+        message: msg,
+      });
+    },
+
+    testSocket(event) {
+      // this.$socket.emit(event, 'data');
+      this.pingServer(event);
+    },
+
+    pingServer() {
+      // Send the "pingServer" event to the server.
+      this.$socket.emit('pingServer', this.roomId, function(ack) {
+        console.log(ack);
+      });
     },
 
     visitedDate(date) {
@@ -307,17 +423,13 @@ export default {
       return test;
     },
 
-    toggleVisits() {
-      this.daysBack = !this.daysBack ? 14 : 0;
-    },
-
     deleteMessage(id) {
       console.log('deleting', id);
       if (this.daysBack == 0) {
-        socket.disconnect();
+        this.$socket.disconnect();
         Message.delete(id);
         alert(
-          socket.connected
+          this.isConnected
             ? 'Socket still connected'
             : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
         );
@@ -327,84 +439,16 @@ export default {
         Message.deleteAll();
       }
     },
-
-    onCheckOut(msg) {
-      ++this.occupancy;
-
-      this.cons.push(
-        'Room sees socket.id :>> ',
-        socket.id,
-        socket.room,
-        socket.visitor
-      );
-      this.cons.push(new Date(), msg);
-      this.messages.push(msg);
-    },
-
-    onCheckin(msg) {
-      --this.occupancy;
-      this.cons.push(
-        'Room sees socket.id :>> ',
-        socket.id,
-        socket.room,
-        socket.visitor
-      );
-      this.cons.push(new Date(), msg);
-      this.messages.push(msg);
-    },
-
-    // Server forwarded from Visitor a Room occupied on given dates
-    // Visitor sends this alert for each occupied Room
-    // This function replies to server for each visitor that occpied the Room on those dates
-    // visits: {visitor, [dates]}
-    onNotifyRoom(message) {
-      let visits = message.message;
-
-      // map over the dates
-      visits.map((visit) => {
-        // from all cached messages, get Visitor(s) on each exposure date
-        let visitors = this.messages.map((message) => {
-          if (
-            message.sentTime == visit.sentTime &&
-            message.message.toLowerCase() == 'entered'
-          )
-            return message.visitor;
-        });
-        // now map over visitors for this date, and emit alertVisitor for each exposed visit
-        visitors.map((visitor) => {
-          this.emit({
-            event: 'alertVisitor',
-            message: {
-              visitor: visitor,
-              message: `You may have been exposed to Covid on ${visit}`,
-              sentTime: new Date().toISOString(),
-            },
-            function(ack) {
-              this.cons.push(ack);
-            },
-          });
-        });
-      });
-    },
+    // end helper methods
   },
 
   async created() {},
 
   async mounted() {
-    // so we can reference this, as necessary
-    let self = this;
-    // check-X to disambiguate the server event handler, enterRoom/leaveRoom
-    socket.on('check-in', (msg) => this.onCheckOut(msg)); // decrements occupancy
-    socket.on('check-out', (msg) => this.onCheckin(msg)); // increments occupancy
-    socket.on('notifyRoom', (msg) => this.onNotifyRoom(msg));
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
     await Message.$fetch();
-
-    socket.on('connect', function() {
-      self.socketId = socket.id;
-    });
   },
 };
 </script>

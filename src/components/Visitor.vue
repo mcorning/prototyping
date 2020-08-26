@@ -6,6 +6,8 @@
         >Lag each Room you visit. If you go into quarantine, Alert
         Rooms</v-card-subtitle
       >
+      <v-btn @click="testSocket">Test</v-btn>
+
       <v-card-text>
         <v-row dense>
           <v-col cols="4">
@@ -86,7 +88,7 @@
       <v-icon small>mdi-transit-connection-variant </v-icon>
       <span>Server:{{ socketUrl }}</span>
       <v-spacer></v-spacer>
-      <span>Socket: {{ socketInfo }}{{ socketId }}</span>
+      <span>Socket: {{ socketId }}</span>
       <v-spacer></v-spacer>
       <span>Room Manager: {{ managedRoom }}</span>
       <v-spacer></v-spacer>
@@ -115,21 +117,6 @@
 import config from '@/config.json';
 import moment from 'moment';
 
-import io from 'socket.io-client';
-let socket;
-connect();
-
-function connect() {
-  socket = io(config.socketUrl);
-}
-
-// socket.on('alert', (msg) => {
-//   alert('alert', msg);
-// });
-socket.on('exposureAlert', (msg) => {
-  alert(msg);
-});
-
 import Message from '@/models/Message';
 import Name from '@/models/Name';
 import Room from '@/models/Room';
@@ -138,9 +125,6 @@ import State from '@/models/State';
 export default {
   name: 'LctVisitor',
   computed: {
-    socketInfo() {
-      return socket.id;
-    },
     allVisits() {
       return this.daysBack != 0;
     },
@@ -224,6 +208,8 @@ export default {
   },
 
   data: () => ({
+    isConnected: false,
+
     cons: [],
     daysBack: 0,
     socketServerOnline: false,
@@ -247,20 +233,24 @@ export default {
     ],
   }),
 
+  sockets: {
+    exposureAlert(alert) {
+      alert(alert);
+    },
+  },
+
   methods: {
     emit(payload) {
-      if (!socket.connected) {
+      if (!this.isConnected) {
         if (!confirm('Your socket is disconnected. Reconnect now? ')) {
           return;
         }
-        connect();
+        alert('how do i reconnect with vue-socket.io?');
+        //connect();
       }
-      console.log('payload :>> ', payload);
-      this.cons.push({
-        sentTime: new Date(),
-        message: `payload: ${JSON.stringify(payload)}`,
-      }),
-        socket.emit(payload.event, payload.message, payload.ack);
+      this.log('payload :>> ' + payload);
+      this.log(`payload: ${JSON.stringify(payload)}`);
+      this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
     test() {
@@ -285,7 +275,6 @@ export default {
     },
 
     check() {
-      let cons = this.cons;
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
@@ -295,20 +284,12 @@ export default {
       this.messages = msg;
 
       let event = this.checkedOut ? 'enterRoom' : 'leaveRoom';
-      // socket.emit(event, msg, function(ack) {
-      //   cons.push({
-      //     sentTime: new Date(),
-      //     message: ack,
-      //   });
-      // });
+
       this.emit({
         event: event,
         message: msg,
         ack: function(ack) {
-          cons.push({
-            sentTime: new Date(),
-            message: ack,
-          });
+          this.log(ack);
         },
       });
 
@@ -326,9 +307,7 @@ export default {
     // Alert payload contains all the dates for that Room.
     // Server relays message to each Room.
     warnRooms() {
-      console.log(this.visits);
-      let roomSet = new Set(this.messages.map((v) => v.room));
-      roomSet.forEach((room) => {
+      new Set(this.messages.map((v) => v.room)).forEach((room) => {
         try {
           let visits = this.messages.filter(
             (v) => v.room == room && v.message.toLowerCase() == 'entered'
@@ -348,31 +327,37 @@ export default {
               },
             });
           } else {
-            alert(`${room} has no visits among its messages.`);
+            alert(
+              `${room} has no visits among its messages. Please investigate.`
+            );
           }
-          // get array of dates for this room
-          // room.visits = this.messages.map((v) => {
-          //   console.log('v.room,v.message :>> ', v.room, v.message);
-          //   if (v.room == room && v.message.toLowerCase() == 'entered') {
-          //     return v.sentTime;
-          //   }
-          // });
         } catch (error) {
           console.log('error :>> ', error);
+          alert(`Error warning Rooms (${error}`);
         }
       });
+    },
 
-      // socket.emit(
-      //   'warnRooms',
-      //   {
-      //     visitor: this.yourId,
-      //     room: '',
-      //     message: visits,
-      //     sentTime: new Date().toISOString(),
-      //   },
-      //   function(msg) {
-      //     alert('Server acknowledges your Room Alerts:', msg);
-      //   }
+    toggleVisits() {
+      let cons = this.cons;
+      this.daysBack = !this.daysBack ? 14 : 0;
+      if (this.daysBack != 0) {
+        this.emit({
+          event: 'listAllSockets',
+          message: null,
+          ack: function(ack) {
+            cons.push({ sentTime: new Date(), message: ack });
+          },
+        });
+      }
+    },
+
+    // helper methods
+    log(msg) {
+      this.cons.push({
+        sentTime: moment().format(this.visitedDate),
+        message: msg,
+      });
     },
 
     getRandomInt(max) {
@@ -402,10 +387,10 @@ export default {
       let m = `Deleting: ${id}`;
       this.cons.push({ sentTime: new Date(), message: m });
       if (this.daysBack == 0) {
-        socket.disconnect();
+        this.$socket.disconnect();
         Message.delete(id);
         alert(
-          socket.connected
+          this.$socket.connected
             ? 'Socket still connected'
             : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
         );
@@ -429,18 +414,16 @@ export default {
       return test;
     },
 
-    toggleVisits() {
-      let cons = this.cons;
-      this.daysBack = !this.daysBack ? 14 : 0;
-      if (this.daysBack != 0) {
-        this.emit({
-          event: 'listAllSockets',
-          message: null,
-          ack: function(ack) {
-            cons.push({ sentTime: new Date(), message: ack });
-          },
-        });
-      }
+    testSocket(event) {
+      // this.$socket.emit(event, 'data');
+      this.pingServer(event);
+    },
+
+    pingServer() {
+      // Send the "pingServer" event to the server.
+      this.$socket.emit('pingServer', this.roomId, function(ack) {
+        console.log(ack);
+      });
     },
   },
 
@@ -465,21 +448,7 @@ export default {
   async created() {},
 
   async mounted() {
-    // so we can reference this, as necessary
-
-    let self = this;
-    let cons = this.cons;
-    socket.on('message', function(msg) {
-      cons.push({ sentTime: new Date(), message: msg });
-    });
-
-    // socket.on('enterRoom', (roomId) => {
-    //   console.log('Entered Room', roomId);
-    //   this.cons.push(`Entered Room: ${roomId}`);
-    // });
-    socket.on('connect', function() {
-      self.socketId = socket.id;
-    });
+    this.toggleVisits();
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
