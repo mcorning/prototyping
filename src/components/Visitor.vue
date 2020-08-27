@@ -248,7 +248,13 @@ export default {
       this.isConnected = false;
       alert('The server disconnected your socket.');
     },
+
+    pong() {
+      this.log('Server ponged back');
+    },
+
     // end socket.io reserved events
+
     exposureAlert(alert) {
       alert(alert);
     },
@@ -267,7 +273,6 @@ export default {
         }
         this.connectToServer();
       }
-      this.log('payload :>> ' + payload);
       this.log(`payload: ${JSON.stringify(payload)}`);
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
@@ -286,7 +291,7 @@ export default {
       this.messages = msg;
       console.log(this.messages);
       let m = `Messages (including test): ${this.messages}`;
-      this.cons.push({ sentTime: new Date(), message: m }),
+      this.log(m),
         this.emit({
           event: 'enterRoom',
           message: msg,
@@ -336,9 +341,7 @@ export default {
                 message: visits, // an array of dates
                 sentTime: new Date().toISOString(),
               },
-              ack: function(ack) {
-                alert(ack);
-              },
+              ack: (ack) => alert(ack),
             });
           } else {
             alert(
@@ -353,23 +356,13 @@ export default {
     },
 
     toggleVisits() {
-      let cons = this.cons;
       this.daysBack = !this.daysBack ? 14 : 0;
-      if (this.daysBack != 0) {
-        this.emit({
-          event: 'listAllSockets',
-          message: null,
-          ack: function(ack) {
-            cons.push({ sentTime: new Date(), message: ack });
-          },
-        });
-      }
     },
 
     // helper methods
     log(msg) {
       this.cons.push({
-        sentTime: moment().format(this.visitFormat),
+        sentTime: moment(),
         message: msg,
       });
     },
@@ -399,7 +392,7 @@ export default {
     deleteMessage(id) {
       console.log('deleting', id);
       let m = `Deleting: ${id}`;
-      this.cons.push({ sentTime: new Date(), message: m });
+      this.log(m);
       if (this.daysBack == 0) {
         this.$socket.disconnect();
         Message.delete(id);
@@ -435,9 +428,13 @@ export default {
 
     pingServer() {
       // Send the "pingServer" event to the server.
-      this.$socket.emit('pingServer', this.roomId, function(ack) {
-        console.log(ack);
-      });
+      this.log(`this.isConnected: ${this.isConnected}`);
+      this.log(`Using socket ${this.$socket.id}...`);
+      this.$socket.emit('pingServer', this.roomId, (ack) =>
+        this.log('...' + ack)
+      );
+      // this.log('pinging server');
+      // this.$socket.emit('ping');
     },
   },
 
@@ -445,14 +442,13 @@ export default {
     roomId() {
       if (!this.checkedOut) {
         if (confirm('Should i act you out of', this.roomId, '?')) {
-          let cons = this.cons;
           this.checkedOut = !this.checkedOut;
           this.emit({
             event: 'leaveRoom',
             message: this.yourId,
-            ack: function(ack) {
+            ack: (ack) => {
               let m = `Checked out of: ${ack}`;
-              cons.push({ sentTime: new Date(), message: m });
+              this.log(m);
             },
           });
         }

@@ -1,7 +1,8 @@
 {
+    "socketUrl": "http://soterialct.westus2.cloudapp.azure.com:3000/",
+    "ioServerAzureUrl": "http://soterialct.westus2.cloudapp.azure.com:3000/",
     "ioServerUrl": "http://localhost:3000/",
-    "socketUrl": "http://localhost:3000",
-    "ngrokUrl": "http://71bd0336bacc.ngrok.io",
+    "ngrokUrl": "https://a426dd219f85.ngrok.io",
     "defaultVue": "visitor",
-    "ver": "08.25.22.51"
+    "ver": "08.26.18.58"
 }

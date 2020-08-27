@@ -8,6 +8,8 @@
       <v-checkbox v-model="hasRoomManager" label="RM" small>
         {{ hasRoomManager }}</v-checkbox
       >
+      <v-spacer></v-spacer>
+      <span class="small">Occupancy: {{ occupancy }}</span>
     </v-system-bar>
     <v-card>
       <v-card-title>Room Control</v-card-title>
@@ -323,9 +325,7 @@ export default {
               message: `You may have been exposed to Covid on ${visit}`,
               sentTime: new Date().toISOString(),
             },
-            function(ack) {
-              this.log(ack);
-            },
+            ack: (ack) => this.log(ack),
           });
         });
       });
@@ -336,7 +336,6 @@ export default {
   methods: {
     // main methods
     changeRoom() {
-      let self = this;
       let msg = {
         room: this.roomId,
         message: 'Closed',
@@ -345,11 +344,11 @@ export default {
       this.emit({
         event: 'closeRoom',
         message: msg,
-        ack: function(ack) {
-          self.closed = ack.error.length;
+        ack: (ack) => {
+          this.closed = ack.error.length;
           let msg = `${ack.message}  ${ack.error}`;
           alert(msg);
-          self.log('Started app, and opened Room');
+          this.log('Started app, and opened Room');
         },
       });
 
@@ -363,11 +362,11 @@ export default {
       this.emit({
         event: 'openRoom',
         message: msg,
-        ack: function(ack) {
-          self.closed = ack.error.length;
+        ack: (ack) => {
+          this.closed = ack.error.length;
           let msg = `${ack.message}  ${ack.error}`;
           alert(msg);
-          self.log('Started app, and opened Room');
+          this.log('Started app, and opened Room');
         },
       });
     },
@@ -424,10 +423,15 @@ export default {
     },
 
     pingServer() {
-      console.log('this.isConnected :>> ', this.isConnected);
       // Send the "pingServer" event to the server.
+      this.log('this.isConnected :>> ', this.isConnected);
+      this.log(`Using socket ${this.$socket.id}...`);
       // Note: using arrow function doesn't require ua to use a proxy for this.
-      this.$socket.emit('pingServer', this.roomId, (ack) => this.log(ack));
+      this.$socket.emit(
+        'pingServer',
+        this.roomId,
+        (ack) => '...' + this.log(ack)
+      );
     },
 
     visitedDate(date) {
