@@ -1,9 +1,16 @@
 <template>
   <v-container>
     <v-system-bar color="secondary">
-      <span>Build: {{ ver }}</span>
-      <v-spacer></v-spacer>
-      <span class="small">Room Manager: {{ managedRoom }}</span>
+      <v-row small justify="space-between">
+        <v-col>Build: {{ ver }} </v-col>
+        <v-col
+          ><v-icon color="yellow">mdi-alert</v-icon
+          ><span>app in development</span>
+        </v-col>
+      </v-row>
+
+      <!-- <v-spacer></v-spacer>
+      <span class="small">Room Manager: {{ managedRoom }}</span> -->
     </v-system-bar>
     <v-card dark>
       <v-card-title>Your Travel Diary</v-card-title>
