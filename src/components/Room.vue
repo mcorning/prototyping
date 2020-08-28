@@ -461,18 +461,20 @@ export default {
     },
 
     deleteMessage(id) {
-      console.log('deleting', id);
       if (this.daysBack == 0) {
-        this.$socket.disconnect();
+        //this.$socket.disconnect();
+        let m = `Deleting message ${id}`;
+        this.log(m);
         Message.delete(id);
-        alert(
-          this.isConnected
-            ? 'Socket still connected'
-            : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
-        );
+        // alert(
+        //   this.isConnected
+        //     ? 'Socket still connected'
+        //     : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
+        // );
       } else {
-        this.emit({ event: 'disconnectAll' });
-        alert('All sockets disconnected. Refesh to reconnect this socket.');
+        // this.emit({ event: 'disconnectAll' });
+        //alert('All sockets disconnected. Refesh to reconnect this socket.');
+        this.log(`Deleting all messages`);
         Message.deleteAll();
       }
     },

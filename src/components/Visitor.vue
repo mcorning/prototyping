@@ -11,11 +11,11 @@
         >Lag each Room you visit. If you go into quarantine, Alert
         Rooms</v-card-subtitle
       >
-      <v-btn @click="testSocket">Test</v-btn>
+      <v-btn @click="testSocket">Ping</v-btn>
 
       <v-card-text>
-        <v-row dense>
-          <v-col cols="4">
+        <v-row dense justify="space-between" align="center">
+          <v-col cols="3">
             <v-combobox
               v-model="yourId"
               :items="names"
@@ -24,7 +24,7 @@
             ></v-combobox>
           </v-col>
 
-          <v-col cols="4">
+          <v-col cols="3">
             <v-select
               v-model="roomId"
               :items="rooms"
@@ -43,6 +43,9 @@
             <span class="pl-3">{{
               checkedOut ? 'Check-in' : 'Check-out'
             }}</span>
+          </v-col>
+          <v-col cols="2"
+            ><span>Occupancy: {{ occupancy }}</span>
           </v-col>
         </v-row>
         <v-card-actions>
@@ -95,7 +98,7 @@
       <v-spacer></v-spacer>
       <span class="small">Socket: {{ socketId }}</span>
       <v-spacer></v-spacer>
-      <v-btn @click="testSocket" text><v-icon>mdi-test-tube</v-icon></v-btn>
+      <v-btn @click="addTestMessage" text><v-icon>mdi-test-tube</v-icon></v-btn>
     </v-system-bar>
     <v-card>
       <v-card-title>Audit Trail</v-card-title>
@@ -128,9 +131,9 @@ import State from '@/models/State';
 export default {
   name: 'LctVisitor',
   computed: {
-    socketId() {
-      return this.isConnected ? this.$socket.id : 'not connected';
-    },
+    // socketId() {
+    //   return this.isConnected ? this.$socket.id : 'not connected';
+    // },
 
     allVisits() {
       return this.daysBack != 0;
@@ -215,6 +218,9 @@ export default {
   },
 
   data: () => ({
+    occupancy: 1,
+    socketId: 'not connected',
+
     isConnected: false,
     ver: config.ver,
     cons: [],
@@ -242,16 +248,22 @@ export default {
     // socket.io reserved events
     connect() {
       this.isConnected = true;
+      this.socketId = this.$socket.id;
+      this.log(`Server connected on socket ${this.socketId}`);
     },
 
     disconnect() {
       this.isConnected = false;
-      alert('The server disconnected your socket.');
+      this.log(
+        'The server disconnected your socket (probably because you refreshed the browser).'
+      );
     },
-
-    pong() {
-      this.log('Server ponged back');
+    message(msg) {
+      this.log(msg);
     },
+    // pong() {
+    //   this.log('Server ponged ');
+    // },
 
     // end socket.io reserved events
 
@@ -262,12 +274,12 @@ export default {
 
   methods: {
     connectToServer() {
+      // this is async, so let the connect() function set the isConnected property
       this.$socket.connect();
-      this.isConnected = true;
     },
 
     emit(payload) {
-      if (!this.isConnected) {
+      if (!this.socketId) {
         if (!confirm('Your socket is disconnected. Reconnect now? ')) {
           return;
         }
@@ -277,7 +289,7 @@ export default {
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
-    test() {
+    addTestMessage() {
       this.daysBack = 14;
       let msg = {
         visitor: this.yourId,
@@ -290,7 +302,7 @@ export default {
       // cache the message
       this.messages = msg;
       console.log(this.messages);
-      let m = `Messages (including test): ${this.messages}`;
+      let m = `Messages (including test): ${JSON.stringify(this.messages)}`;
       this.log(m),
         this.emit({
           event: 'enterRoom',
@@ -312,13 +324,14 @@ export default {
       this.emit({
         event: event,
         message: msg,
-        ack: (ack) => this.log(ack.message),
+        ack: (ack) => {
+          this.log(ack.message);
+        },
       });
-
+      this.event == 'enterRoom' ? this.occupancy++ : this.occupancy--;
       this.checkedOut = !this.checkedOut;
-      if (this.checkedOut) {
-        this.log(`You checked out of ${this.roomId}`);
-      }
+      let m = this.checkedOut ? 'out of' : 'into';
+      this.log(`You checked ${m}  ${this.roomId}`);
     },
 
     // Visitor groups all messages by Room.
@@ -390,20 +403,20 @@ export default {
     },
 
     deleteMessage(id) {
-      console.log('deleting', id);
-      let m = `Deleting: ${id}`;
-      this.log(m);
       if (this.daysBack == 0) {
-        this.$socket.disconnect();
+        //this.$socket.disconnect();
+        let m = `Deleting message ${id}`;
+        this.log(m);
         Message.delete(id);
-        alert(
-          this.$socket.connected
-            ? 'Socket still connected'
-            : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
-        );
+        // alert(
+        //   this.isConnected
+        //     ? 'Socket still connected'
+        //     : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
+        // );
       } else {
-        this.emit({ event: 'disconnectAll' });
-        alert('All sockets disconnected. Refesh to reconnect this socket.');
+        // this.emit({ event: 'disconnectAll' });
+        //alert('All sockets disconnected. Refesh to reconnect this socket.');
+        this.log(`Deleting all messages`);
         Message.deleteAll();
       }
     },
@@ -458,8 +471,10 @@ export default {
   async created() {},
 
   async mounted() {
-    if (!this.isConnected) {
-      this.connectToServer();
+    let self = this;
+    if (!self.socketId) {
+      this.log('Connecting to Server...');
+      self.connectToServer();
     }
     await Room.$fetch();
     await Name.$fetch();

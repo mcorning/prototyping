@@ -1,5 +1,5 @@
 {
-    "socketUrl": "https://a426dd219f85.ngrok.io",
+    "socketUrl": "http://localhost:3000/",
     "ioServerAzureUrl": "http://soterialct.westus2.cloudapp.azure.com:3000/",
     "ioServerUrl": "http://localhost:3000/",
     "ngrokUrl": "https://a426dd219f85.ngrok.io",
