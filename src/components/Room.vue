@@ -16,9 +16,9 @@
       <v-card-subtitle
         >Monitor Visitors and alert them as necessary</v-card-subtitle
       >
-      <v-card-text>
+      <v-card-text class="pb-0">
         <v-row dense>
-          <v-col cols="6" class="col-md-4">
+          <v-col cols="3" class="col-md-3">
             <v-combobox
               v-model="roomId"
               @change="changeRoom"
@@ -26,7 +26,7 @@
               label="My Room"
             ></v-combobox>
           </v-col>
-          <v-col cols="6" class="col-md-8">
+          <v-col cols="4" class="col-md-4 pl-10">
             <v-btn
               :color="closed ? 'success' : 'warning'"
               fab
@@ -37,6 +37,20 @@
             </v-btn>
             <span class="pl-3">{{ closed ? 'Open Room' : 'Close Room' }}</span>
           </v-col>
+          <v-col cols="5" class="col-md-5">
+            <v-card>
+              <v-card-text>
+                Rooms are easy to get ready.
+                <ol>
+                  <li>Choose a room</li>
+                  <li>Click the Open Room button.</li>
+                </ol>
+                Then watch as people checkin...
+                <p class="pb-0">Visitor exposure alerts are automatic.</p>
+              </v-card-text>
+            </v-card>
+          </v-col>
+
           <v-col cols="6" v-if="hasRoomManager">
             <v-text-field
               label="Room Manager ID"
@@ -45,9 +59,9 @@
           ></v-col>
         </v-row>
       </v-card-text>
-      <v-row>
+      <v-row dense>
         <v-col cols="12">
-          <v-card-text>
+          <v-card-text class="pb-0">
             <v-subheader>
               <v-row align="center" justify="space-between">
                 <v-col cols="auto">
@@ -118,12 +132,13 @@
           </template>
         </v-data-table>
       </v-card-text>
-      <v-card-actions>
+      <!-- <v-card-actions>
+        
         <span class="pr-3">Alert Room's Visitors </span>
         <v-btn color="error" fab dark>
           <v-icon x-large>mdi-alert</v-icon>
         </v-btn>
-      </v-card-actions>
+      </v-card-actions> -->
     </v-card>
     <v-system-bar color="secondary">
       <v-icon small>mdi-transit-connection-variant </v-icon>
@@ -166,9 +181,8 @@ export default {
   name: 'LctRoom',
   components: {},
   computed: {
-    socketId() {
-      // using this.isConnected is a way to bind changes in this.$socket to reactive data
-      return this.isConnected ? this.$socket.id : 'not connected';
+    roomisEmpty() {
+      return Room.exists();
     },
 
     state: {
@@ -177,7 +191,7 @@ export default {
         return s;
       },
       set(newVal) {
-        console.log(newVal);
+        this.log(`State gets${newVal}, but we don't use it...odd.`);
       },
     },
 
@@ -245,7 +259,7 @@ export default {
     ver: config.ver,
     isConnected: false,
     cons: [],
-
+    socketId: 'not connected',
     occupancy: 1, // assuming a person opens the Room
     socketUrl: config.socketUrl,
     hasRoomManager: false,
@@ -278,11 +292,13 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
-      this.isConnected = true;
+      this.log(`Server connected on socket ${this.socketId}`);
     },
 
     disconnect() {
-      this.isConnected = false;
+      this.log(
+        'The server disconnected your socket (probably because you refreshed the browser).'
+      );
     },
     // end socket.io reserved events
 
@@ -336,23 +352,24 @@ export default {
   methods: {
     // main methods
     changeRoom() {
-      let msg = {
-        room: this.roomId,
-        message: 'Closed',
-        sentTime: new Date().toISOString(),
-      };
-      this.emit({
-        event: 'closeRoom',
-        message: msg,
-        ack: (ack) => {
-          this.closed = ack.error.length;
-          let msg = `${ack.message}  ${ack.error}`;
-          alert(msg);
-          this.log('Started app, and opened Room');
-        },
-      });
-
-      this.connectToServer();
+      let msg;
+      if (this.rooms.length > 1) {
+        msg = {
+          room: this.roomId,
+          message: 'Closed',
+          sentTime: new Date().toISOString(),
+        };
+        this.emit({
+          event: 'closeRoom',
+          message: msg,
+          ack: (ack) => {
+            this.closed = ack.error.length;
+            let msg = `${ack.message}  ${ack.error}`;
+            alert(msg);
+            this.log('Closed Room');
+          },
+        });
+      }
 
       msg = {
         room: this.roomId,
@@ -366,24 +383,24 @@ export default {
           this.closed = ack.error.length;
           let msg = `${ack.message}  ${ack.error}`;
           alert(msg);
-          this.log('Started app, and opened Room');
+          this.log('Opened Room');
         },
       });
     },
 
     connectToServer() {
+      this.log('Connecting to Server...');
       this.$socket.connect();
-      this.isConnected = true;
     },
 
     emit(payload) {
-      if (!this.isConnected) {
+      if (!this.$socket.id) {
         if (!confirm('Your socket is disconnected. Reconnect now? ')) {
           return;
         }
         this.connectToServer();
       }
-      console.log('payload :>> ', payload);
+      this.log(JSON.stringify(payload));
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
@@ -423,10 +440,7 @@ export default {
     },
 
     pingServer() {
-      // Send the "pingServer" event to the server.
-      this.log('this.isConnected :>> ', this.isConnected);
       this.log(`Using socket ${this.$socket.id}...`);
-      // Note: using arrow function doesn't require ua to use a proxy for this.
       this.$socket.emit(
         'pingServer',
         this.roomId,
@@ -462,18 +476,10 @@ export default {
 
     deleteMessage(id) {
       if (this.daysBack == 0) {
-        //this.$socket.disconnect();
         let m = `Deleting message ${id}`;
         this.log(m);
         Message.delete(id);
-        // alert(
-        //   this.isConnected
-        //     ? 'Socket still connected'
-        //     : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
-        // );
       } else {
-        // this.emit({ event: 'disconnectAll' });
-        //alert('All sockets disconnected. Refesh to reconnect this socket.');
         this.log(`Deleting all messages`);
         Message.deleteAll();
       }
@@ -484,8 +490,13 @@ export default {
   async created() {},
 
   async mounted() {
-    if (!this.isConnected) {
-      this.connectToServer();
+    let self = this;
+    if (!self.$socket.id) {
+      self.connectToServer();
+    } else {
+      // we may need to refesh this vue's property if we come from the other vue
+      this.socketId = this.$socket.id;
+      self.log(`Mounted with socket ${self.socketId}`);
     }
     await Room.$fetch();
     await Name.$fetch();

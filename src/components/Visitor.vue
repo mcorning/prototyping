@@ -135,13 +135,15 @@ import Name from '@/models/Name';
 import Room from '@/models/Room';
 import State from '@/models/State';
 
+// window.onerror = function(message, source, lineno, colno, error) {
+window.onerror = function(message) {
+  /// what you want to do with error here
+  alert('onerror: ' + message);
+};
+
 export default {
   name: 'LctVisitor',
   computed: {
-    // socketId() {
-    //   return this.isConnected ? this.$socket.id : 'not connected';
-    // },
-
     allVisits() {
       return this.daysBack != 0;
     },
@@ -228,7 +230,7 @@ export default {
     occupancy: 1,
     socketId: 'not connected',
 
-    isConnected: false,
+    // isConnected: false,
     ver: config.ver,
     cons: [],
     daysBack: 0,
@@ -254,13 +256,13 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
-      this.isConnected = true;
+      // this.isConnected = true;
       this.socketId = this.$socket.id;
       this.log(`Server connected on socket ${this.socketId}`);
     },
 
     disconnect() {
-      this.isConnected = false;
+      // this.isConnected = false;
       this.log(
         'The server disconnected your socket (probably because you refreshed the browser).'
       );
@@ -335,7 +337,7 @@ export default {
           this.log(ack.message);
         },
       });
-      this.event == 'enterRoom' ? this.occupancy++ : this.occupancy--;
+      event == 'enterRoom' ? this.occupancy++ : this.occupancy--;
       this.checkedOut = !this.checkedOut;
       let m = this.checkedOut ? 'out of' : 'into';
       this.log(`You checked ${m}  ${this.roomId}`);
@@ -448,7 +450,7 @@ export default {
 
     pingServer() {
       // Send the "pingServer" event to the server.
-      this.log(`this.isConnected: ${this.isConnected}`);
+      // this.log(`this.isConnected: ${this.isConnected}`);
       this.log(`Using socket ${this.$socket.id}...`);
       this.$socket.emit('pingServer', this.roomId, (ack) =>
         this.log('...' + ack)
@@ -482,6 +484,10 @@ export default {
     if (!self.socketId) {
       this.log('Connecting to Server...');
       self.connectToServer();
+    } else {
+      // we may need to refesh this vue's property if we come from the other vue
+      this.socketId = this.$socket.id;
+      self.log(`Mounted with socket ${self.socketId}`);
     }
     await Room.$fetch();
     await Name.$fetch();

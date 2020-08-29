@@ -37,6 +37,10 @@ export default {
   data: () => ({
     links: [
       {
+        label: 'Home',
+        url: '/home',
+      },
+      {
         label: 'Room',
         url: '/room',
       },

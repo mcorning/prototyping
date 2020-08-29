@@ -19,17 +19,22 @@ Vue.use(VueRouter);
 
 const routes = [
   {
-    path: '/home',
-    name: 'Home',
-    component: Visitor,
-  },
-  {
     path: '/',
-    redirect: 'visitor',
-    // redirect: getDefaultVue(),
-    name: 'redir',
+    name: 'Home',
     component: Home,
   },
+  {
+    path: '/home',
+    name: 'Home',
+    component: Home,
+  },
+  // {
+  //   path: '/',
+  //   redirect: 'visitor',
+  //   // redirect: getDefaultVue(),
+  //   name: 'redir',
+  //   component: Home,
+  // },
   {
     path: '/visitor',
     name: 'Visitor',
