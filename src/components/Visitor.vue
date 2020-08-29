@@ -1,12 +1,9 @@
 <template>
   <v-container>
     <v-system-bar color="secondary">
-      <v-row small justify="space-between">
-        <v-col>Build: {{ ver }} </v-col>
-        <v-col
-          ><v-icon color="yellow">mdi-alert</v-icon
-          ><span>app in development</span>
-        </v-col>
+      <v-row align="center">
+        <v-col cols="8">{{ socketUrl }}</v-col>
+        <v-col class="text-right">{{ ver }} </v-col>
       </v-row>
 
       <!-- <v-spacer></v-spacer>
@@ -15,14 +12,13 @@
     <v-card dark>
       <v-card-title>Your Travel Diary</v-card-title>
       <v-card-subtitle
-        >Lag each Room you visit. If you go into quarantine, Alert
-        Rooms</v-card-subtitle
-      >
-      <v-btn @click="testSocket">Ping</v-btn>
+        >Log each Room you visit. Alert Rooms if you go into quarantine.
+      </v-card-subtitle>
+      <!-- <v-btn @click="testSocket">Ping</v-btn> -->
 
       <v-card-text>
         <v-row dense justify="space-between" align="center">
-          <v-col cols="3">
+          <v-col cols="4">
             <v-combobox
               v-model="yourId"
               :items="names"
@@ -31,14 +27,15 @@
             ></v-combobox>
           </v-col>
 
-          <v-col cols="3">
+          <v-col cols="4">
             <v-select
               v-model="roomId"
               :items="rooms"
               label="Visit Room"
             ></v-select>
           </v-col>
-          <v-col cols="3">
+          <v-col class="text-center">
+            {{ checkedOut ? 'Check-in' : 'Check-out' }}
             <v-btn
               :color="checkedOut ? 'success' : 'warning'"
               fab
@@ -47,13 +44,10 @@
             >
               <v-icon>{{ btnType }}</v-icon>
             </v-btn>
-            <span class="pl-3">{{
-              checkedOut ? 'Check-in' : 'Check-out'
-            }}</span>
           </v-col>
-          <v-col cols="2"
-            ><span>Occupancy: {{ occupancy }}</span>
-          </v-col>
+          <!-- <v-col cols="2"
+            ><span>{{ occupancy }}</span>
+          </v-col> -->
         </v-row>
         <v-card-actions>
           <v-btn color="error" block dark @click="warnRooms">
@@ -100,12 +94,14 @@
       </v-card-text>
     </v-card>
     <v-system-bar color="secondary">
-      <v-icon small>mdi-transit-connection-variant </v-icon>
-      <span class="small">Server:{{ socketUrl }}</span>
-      <v-spacer></v-spacer>
-      <span class="small">Socket: {{ socketId }}</span>
-      <v-spacer></v-spacer>
-      <v-btn @click="addTestMessage" text><v-icon>mdi-test-tube</v-icon></v-btn>
+      <v-row align="center">
+        <v-col cols="10">Socket: {{ socketId }}</v-col>
+        <v-col cols="2" class="text-right"
+          ><v-btn @click="testSocket" text
+            ><v-icon>mdi-test-tube</v-icon></v-btn
+          >
+        </v-col>
+      </v-row>
     </v-system-bar>
     <v-card>
       <v-card-title>Audit Trail</v-card-title>

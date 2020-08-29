@@ -1,15 +1,17 @@
 <template>
   <v-container>
     <v-system-bar color="secondary">
-      <span>Build: {{ ver }}</span>
-      <v-spacer></v-spacer>
-      <span class="small">Room Manager: {{ managedRoom }}</span>
+      <v-row>
+        <v-col v-if="hasRoomManager">
+          <!-- <span class="small">Room Manager: {{ managedRoom }}</span>
       <v-spacer></v-spacer>
       <v-checkbox v-model="hasRoomManager" label="RM" small>
         {{ hasRoomManager }}</v-checkbox
-      >
-      <v-spacer></v-spacer>
-      <span class="small">Occupancy: {{ occupancy }}</span>
+      > -->
+        </v-col>
+        <v-col>IO:{{ socketUrl }}</v-col>
+        <v-col class="text-right">{{ ver }} </v-col>
+      </v-row>
     </v-system-bar>
     <v-card>
       <v-card-title>Room Control</v-card-title>
@@ -141,9 +143,8 @@
       </v-card-actions> -->
     </v-card>
     <v-system-bar color="secondary">
-      <v-icon small>mdi-transit-connection-variant </v-icon>
-      <span class="small">Server:{{ socketUrl }}</span>
-      <v-spacer></v-spacer>
+      <!-- <v-icon small>mdi-transit-connection-variant </v-icon> -->
+
       <span class="small">Socket: {{ socketId }}</span>
       <v-spacer></v-spacer>
       <v-btn @click="testSocket" text><v-icon>mdi-test-tube</v-icon></v-btn>
