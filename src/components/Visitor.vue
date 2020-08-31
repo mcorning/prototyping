@@ -51,10 +51,24 @@
         </v-row>
         <v-card-actions>
           <v-btn color="error" block dark @click="warnRooms">
-            Alert
+            Warn
             <v-icon>mdi-alert</v-icon> Rooms
           </v-btn>
+          <Dialog v-if="dialog" @reconnect="connectToServer()" />
         </v-card-actions>
+        <v-card-text class="text-center mb-4">
+          <v-alert
+            :value="alert"
+            dismissible
+            border="left"
+            :color="alertColor"
+            elevation="2"
+            colored-border
+            icon="mdi-alert"
+            transition="scale-transition"
+            >{{ alertMessage }}
+          </v-alert>
+        </v-card-text>
       </v-card-text>
       <v-card-text>
         <v-list dense>
@@ -130,6 +144,7 @@ import Message from '@/models/Message';
 import Name from '@/models/Name';
 import Room from '@/models/Room';
 import State from '@/models/State';
+import Dialog from '@/components/Dialog';
 
 // window.onerror = function(message, source, lineno, colno, error) {
 window.onerror = function(message) {
@@ -139,6 +154,8 @@ window.onerror = function(message) {
 
 export default {
   name: 'LctVisitor',
+  components: { Dialog },
+
   computed: {
     allVisits() {
       return this.daysBack != 0;
@@ -223,8 +240,13 @@ export default {
   },
 
   data: () => ({
+    dialog: false,
+    alertIcon: '',
+    alertColor: '',
+    alert: false,
+    alertMessage: '',
     occupancy: 1,
-    socketId: 'not connected',
+    socketId: '',
 
     // isConnected: false,
     ver: config.ver,
@@ -272,8 +294,12 @@ export default {
 
     // end socket.io reserved events
 
-    exposureAlert(alert) {
-      alert(alert);
+    exposureAlert(alertMessage) {
+      this.log(alertMessage);
+      this.alert = true;
+      this.alertIcon = 'mdi-alert';
+      this.alertColor = 'error';
+      this.alertMessage = alertMessage;
     },
   },
 
@@ -285,12 +311,10 @@ export default {
 
     emit(payload) {
       if (!this.socketId) {
-        if (!confirm('Your socket is disconnected. Reconnect now? ')) {
-          return;
-        }
-        this.connectToServer();
+        this.dialog = true;
+        return;
       }
-      this.log(`payload: ${JSON.stringify(payload)}`);
+      this.log(`emitting: ${payload.event}`);
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
@@ -349,8 +373,8 @@ export default {
           let visits = this.messages.filter(
             (v) => v.room == room && v.message.toLowerCase() == 'entered'
           );
-          console.log('room :>> ', room);
-          console.log('visits :>> ', visits);
+          // console.log('room :>> ', room);
+          // console.log('visits :>> ', visits);
           if (visits.length) {
             this.emit({
               event: 'exposureWarning',
@@ -359,7 +383,12 @@ export default {
                 message: visits, // an array of dates
                 sentTime: new Date().toISOString(),
               },
-              ack: (ack) => alert(ack),
+              ack: (ack) => {
+                this.alert = true;
+                this.alertIcon = 'mdi-alert';
+                this.alertColor = 'warning';
+                this.alertMessage = ack;
+              },
             });
           } else {
             alert(

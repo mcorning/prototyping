@@ -39,7 +39,7 @@
             </v-btn>
             <span class="pl-3">{{ closed ? 'Open Room' : 'Close Room' }}</span>
           </v-col>
-          <v-col cols="5" class="col-md-5">
+          <!-- <v-col cols="5" class="col-md-5">
             <v-card>
               <v-card-text>
                 Rooms are easy to get ready.
@@ -51,8 +51,20 @@
                 <p class="pb-0">Visitor exposure alerts are automatic.</p>
               </v-card-text>
             </v-card>
-          </v-col>
+          </v-col> -->
 
+          <v-alert
+            :value="alert"
+            dismissible
+            border="left"
+            :color="alertColor"
+            elevation="2"
+            colored-border
+            icon="mdi-alert"
+            transition="scale-transition"
+            ><span color="gray">{{ alertMessage }}</span>
+          </v-alert>
+          <Dialog v-if="dialog" @reconnect="connectToServer()" />
           <v-col cols="6" v-if="hasRoomManager">
             <v-text-field
               label="Room Manager ID"
@@ -177,10 +189,11 @@ import Message from '@/models/Message';
 import Name from '@/models/Name';
 import Room from '@/models/Room';
 import State from '@/models/State';
+import Dialog from '@/components/Dialog';
 
 export default {
   name: 'LctRoom',
-  components: {},
+  components: { Dialog },
   computed: {
     roomisEmpty() {
       return Room.exists();
@@ -237,15 +250,19 @@ export default {
       if (this.daysBack == 0) {
         return allVisits.filter((v) => this.roomId == v.room);
       }
-      return allVisits;
+      return this.allVisits;
     },
 
     entered() {
-      return this.visits.filter((v) => v.message == 'Entered').length;
+      return this.visits
+        ? this.visits.filter((v) => v.message == 'Entered').length
+        : 0;
     },
 
     departed() {
-      return this.visits.filter((v) => v.message == 'Departed').length;
+      return this.visits
+        ? this.visits.filter((v) => v.message == 'Departed').length
+        : 0;
     },
 
     uniqueVisitorNames() {
@@ -257,10 +274,14 @@ export default {
   },
 
   data: () => ({
+    dialog: false,
+    alert: false,
+    alertColor: 'error',
+    alertMessage: '',
     ver: config.ver,
     isConnected: false,
     cons: [],
-    socketId: 'not connected',
+    socketId: '',
     occupancy: 1, // assuming a person opens the Room
     socketUrl: config.socketUrl,
     hasRoomManager: false,
@@ -294,7 +315,7 @@ export default {
     // socket.io reserved events
     connect() {
       this.socketId = this.$socket.id;
-      this.log(`Server connected on socket ${this.socketId}`);
+      // this.log(`Server connected on socket ${this.socketId}`);
     },
 
     disconnect() {
@@ -307,14 +328,14 @@ export default {
     // Visitor routine events
     checkIn(msg) {
       ++this.occupancy;
-      this.log(`Room count is now ${this.occupancy}`);
-      this.messages.push(msg);
+      // this.log(`Room count is now ${this.occupancy}`);
+      this.messages = msg;
     },
 
     checkOut(msg) {
       --this.occupancy;
-      this.log(`Room count is now ${this.occupancy}`);
-      this.messages.push(msg);
+      // this.log(`Room count is now ${this.occupancy}`);
+      this.messages = msg;
     },
     //
 
@@ -324,15 +345,16 @@ export default {
     // Visitor sends this alert for each occupied Room
     // This function replies to server for each visitor that occpied the Room on those dates
     notifyRoom(visits, ack) {
-      this.log('Visits' + JSON.stringify(visits));
+      this.alertMessage =
+        'Visitor warning triggered Exposure Alert to all other visitors';
+      this.alertColor = 'warning';
+      this.alert = true;
+      this.alerts = visits;
       // map over the dates
       visits.map((visit) => {
-        this.log('Visit' + JSON.stringify(visit));
-
         // from all cached messages, get Visitor(s) on each exposure date
         let visitors = this.messages.map((message) => {
           if (
-            message.message &&
             message.message.toLowerCase() == 'entered' &&
             moment(message.sentTime).format('YYYYMMDD') ==
               moment(visit.sentTime).format('YYYYMMDD')
@@ -341,11 +363,17 @@ export default {
         });
         // now map over visitors for this date, and emit alertVisitor for each exposed visit
         visitors.map((visitor) => {
+          if (!visitor) {
+            return;
+          }
+          this.log(`${visitor} alerted`);
           this.emit({
             event: 'alertVisitor',
             message: {
               visitor: visitor,
-              message: `You may have been exposed to Covid on ${visit}`,
+              message: `You may have been exposed to Covid after ${moment(
+                visit.sentTime
+              ).format(this.visitFormat)}`,
               sentTime: new Date().toISOString(),
             },
             ack: (ack) => this.log(ack),
@@ -372,7 +400,9 @@ export default {
           ack: (ack) => {
             this.closed = ack.error.length;
             let msg = `${ack.message}  ${ack.error}`;
-            alert(msg);
+            this.alertMessage = msg;
+            this.alertColor = 'success';
+            this.alert = true;
             this.log('Closed Room');
           },
         });
@@ -389,7 +419,9 @@ export default {
         ack: (ack) => {
           this.closed = ack.error.length;
           let msg = `${ack.message}  ${ack.error}`;
-          alert(msg);
+          this.alertMessage = msg;
+          this.alertColor = 'success';
+          this.alert = true;
           this.log('Opened Room');
         },
       });
@@ -401,13 +433,11 @@ export default {
     },
 
     emit(payload) {
-      if (!this.$socket.id) {
-        if (!confirm('Your socket is disconnected. Reconnect now? ')) {
-          return;
-        }
-        this.connectToServer();
+      if (!this.socketId) {
+        this.dialog = true;
+        return;
       }
-      this.log(JSON.stringify(payload));
+      this.log(`Emitting ${payload.event}`);
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
@@ -423,7 +453,11 @@ export default {
       this.emit({
         event: event,
         message: msg,
-        ack: (ack) => alert(ack.message),
+        ack: (ack) => {
+          this.alertColor = 'success';
+          this.alertMessage = ack.message;
+          this.alert = true;
+        },
       });
       this.closed = !this.closed;
     },
