@@ -293,6 +293,7 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
+      this.socketId = this.$socket.id;
       this.log(`Server connected on socket ${this.socketId}`);
     },
 
@@ -323,13 +324,18 @@ export default {
     // Visitor sends this alert for each occupied Room
     // This function replies to server for each visitor that occpied the Room on those dates
     notifyRoom(visits, ack) {
+      this.log('Visits' + JSON.stringify(visits));
       // map over the dates
       visits.map((visit) => {
+        this.log('Visit' + JSON.stringify(visit));
+
         // from all cached messages, get Visitor(s) on each exposure date
         let visitors = this.messages.map((message) => {
           if (
-            message.sentTime == visit.sentTime &&
-            message.message.toLowerCase() == 'entered'
+            message.message &&
+            message.message.toLowerCase() == 'entered' &&
+            moment(message.sentTime).format('YYYYMMDD') ==
+              moment(visit.sentTime).format('YYYYMMDD')
           )
             return message.visitor;
         });
@@ -496,7 +502,7 @@ export default {
       self.connectToServer();
     } else {
       // we may need to refesh this vue's property if we come from the other vue
-      this.socketId = this.$socket.id;
+      self.socketId = self.$socket.id;
       self.log(`Mounted with socket ${self.socketId}`);
     }
     await Room.$fetch();
