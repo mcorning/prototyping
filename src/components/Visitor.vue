@@ -274,13 +274,11 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
-      // this.isConnected = true;
       this.socketId = this.$socket.id;
       this.log(`Server connected on socket ${this.socketId}`);
     },
 
     disconnect() {
-      // this.isConnected = false;
       this.log(
         'The server disconnected your socket (probably because you refreshed the browser).'
       );
@@ -438,18 +436,10 @@ export default {
 
     deleteMessage(id) {
       if (this.daysBack == 0) {
-        //this.$socket.disconnect();
         let m = `Deleting message ${id}`;
         this.log(m);
         Message.delete(id);
-        // alert(
-        //   this.isConnected
-        //     ? 'Socket still connected'
-        //     : 'Your socket disconnected. Refesh to reconnect and to continue to receive messages.'
-        // );
       } else {
-        // this.emit({ event: 'disconnectAll' });
-        //alert('All sockets disconnected. Refesh to reconnect this socket.');
         this.log(`Deleting all messages`);
         Message.deleteAll();
       }

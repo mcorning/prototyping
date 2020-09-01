@@ -1,14 +1,17 @@
 <template>
   <v-app>
     <v-app-bar app color="primary" dark>
+      <!-- src="@/assets/soteriaLogoCovidRed.jpg" 
+                              width="40"
+-->
+
       <div class="d-flex align-center">
         <v-img
-          alt="Soteria Logo"
+          alt="Enduring Net Logo"
           class="shrink mr-2"
           contain
-          src="@/assets/soteriaLogoCovidRed.jpg"
-          transition="scale-transition"
-          width="40"
+          src="@/assets/Enduring-Net-Logo-Vertical-Purple-RGB-BG.png"
+          max-width="120"
         />
       </div>
 

@@ -349,7 +349,6 @@ export default {
         'Visitor warning triggered Exposure Alert to all other visitors';
       this.alertColor = 'warning';
       this.alert = true;
-      this.alerts = visits;
       // map over the dates
       visits.map((visit) => {
         // from all cached messages, get Visitor(s) on each exposure date
@@ -367,16 +366,19 @@ export default {
             return;
           }
           this.log(`${visitor} alerted`);
+          let msg = `You may have been exposed to Covid after ${moment(
+            visit.sentTime
+          ).format(this.visitFormat)}`;
           this.emit({
             event: 'alertVisitor',
             message: {
               visitor: visitor,
-              message: `You may have been exposed to Covid after ${moment(
-                visit.sentTime
-              ).format(this.visitFormat)}`,
+              message: msg,
               sentTime: new Date().toISOString(),
             },
-            ack: (ack) => this.log(ack),
+            ack: (ack) => {
+              this.log(ack);
+            },
           });
         });
       });
