@@ -157,7 +157,7 @@
     <v-system-bar color="secondary">
       <!-- <v-icon small>mdi-transit-connection-variant </v-icon> -->
 
-      <span class="small">Socket: {{ this.socket.id }}</span>
+      <span class="small">Socket: {{ this.$socket.id }}</span>
       <v-spacer></v-spacer>
       <v-btn @click="testSocket" text><v-icon>mdi-test-tube</v-icon></v-btn>
     </v-system-bar>
