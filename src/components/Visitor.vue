@@ -54,7 +54,15 @@
             Warn
             <v-icon>mdi-alert</v-icon> Rooms
           </v-btn>
-          <Dialog v-if="dialog" @reconnect="connectToServer()" />
+        </v-card-actions>
+        <v-card-actions>
+          <v-banner v-if="dialog" class="text-center">
+            At the moment, the Server doesn't know about you. Reconnect?
+            <template v-slot:actions>
+              <v-btn text color="secondary" @click="connectToServer">Yes</v-btn>
+              <v-btn text color="secondary" @click="dialog = false">No</v-btn>
+            </template>
+          </v-banner>
         </v-card-actions>
         <v-card-text class="text-center mb-4">
           <v-alert
@@ -109,7 +117,7 @@
     </v-card>
     <v-system-bar color="secondary">
       <v-row align="center">
-        <v-col cols="10">Socket: {{ socketId }}</v-col>
+        <v-col cols="10">Socket: {{ $socket.id }}</v-col>
         <v-col cols="2" class="text-right"
           ><v-btn @click="testSocket" text
             ><v-icon>mdi-test-tube</v-icon></v-btn
@@ -144,7 +152,6 @@ import Message from '@/models/Message';
 import Name from '@/models/Name';
 import Room from '@/models/Room';
 import State from '@/models/State';
-import Dialog from '@/components/Dialog';
 
 // window.onerror = function(message, source, lineno, colno, error) {
 window.onerror = function(message) {
@@ -154,7 +161,7 @@ window.onerror = function(message) {
 
 export default {
   name: 'LctVisitor',
-  components: { Dialog },
+  components: {},
 
   computed: {
     allVisits() {
@@ -240,7 +247,7 @@ export default {
   },
 
   data: () => ({
-    dialog: false,
+    dialog: true,
     alertIcon: '',
     alertColor: '',
     alert: false,
@@ -303,12 +310,13 @@ export default {
 
   methods: {
     connectToServer() {
+      this.dialog = false;
       // this is async, so let the connect() function set the isConnected property
       this.$socket.connect();
     },
 
     emit(payload) {
-      if (!this.socketId) {
+      if (!this.$socket.id) {
         this.dialog = true;
         return;
       }
