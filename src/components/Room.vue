@@ -435,7 +435,7 @@ export default {
     },
 
     emit(payload) {
-      if (!this.socket.id) {
+      if (!this.$socket.id) {
         this.dialog = true;
         return;
       }
