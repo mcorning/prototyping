@@ -119,7 +119,7 @@
       <v-row align="center">
         <v-col cols="10">Socket: {{ $socket.id }}</v-col>
         <v-col cols="2" class="text-right"
-          ><v-btn @click="testSocket" text
+          ><v-btn @click="addTestMessage" text
             ><v-icon>mdi-test-tube</v-icon></v-btn
           >
         </v-col>
@@ -298,6 +298,10 @@ export default {
     // },
 
     // end socket.io reserved events
+    roomIsAvailable(room) {
+      this.log(`Available Room: ${room}`);
+      Room.update(room);
+    },
 
     exposureAlert(alertMessage) {
       this.log(alertMessage);
@@ -305,10 +309,58 @@ export default {
       this.alertIcon = 'mdi-alert';
       this.alertColor = 'error';
       this.alertMessage = alertMessage;
+      this.log(alertMessage);
     },
   },
 
   methods: {
+    getEnteredMessages(room, v) {
+      return v.room == room && v.message.toLowerCase() == 'entered';
+    },
+
+    // emit the exposureWarning to each Room occupied by Visitor
+    emitExposureWarning(v) {
+      {
+        this.emit({
+          event: 'exposureWarning',
+          message: {
+            room: v.room,
+            message: v.sentTime,
+            sentTime: new Date().toISOString(),
+          },
+          ack: (ack) => {
+            this.alert = true;
+            this.alertIcon = 'mdi-alert';
+            this.alertColor = 'warning';
+            this.alertMessage = ack;
+          },
+        });
+      }
+    },
+
+    // Visitor groups all messages by Room.
+    // Visitor iterates list sending an alertRoom event to socket.io server for each Room.
+    // Alert payload contains all the dates for that Room.
+    // Server relays message to each Room.
+    warnRooms() {
+      // Get unique list of visited Rooms
+      new Set(this.messages.map((v) => v.room)).forEach((room) => {
+        // for each Room...
+        //...get the Room's 'entered' messages
+
+        // WHY ARE WE GETTING TOO MANY WARNINGS SENT?
+
+        let x = this.messages
+          .filter((v) => this.getEnteredMessages(room, v))
+          .map((v) => this.emitExposureWarning(v));
+        // .catch((error) => {
+        //   this.log(`Error :>> ${error}`);
+        //   alert(`Error warning Rooms (${error}`);
+        // });
+        console.log(x);
+      });
+    },
+
     connectToServer() {
       this.dialog = false;
       // this is async, so let the connect() function set the isConnected property
@@ -325,24 +377,26 @@ export default {
     },
 
     addTestMessage() {
+      // open up the message list beyond today
       this.daysBack = 14;
+      // get a random number of days back for test data
+      let days = this.getRandomInt(5);
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
         message: 'Entered',
         sentTime: moment()
-          .add(-this.getRandomInt(3), 'day')
+          .add(-days, 'day')
           .toISOString(),
       };
-      // cache the message
+      // cache the message in IndexedDB
       this.messages = msg;
-      console.log(this.messages);
-      let m = `Messages (including test): ${JSON.stringify(this.messages)}`;
-      this.log(m),
-        this.emit({
-          event: 'enterRoom',
-          message: msg,
-        });
+      // log the test data
+      this.log(JSON.stringify(msg));
+      this.emit({
+        event: 'enterRoom',
+        message: msg,
+      });
     },
 
     act() {
@@ -367,45 +421,6 @@ export default {
       this.checkedOut = !this.checkedOut;
       let m = this.checkedOut ? 'out of' : 'into';
       this.log(`You checked ${m}  ${this.roomId}`);
-    },
-
-    // Visitor groups all messages by Room.
-    // Visitor iterates list sending an alertRoom event to socket.io server for each Room.
-    // Alert payload contains all the dates for that Room.
-    // Server relays message to each Room.
-    warnRooms() {
-      new Set(this.messages.map((v) => v.room)).forEach((room) => {
-        try {
-          let visits = this.messages.filter(
-            (v) => v.room == room && v.message.toLowerCase() == 'entered'
-          );
-          // console.log('room :>> ', room);
-          // console.log('visits :>> ', visits);
-          if (visits.length) {
-            this.emit({
-              event: 'exposureWarning',
-              message: {
-                room: room,
-                message: visits, // an array of dates
-                sentTime: new Date().toISOString(),
-              },
-              ack: (ack) => {
-                this.alert = true;
-                this.alertIcon = 'mdi-alert';
-                this.alertColor = 'warning';
-                this.alertMessage = ack;
-              },
-            });
-          } else {
-            alert(
-              `${room} has no visits among its messages. Please investigate.`
-            );
-          }
-        } catch (error) {
-          console.log('error :>> ', error);
-          alert(`Error warning Rooms (${error}`);
-        }
-      });
     },
 
     toggleVisits() {

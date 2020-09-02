@@ -254,15 +254,17 @@ export default {
     },
 
     entered() {
-      return this.visits
-        ? this.visits.filter((v) => v.message == 'Entered').length
-        : 0;
+      return null;
+      // this.visits
+      //   ? this.visits.filter((v) => v.message == 'Entered').length
+      //   : 0;
     },
 
     departed() {
-      return this.visits
-        ? this.visits.filter((v) => v.message == 'Departed').length
-        : 0;
+      return null;
+      // this.visits
+      //   ? this.visits.filter((v) => v.message == 'Departed').length
+      //   : 0;
     },
 
     uniqueVisitorNames() {
@@ -344,42 +346,39 @@ export default {
     // Server forwarded from Visitor a Room occupied on given dates
     // Visitor sends this alert for each occupied Room
     // This function replies to server for each visitor that occpied the Room on those dates
-    notifyRoom(visits, ack) {
+    notifyRoom(visit, ack) {
       this.alertMessage =
         'Visitor warning triggered Exposure Alert to all other visitors';
       this.alertColor = 'warning';
       this.alert = true;
       // map over the dates
-      visits.map((visit) => {
-        // from all cached messages, get Visitor(s) on each exposure date
-        let visitors = this.messages.map((message) => {
-          if (
-            message.message.toLowerCase() == 'entered' &&
-            moment(message.sentTime).format('YYYYMMDD') ==
-              moment(visit.sentTime).format('YYYYMMDD')
-          )
-            return message.visitor;
-        });
-        // now map over visitors for this date, and emit alertVisitor for each exposed visit
-        visitors.map((visitor) => {
-          if (!visitor) {
-            return;
-          }
-          this.log(`${visitor} alerted`);
-          let msg = `You may have been exposed to Covid after ${moment(
-            visit.sentTime
-          ).format(this.visitFormat)}`;
-          this.emit({
-            event: 'alertVisitor',
-            message: {
-              visitor: visitor,
-              message: msg,
-              sentTime: new Date().toISOString(),
-            },
-            ack: (ack) => {
-              this.log(ack);
-            },
-          });
+      // from all cached messages, get Visitor(s) on each exposure date
+      let visitors = this.messages.map((message) => {
+        if (
+          message.message.toLowerCase() == 'entered' &&
+          moment(message.sentTime).format('YYYYMMDD') ==
+            moment(visit.sentTime).format('YYYYMMDD')
+        )
+          return message.visitor;
+      });
+      // now map over visitors for this date, and emit alertVisitor for each exposed visit
+      visitors.map((visitor) => {
+        if (!visitor) {
+          return;
+        }
+        let msg = `${visitor}, you may have been exposed to Covid on ${moment(
+          visit.sentTime
+        ).format('MMM DD')}`;
+        this.emit({
+          event: 'alertVisitor',
+          message: {
+            visitor: visitor,
+            message: msg,
+            sentTime: new Date().toISOString(),
+          },
+          ack: (ack) => {
+            this.log(ack);
+          },
         });
       });
       if (ack) ack('alert sent');
@@ -439,7 +438,7 @@ export default {
         this.dialog = true;
         return;
       }
-      this.log(`Emitting ${payload.event}`);
+      this.log(`Emitting ${payload.event} to ${payload.message.visitor}`);
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
