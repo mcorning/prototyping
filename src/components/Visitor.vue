@@ -314,30 +314,6 @@ export default {
   },
 
   methods: {
-    getEnteredMessages(room, v) {
-      return v.room == room && v.message.toLowerCase() == 'entered';
-    },
-
-    // emit the exposureWarning to each Room occupied by Visitor
-    emitExposureWarning(v) {
-      {
-        this.emit({
-          event: 'exposureWarning',
-          message: {
-            room: v.room,
-            message: v.sentTime,
-            sentTime: new Date().toISOString(),
-          },
-          ack: (ack) => {
-            this.alert = true;
-            this.alertIcon = 'mdi-alert';
-            this.alertColor = 'warning';
-            this.alertMessage = ack;
-          },
-        });
-      }
-    },
-
     // Visitor groups all messages by Room.
     // Visitor iterates list sending an alertRoom event to socket.io server for each Room.
     // Alert payload contains all the dates for that Room.
@@ -346,18 +322,38 @@ export default {
       // Get unique list of visited Rooms
       new Set(this.messages.map((v) => v.room)).forEach((room) => {
         // for each Room...
-        //...get the Room's 'entered' messages
-
-        // WHY ARE WE GETTING TOO MANY WARNINGS SENT?
-
-        let x = this.messages
+        this.messages
+          //...get the Room's 'entered' messages
           .filter((v) => this.getEnteredMessages(room, v))
-          .map((v) => this.emitExposureWarning(v));
-        // .catch((error) => {
-        //   this.log(`Error :>> ${error}`);
-        //   alert(`Error warning Rooms (${error}`);
-        // });
-        console.log(x);
+          // alert on each visit
+          .forEach((v) => {
+            this.emitExposureWarning(v);
+          });
+      });
+    },
+
+    getEnteredMessages(room, v) {
+      return v.room == room && v.message.toLowerCase() == 'entered';
+    },
+
+    // emit the exposureWarning to each Room occupied by Visitor
+    emitExposureWarning(v) {
+      this.log(
+        `Warned ${v.room} of exposure on ${moment(v.sentTime).format('llll')}`
+      );
+      this.emit({
+        event: 'exposureWarning',
+        message: {
+          room: v.room,
+          message: v.sentTime,
+          sentTime: v.sentTime,
+        },
+        ack: (ack) => {
+          this.alert = true;
+          this.alertIcon = 'mdi-alert';
+          this.alertColor = 'warning';
+          this.alertMessage = ack;
+        },
       });
     },
 
@@ -372,7 +368,6 @@ export default {
         this.dialog = true;
         return;
       }
-      this.log(`emitting: ${payload.event}`);
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 

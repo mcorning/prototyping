@@ -368,7 +368,7 @@ export default {
         }
         let msg = `${visitor}, you may have been exposed to Covid on ${moment(
           visit.sentTime
-        ).format('MMM DD')}`;
+        ).format('llll')}`;
         this.emit({
           event: 'alertVisitor',
           message: {
