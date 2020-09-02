@@ -42,10 +42,6 @@ export default class State extends Model {
     return p;
   }
   static async changeYourId(val) {
-    // somehow myId messes up State. reverting to connectionId
-    // this.$update({
-    //   data: { id: 0, myId: val }
-    // });
     let p = await this.$update({
       data: { id: 0, yourId: val },
     });

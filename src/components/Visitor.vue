@@ -20,11 +20,18 @@
         <v-row dense justify="space-between" align="center">
           <v-col cols="4">
             <v-combobox
+              v-if="names.length"
               v-model="yourId"
               :items="names"
               label="Your ID"
               hint="Make this unique and pseudonymous"
             ></v-combobox>
+
+            <v-text-field
+              v-else
+              label="Your ID"
+              @change="addYourId"
+            ></v-text-field>
           </v-col>
 
           <v-col cols="4">
@@ -298,9 +305,12 @@ export default {
     // },
 
     // end socket.io reserved events
-    roomIsAvailable(room) {
-      this.log(`Available Room: ${room}`);
-      Room.update(room);
+    // Server fires this event when a Room opens
+    availableRooms(rooms) {
+      this.log(`Available Rooms: ${rooms}`);
+      Room.$deleteAll();
+      console.log(this.rooms);
+      Room.update(rooms);
     },
 
     exposureAlert(alertMessage) {
@@ -314,6 +324,10 @@ export default {
   },
 
   methods: {
+    addYourId(val) {
+      this.yourId = val;
+    },
+
     // Visitor groups all messages by Room.
     // Visitor iterates list sending an alertRoom event to socket.io server for each Room.
     // Alert payload contains all the dates for that Room.
