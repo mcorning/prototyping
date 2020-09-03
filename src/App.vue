@@ -28,16 +28,69 @@
     <v-main>
       <router-view></router-view>
     </v-main>
+    <v-footer color="primary lighten-1" padless>
+      <v-layout justify-center wrap align-center>
+        <v-btn
+          v-for="link in links"
+          :key="`${link.label}-footer-link`"
+          color="white"
+          text
+          rounded
+          class="mx-2"
+          :to="link.url"
+          >{{ link.label }}</v-btn
+        >
+        <!-- <v-btn v-if="image" height="0" width="0" to="/profile">
+          <v-avatar min-width="30" width="30" height="30">
+            <v-img :src="image" alt="Me"></v-img> </v-avatar
+        ></v-btn> -->
+
+        <!-- <v-btn to="/profile" color="white" text rounded> Track</v-btn> -->
+        <v-flex
+          prepend-icon="mdi-tm"
+          primary
+          lighten-2
+          py-4
+          text-center
+          white--text
+          xs12
+        >
+          <v-row no-gutters>
+            <v-col>
+              <small>Version {{ ver }}</small>
+            </v-col>
+
+            <v-col>
+              &copy; {{ new Date().getFullYear() }} —
+              <strong>Soteria.id</strong>
+            </v-col>
+
+            <v-col> Major support: Secours.io </v-col>
+            <v-col>
+              <small>{{ shipString }}</small>
+            </v-col>
+          </v-row>
+        </v-flex>
+      </v-layout>
+    </v-footer>
   </v-app>
 </template>
 
 <script>
+import config from '@/config.json';
+import moment from 'moment';
+
 export default {
   name: 'App',
 
   components: {},
-
+  computed: {
+    shipString() {
+      return moment(this.ver, 'MM.DD.hh.mm');
+    },
+  },
   data: () => ({
+    ver: config.ver,
     links: [
       {
         label: 'Home',

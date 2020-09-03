@@ -20,7 +20,7 @@ Vue.use(VueRouter);
 const routes = [
   {
     path: '/',
-    name: 'Home',
+    name: 'Root',
     component: Home,
   },
   {
