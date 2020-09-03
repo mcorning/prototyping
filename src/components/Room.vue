@@ -198,6 +198,16 @@
           {{ visitedDate(item.sentTime) }}
         </template>
       </v-data-table>
+      <div class="text-center">
+        Haw are we doing on the Room experience?
+
+        <v-rating
+          v-model="rating"
+          background-color="primary lighten-3"
+          color="primary"
+          large
+        ></v-rating>
+      </div>
     </v-card>
   </v-container>
 </template>
@@ -319,6 +329,7 @@ export default {
   },
 
   data: () => ({
+    rating: 3,
     deleting: false,
     dialog: false,
     alert: false,

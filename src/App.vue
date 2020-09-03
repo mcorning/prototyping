@@ -91,6 +91,7 @@ export default {
   },
   data: () => ({
     ver: config.ver,
+    rating: 3,
     links: [
       {
         label: 'Home',
