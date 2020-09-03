@@ -30,19 +30,37 @@
               placeholder="New entry example: CareCenter.Lobby"
             ></v-combobox>
           </v-col>
-          <v-col cols="4" class="col-md-4 pl-10">
-            <v-btn
-              :disabled="!roomId"
-              :color="closed ? 'success' : 'warning'"
-              fab
-              dark
-              @click="act"
-            >
-              <v-icon>{{ btnType }}</v-icon>
-            </v-btn>
-            <span class="pl-3">{{ closed ? 'Open Room' : 'Close Room' }}</span>
-            {{ roomId }}
+          <v-col class="col-md-4 pl-10">
+            <div v-if="rooms.length" class="text-center">
+              <v-btn
+                :color="closed ? 'success' : 'warning'"
+                fab
+                dark
+                @click="act"
+              >
+                <v-icon>{{ btnType }}</v-icon>
+              </v-btn>
+              <span class="pl-3">{{
+                closed ? 'Open Room' : 'Close Room'
+              }}</span>
+            </div>
+            <v-card v-else>
+              <v-card-title>First Time?</v-card-title>
+              <v-card-text
+                >Enter your two-part Room name (e.g., Building.Room).
+              </v-card-text>
+              <v-card-text>
+                You can manage more than one Room, but you can only open one
+                Room at a time. You can delete an entry with the X
+                button.</v-card-text
+              >
+              <v-card-text
+                >When you open a Room, the Server adds your Room to Visitor
+                pages so they can enter.</v-card-text
+              >
+            </v-card>
           </v-col>
+
           <!-- <v-col cols="5" class="col-md-5">
             <v-card>
               <v-card-text>
@@ -232,7 +250,7 @@ export default {
   components: {},
   computed: {
     roomisEmpty() {
-      return Room.exists();
+      return !this.rooms.length;
     },
 
     state: {
@@ -447,7 +465,7 @@ export default {
       if (!val || this.rooms.length > 1) {
         msg = {
           room: this.roomId,
-          message: 'Closed',
+          message: val ? 'Closed' : 'Deleted',
           sentTime: new Date().toISOString(),
         };
         this.emit({

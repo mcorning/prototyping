@@ -17,4 +17,12 @@ export default class Name extends Model {
     });
     return p;
   }
+
+  static async delete(val) {
+    console.log('Names before', this.all());
+
+    await this.$delete(val);
+    console.log('remaining names', this.all());
+    return this.all();
+  }
 }

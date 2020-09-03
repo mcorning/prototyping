@@ -17,14 +17,15 @@
       <!-- <v-btn @click="testSocket">Ping</v-btn> -->
 
       <v-card-text>
-        <v-row dense justify="space-between" align="center">
-          <v-col cols="4">
+        <v-row dense justify="space-between">
+          <v-col cols="3">
             <v-combobox
               v-if="names.length"
               v-model="yourId"
               :items="names"
               label="Your ID"
-              hint="Make this unique and pseudonymous"
+              hint="Must be unique"
+              clearable
             ></v-combobox>
 
             <v-text-field
@@ -34,15 +35,15 @@
             ></v-text-field>
           </v-col>
 
-          <v-col cols="4">
+          <v-col cols="3">
             <v-select
               v-model="roomId"
               :items="rooms"
               label="Visit Room"
             ></v-select>
           </v-col>
-          <v-col class="text-center">
-            <div v-show="roomIsOpen">
+          <v-col>
+            <div v-show="roomIsReadyToEnter" class="text-center">
               {{ checkedOut ? 'Check-in' : 'Check-out' }}
               <v-btn
                 :color="checkedOut ? 'success' : 'warning'"
@@ -53,10 +54,25 @@
                 <v-icon>{{ btnType }}</v-icon>
               </v-btn>
             </div>
+            <v-card v-if="firstTime">
+              <v-card-title>First Time?</v-card-title>
+              <v-card-text
+                >Enter your name in the Your ID field. We enable more than one
+                person to use the same instance of the app or device. You can
+                delete an entry with the X button.</v-card-text
+              >
+              <v-card-text
+                >You can only visit an open Room. The Room dropdown gets its
+                values from the Server.</v-card-text
+              >
+              <v-card-text
+                >When you see the Room you want is open, select it.</v-card-text
+              >
+              <v-card-text
+                >A selected room enables your Check-in button.</v-card-text
+              >
+            </v-card>
           </v-col>
-          <!-- <v-col cols="2"
-            ><span>{{ occupancy }}</span>
-          </v-col> -->
         </v-row>
         <v-card-actions>
           <v-btn
@@ -188,8 +204,12 @@ export default {
   components: {},
 
   computed: {
-    roomIsOpen() {
-      return this.rooms.includes(this.roomId);
+    firstTime() {
+      return !this.names.length;
+    },
+
+    roomIsReadyToEnter() {
+      return this.rooms.includes(this.roomId) && this.yourId;
     },
 
     allVisits() {
@@ -211,10 +231,15 @@ export default {
         return this.state?.yourId;
       },
       set(newVal) {
+        if (newVal) {
+          // static update function on Name model
+          Name.update(newVal).catch((e) => console.log(e));
+        } else {
+          Name.delete(this.yourId);
+        }
+
         // static changeYourId function on State model
         State.changeYourId(newVal);
-        // static update function on Name model
-        Name.update(newVal).catch((e) => console.log(e));
       },
     },
 
