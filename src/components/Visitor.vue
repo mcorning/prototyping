@@ -12,7 +12,7 @@
     <v-card dark>
       <v-card-title>Your Travel Diary</v-card-title>
       <v-card-subtitle
-        >Log each Room you visit. Alert Rooms if you go into quarantine.
+        >Log each Room you visit. Warn Rooms if you go into quarantine.
       </v-card-subtitle>
       <!-- <v-btn @click="testSocket">Ping</v-btn> -->
 
@@ -42,22 +42,30 @@
             ></v-select>
           </v-col>
           <v-col class="text-center">
-            {{ checkedOut ? 'Check-in' : 'Check-out' }}
-            <v-btn
-              :color="checkedOut ? 'success' : 'warning'"
-              fab
-              dark
-              @click="act"
-            >
-              <v-icon>{{ btnType }}</v-icon>
-            </v-btn>
+            <div v-show="roomIsOpen">
+              {{ checkedOut ? 'Check-in' : 'Check-out' }}
+              <v-btn
+                :color="checkedOut ? 'success' : 'warning'"
+                fab
+                dark
+                @click="act"
+              >
+                <v-icon>{{ btnType }}</v-icon>
+              </v-btn>
+            </div>
           </v-col>
           <!-- <v-col cols="2"
             ><span>{{ occupancy }}</span>
           </v-col> -->
         </v-row>
         <v-card-actions>
-          <v-btn color="error" block dark @click="warnRooms">
+          <v-btn
+            color="error"
+            block
+            dark
+            @click="warnRooms"
+            :disabled="!messages.length"
+          >
             Warn
             <v-icon>mdi-alert</v-icon> Rooms
           </v-btn>
@@ -171,6 +179,10 @@ export default {
   components: {},
 
   computed: {
+    roomIsOpen() {
+      return this.rooms.includes(this.roomId);
+    },
+
     allVisits() {
       return this.daysBack != 0;
     },
@@ -305,12 +317,18 @@ export default {
     // },
 
     // end socket.io reserved events
-    // Server fires this event when a Room opens
+    // Server fires this event when a Room opens/closes
     availableRooms(rooms) {
       this.log(`Available Rooms: ${rooms}`);
       Room.$deleteAll();
       console.log(this.rooms);
-      Room.update(rooms);
+      console.assert(
+        this.rooms.length == 0,
+        'Should have no rooms before update'
+      );
+      rooms.forEach((room) => {
+        Room.update(room);
+      });
     },
 
     exposureAlert(alertMessage) {

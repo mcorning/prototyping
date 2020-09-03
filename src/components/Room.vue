@@ -20,16 +20,19 @@
       >
       <v-card-text class="pb-0">
         <v-row dense>
-          <v-col cols="3" class="col-md-3">
+          <v-col cols="6" class="col-md-3">
             <v-combobox
               v-model="roomId"
               @change="changeRoom"
               :items="rooms"
               label="My Room"
+              clearable
+              placeholder="New entry example: CareCenter.Lobby"
             ></v-combobox>
           </v-col>
           <v-col cols="4" class="col-md-4 pl-10">
             <v-btn
+              :disabled="!roomId"
               :color="closed ? 'success' : 'warning'"
               fab
               dark
@@ -38,6 +41,7 @@
               <v-icon>{{ btnType }}</v-icon>
             </v-btn>
             <span class="pl-3">{{ closed ? 'Open Room' : 'Close Room' }}</span>
+            {{ roomId }}
           </v-col>
           <!-- <v-col cols="5" class="col-md-5">
             <v-card>
@@ -64,7 +68,23 @@
             transition="scale-transition"
             ><span color="gray">{{ alertMessage }}</span>
           </v-alert>
-          <Dialog v-if="dialog" @reconnect="connectToServer()" />
+          <!-- <v-dialog v-model="dialog" persistent max-width="290">
+            <v-card>
+              <v-card-title class="headline">Room Management</v-card-title>
+              <v-card-text
+                >Are you sure you want to delete {{ roomId }}?</v-card-text
+              >
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="green darken-1" text @click="deleteRoom"
+                  >Yes</v-btn
+                >
+                <v-btn color="green darken-1" text @click="dialog = false"
+                  >No</v-btn
+                >
+              </v-card-actions>
+            </v-card>
+          </v-dialog> -->
           <v-col cols="6" v-if="hasRoomManager">
             <v-text-field
               label="Room Manager ID"
@@ -159,7 +179,9 @@
 
       <span class="small">Socket: {{ this.$socket.id }}</span>
       <v-spacer></v-spacer>
-      <v-btn @click="testSocket" text><v-icon>mdi-test-tube</v-icon></v-btn>
+      <v-btn @click="testSocket" text
+        ><v-icon>mdi-check-network-outline</v-icon></v-btn
+      >
     </v-system-bar>
     <v-card>
       <v-card-title>Audit Trail</v-card-title>
@@ -189,11 +211,15 @@ import Message from '@/models/Message';
 import Name from '@/models/Name';
 import Room from '@/models/Room';
 import State from '@/models/State';
-import Dialog from '@/components/Dialog';
+
+window.onerror = function(message) {
+  /// what you want to do with error here
+  alert('onerror: ' + message);
+};
 
 export default {
   name: 'LctRoom',
-  components: { Dialog },
+  components: {},
   computed: {
     roomisEmpty() {
       return Room.exists();
@@ -214,13 +240,30 @@ export default {
     },
     roomId: {
       get() {
-        return this.state?.roomId;
+        // state will be null at first
+        // but second call should have value
+        // somewhere, when rooms is empty, '
+        // the system wants to return the string 'null'
+        // and we want an empty string
+        // so it is written
+        // so it shall be done
+        let x = this.state?.roomId;
+        return !x || x == 'null' ? '' : x;
       },
       set(newVal) {
+        // if we have a newVal, use it
+        if (newVal) {
+          // static update function on Room model
+          Room.update(newVal).catch((e) => console.log(e));
+        }
+        // else delete the last used roomId (then delete the roomId in state)
+        else {
+          Room.delete(this.roomId).then((r) => console.log('rooms', r));
+        }
+        // change the roomId after we don't need the old value
+        // (e.g., when deleting a Room from IndexDB)
         // static changeRoomId function on State model
         State.changeRoomId(newVal);
-        // static update function on Room model
-        Room.update(newVal).catch((e) => console.log(e));
       },
     },
     managedRoom: {
@@ -276,6 +319,7 @@ export default {
   },
 
   data: () => ({
+    deleting: false,
     dialog: false,
     alert: false,
     alertColor: 'error',
@@ -387,9 +431,9 @@ export default {
 
   methods: {
     // main methods
-    changeRoom() {
+    changeRoom(val) {
       let msg;
-      if (this.rooms.length > 1) {
+      if (!val || this.rooms.length > 1) {
         msg = {
           room: this.roomId,
           message: 'Closed',
@@ -402,30 +446,35 @@ export default {
             this.closed = ack.error.length;
             let msg = `${ack.message}  ${ack.error}`;
             this.alertMessage = msg;
-            this.alertColor = 'success';
+            this.alertColor = val ? 'success' : 'warning';
             this.alert = true;
-            this.log('Closed Room');
+            this.log(`Closed Room ${this.roomId}`);
           },
         });
       }
+      if (val && this.rooms.length) {
+        msg = {
+          room: this.roomId,
+          message: 'Opened',
+          sentTime: new Date().toISOString(),
+        };
+        this.emit({
+          event: 'openRoom',
+          message: msg,
+          ack: (ack) => {
+            this.closed = ack.error.length;
+            let msg = `${ack.message}  ${ack.error}`;
+            this.alertMessage = msg;
+            this.alertColor = 'success';
+            this.alert = true;
+            this.log('Opened Room');
+          },
+        });
+      }
+    },
 
-      msg = {
-        room: this.roomId,
-        message: 'Opened',
-        sentTime: new Date().toISOString(),
-      };
-      this.emit({
-        event: 'openRoom',
-        message: msg,
-        ack: (ack) => {
-          this.closed = ack.error.length;
-          let msg = `${ack.message}  ${ack.error}`;
-          this.alertMessage = msg;
-          this.alertColor = 'success';
-          this.alert = true;
-          this.log('Opened Room');
-        },
-      });
+    reset() {
+      this.deleting = false;
     },
 
     connectToServer() {
@@ -435,7 +484,8 @@ export default {
 
     emit(payload) {
       if (!this.$socket.id) {
-        this.dialog = true;
+        // this.dialog = true;
+        alert('no socket');
         return;
       }
       this.log(`Emitting ${payload.event} to ${payload.message.visitor}`);

@@ -17,4 +17,11 @@ export default class Room extends Model {
     });
     return p;
   }
+  static async delete(val) {
+    console.log('rooms before', this.all());
+
+    await this.$delete(val);
+    console.log('remaining rooms', this.all());
+    return this.all();
+  }
 }
