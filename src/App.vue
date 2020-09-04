@@ -6,14 +6,14 @@
 -->
 
       <div class="d-flex align-center">
-        <!-- <v-img
+        <v-img
           alt="Enduring Net Logo"
           class="shrink mr-2"
           contain
           src="@/assets/Enduring-Net-Logo-Vertical-Purple-RGB-BG.png"
           max-width="120"
-        /> -->
-        <soteria-icon />
+        />
+        <!-- <soteria-icon /> -->
       </div>
 
       <v-spacer></v-spacer>
