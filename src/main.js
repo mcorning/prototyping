@@ -8,6 +8,9 @@ import VueSocketIO from 'vue-socket.io';
 import SocketIO from 'socket.io-client';
 import config from '@/config.json';
 
+import SoteriaIcon from './components/svg/SoteriaLogo.vue';
+Vue.component('soteria-icon', SoteriaIcon);
+
 Vue.config.productionTip = false;
 Vue.use(
   new VueSocketIO({
