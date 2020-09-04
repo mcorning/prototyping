@@ -66,7 +66,7 @@
               <strong>Soteria.id</strong>
             </v-col>
 
-            <v-col> Major support: Secours.io </v-col>
+            <v-col> Major supporter: <strong>Secours.io</strong> </v-col>
             <v-col>
               <small>{{ shipString }}</small>
             </v-col>

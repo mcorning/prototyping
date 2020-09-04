@@ -316,7 +316,6 @@ export default {
     socketServerOnline: false,
     dataUrl: config.dataUrl,
     socketUrl: config.socketUrl,
-    // socketUrl: config.ngrokUrl,
     visitFormat: 'HH:mm on ddd, MMM DD',
     checkedOut: true,
     messageHeaders: [

@@ -195,7 +195,7 @@
     <v-system-bar color="secondary">
       <!-- <v-icon small>mdi-transit-connection-variant </v-icon> -->
 
-      <span class="small">Socket: {{ this.$socket.id }}</span>
+      <span class="small">Socket: {{ $socket.id }}</span>
       <v-spacer></v-spacer>
       <v-btn @click="testSocket" text
         ><v-icon>mdi-check-network-outline</v-icon></v-btn
@@ -371,7 +371,6 @@ export default {
       { text: 'Message', value: 'message' },
       { text: 'Sent  ', value: 'sentTime' },
       { text: 'Room', value: 'room' },
-      { text: 'SocketId', value: 'socketId' },
       { text: 'Delete', value: 'action' },
     ],
     logHeaders: [
