@@ -4,10 +4,20 @@
       <v-card-title>
         Welcome to Local Contact Tracing
       </v-card-title>
-      <v-card-subtitle>A prototype</v-card-subtitle>
+      <v-card-subtitle>Contact Tracing for the rest of us</v-card-subtitle>
       <v-card-text
-        >If you came to visit after reading the Trinsic Newsletter, thanks for
-        stopping by.</v-card-text
+        >If you came to visit after reading the
+        <a
+          href="https://trinsic.id/simplifying-ssi-based-solutions-to-focus-on-adoption/"
+          target="_blank"
+          >Trinsic Newsletter</a
+        >
+        or the
+        <a
+          href="https://us10.campaign-archive.com/?u=1e21ad08ed0422a5dac0b8eed&id=6eea8bc679"
+          target="_blank"
+          >CCI Newsletter</a
+        >, thanks for stopping by.</v-card-text
       >
       <v-card-text
         >Since this project is still in beta, you might not be able to use all
