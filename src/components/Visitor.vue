@@ -228,7 +228,12 @@ export default {
 
     yourId: {
       get() {
-        return this.state?.yourId;
+        let yourId = this.state?.yourId;
+        if (yourId) {
+          // yourId isn't yet available to methods, so pass the arg here explicitly
+          this.openMyRoom(yourId);
+        }
+        return yourId;
       },
       set(newVal) {
         if (newVal) {
@@ -335,20 +340,6 @@ export default {
     // socket.io reserved events
     connect() {
       this.socketId = this.$socket.id;
-
-      let payload = {
-        event: 'openMyRoom',
-        message: this.yourID,
-        ack: (ack) => {
-          this.log(ack.message);
-
-          this.alertColor = 'success';
-          this.alertMessage = ack.message;
-          this.alert = true;
-        },
-      };
-      this.$socket.emit(payload.event, payload.message, payload.ack);
-
       this.log(`Server connected on socket ${this.socketId}`);
     },
 
@@ -390,6 +381,20 @@ export default {
   },
 
   methods: {
+    openMyRoom(yourID) {
+      let payload = {
+        event: 'openMyRoom',
+        message: yourID,
+        ack: (ack) => {
+          this.log(ack);
+          this.alertColor = 'success';
+          this.alertMessage = ack;
+          this.alert = true;
+        },
+      };
+      this.$socket.emit(payload.event, payload.message, payload.ack);
+    },
+
     addYourId(val) {
       this.yourId = val;
     },
@@ -602,6 +607,7 @@ export default {
       this.socketId = this.$socket.id;
       self.log(`Mounted with socket ${self.socketId}`);
     }
+
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
