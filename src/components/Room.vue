@@ -389,7 +389,7 @@ export default {
     // socket.io reserved events
     connect() {
       this.socketId = this.$socket.id;
-      // this.log(`Server connected on socket ${this.socketId}`);
+      this.log(`Server connected on socket ${this.socketId}`);
     },
 
     disconnect() {

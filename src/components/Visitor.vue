@@ -335,6 +335,20 @@ export default {
     // socket.io reserved events
     connect() {
       this.socketId = this.$socket.id;
+
+      let payload = {
+        event: 'openMyRoom',
+        message: this.yourID,
+        ack: (ack) => {
+          this.log(ack.message);
+
+          this.alertColor = 'success';
+          this.alertMessage = ack.message;
+          this.alert = true;
+        },
+      };
+      this.$socket.emit(payload.event, payload.message, payload.ack);
+
       this.log(`Server connected on socket ${this.socketId}`);
     },
 
