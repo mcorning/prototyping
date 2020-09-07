@@ -19,15 +19,16 @@
         >Monitor Visitors and alert them as necessary</v-card-subtitle
       >
       <v-card-text class="pb-0">
-        <v-row dense>
+        <v-row>
           <v-col cols="6" class="col-md-3">
             <v-combobox
               v-model="roomId"
               @change="changeRoom"
               :items="rooms"
-              label="My Room"
+              label="Public place: Building.Room"
               clearable
-              placeholder="New entry example: CareCenter.Lobby"
+              placeholder="Example: CareCenter.Lobby"
+              :rules="[rules.counter, rules.nameDelimiter]"
             ></v-combobox>
           </v-col>
           <v-col class="col-md-4 pl-10">
@@ -269,7 +270,7 @@ export default {
     roomId: {
       get() {
         // state will be null at first
-        // but second call should have value
+        // but second call should have value.
         // somewhere, when rooms is empty, '
         // the system wants to return the string 'null'
         // and we want an empty string
@@ -383,6 +384,17 @@ export default {
     ],
     alerts: [],
     yourId: '',
+
+    // Vuetify provides validation
+    rules: {
+      required: (value) => !!value || 'Required.',
+      counter: (value) => value.length <= 20 || 'Max 20 characters',
+      nameDelimiter: (value) => value.includes('.'),
+      email: (value) => {
+        const pattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return pattern.test(value) || 'Invalid e-mail.';
+      },
+    },
   }),
 
   sockets: {
@@ -413,7 +425,14 @@ export default {
     },
     //
 
-    // Room event handler
+    // Room event handlers
+
+    // end socket.io reserved events
+    // Server fires this event when a Room opens/closes.
+    // Not sure how to incorporate this data in Room management protocol.
+    availableRooms(rooms) {
+      this.log(`Available Rooms: ${rooms}`);
+    },
 
     // Server forwarded from Visitor a Room occupied on given dates
     // Visitor sends this alert for each occupied Room

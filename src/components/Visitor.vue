@@ -239,6 +239,7 @@ export default {
         if (newVal) {
           // static update function on Name model
           Name.update(newVal).catch((e) => console.log(e));
+          this.openMyRoom(newVal);
         } else {
           Name.delete(this.yourId);
         }
@@ -381,6 +382,9 @@ export default {
   },
 
   methods: {
+    // Server on.connection() does not know the name of the new connection.
+    // So we fire this event right after connection is made to pass the name of the room to the server.
+    // The Server needs this name to alert Visitors.
     openMyRoom(yourID) {
       let payload = {
         event: 'openMyRoom',
@@ -389,6 +393,7 @@ export default {
           this.log(ack);
           this.alertColor = 'success';
           this.alertMessage = ack;
+          this.alertIcon = 'mdi-email-open';
           this.alert = true;
         },
       };
