@@ -220,7 +220,7 @@
         </template>
       </v-data-table>
       <div class="text-center">
-        Haw are we doing on the Room experience?
+        How are we doing on the Room experience?
 
         <v-rating
           v-model="rating"

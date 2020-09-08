@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Local Contact Tracing -- Specification V0.5</title>
+        <style>
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="local-contact-tracing----specification-v05">Local Contact Tracing -- Specification V0.5</h1>
+<p>This document stipulates the rationale and resolution of forces that make the essential Local Contact Tracing app.</p>
+<h2 id="players">Players</h2>
+<p>LCT consists in a set of <strong>public spaces</strong> called Rooms and a set of <strong>private individuals</strong> called Visitors and a multiset of Occupants. Data needs to discriminate these sets by name convention.</p>
+<h3 id="rooms">Rooms</h3>
+<p><strong>Room</strong> identity MUST:</p>
+<ul>
+<li>Name the <strong>building</strong></li>
+<li>Name the <strong>room</strong>, itself (a room name can be generic; e.g., &quot;inside&quot; or &quot;outside&quot;)</li>
+<li>Be <strong>unique</strong> in the network (see Network Section below)</li>
+<li>Be <strong>identifying</strong> names in the public domain (there is no presumption of privacy)</li>
+</ul>
+<h3 id="visitors">Visitors</h3>
+<p><strong>Visitor</strong> identity MUST:</p>
+<ul>
+<li>Be <strong>unique</strong> in the network</li>
+<li>Use less than 20 characters</li>
+<li>Cannot include a '.' character</li>
+</ul>
+<p>Visitor identity MAY be one of:</p>
+<ul>
+<li>anonymous</li>
+<li>pseudonymous</li>
+<li>identifying</li>
+</ul>
+<h2 id="the-network">The Network</h2>
+<p>The word network can refer to (tangible) infrastructure or (intangible) organization structure.</p>
+<h3 id="infrastructure">Infrastructure</h3>
+<p>In this design, <a href="http://socket.io">socket.io</a> provides the network infrastructure. Each organization structure has a namespace. Names must be unique within this namespace. If an individual is active in more than one organization structure, they can use the same name in all namespaces.</p>
+<h3 id="organization-structure">Organization Structure</h3>
+<p>How private individuals interact in public determines organization structure.</p>
+<h4 id="offices">Offices</h4>
+<p>A common example of organization structure in the network is an office. Here, (the same) employees interact in generally accepted ways.</p>
+<h4 id="businesses">Businesses</h4>
+<p>Another common example of network organization structure are retailers. Here, a variety of private indivicuals will interact in novel ways.</p>
+<h4 id="special-cases">Special Cases</h4>
+<p>Care Centers exemplify an important category of network organization structure: the matrix. Here more than one Care Center may employ more than one private individual. When individuals are front-line care workers, the risk they pose to each other as they move through the network can be higher than in most other structures.</p>
+<h4 id="geography">Geography</h4>
+<p>Geographic limits provide the final category of network organization. For example, a small town can provide the organzition structure for a local contact tracing network. This network can admit any other structure.</p>
+<h2 id="invariants">Invariants</h2>
+<p>To work properly, LCT must comport closely with human behavior.</p>
+<h3 id="room-conditions">Room Conditions</h3>
+<p>For example, a Visitor MAY enter a Room, but first, the Room MUST be open physically.</p>
+<p>On the other hand, there can be no restrictions on processing a virus exposure alert. To alert past occupants, a Room MAY be closed.</p>
+<h3 id="visitor-conditions">Visitor Conditions</h3>
+<p>In this design, to see a virus exposure alert, a Visitors MUST be connected to the network.</p>
+<p>The Visitor MAY be in a Room when the alert from another Room arrives. If a Visitor is not online the moment a Room raises the virus exposure alert to Visitors, the Room MUST notify the Visitor the next time the Visitor connects to the network.</p>
+
+    </body>
+    </html>

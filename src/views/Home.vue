@@ -1,11 +1,21 @@
 <template>
   <v-container>
-    <v-card max-width="350" outlined>
-      <v-card-title>
-        Welcome to Local Contact Tracing
-      </v-card-title>
-      <v-card-subtitle>Contact Tracing for the rest of us</v-card-subtitle>
+    <v-card>
+      <v-card-title>Supporting Documents</v-card-title>
       <v-card-text
+        ><a
+          href="https://github.com/mcorning/prototyping/blob/master/out/Specification.html"
+          target="_blank"
+          >LCT Specification</a
+        ></v-card-text
+      >
+    </v-card>
+    <v-card max-width="350" outlined>
+      <H3 class="pl-3">
+        Welcome to Local Contact Tracing
+      </H3>
+      <v-card-subtitle>Contact Tracing for the rest of us</v-card-subtitle>
+      <v-card-text class="pt-4"
         >If you came to visit after reading the
         <a
           href="https://trinsic.id/simplifying-ssi-based-solutions-to-focus-on-adoption/"
