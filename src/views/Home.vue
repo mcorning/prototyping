@@ -4,7 +4,7 @@
       <v-card-title>Supporting Documents</v-card-title>
       <v-card-text
         ><a
-          href="https://github.com/mcorning/prototyping/blob/master/out/Specification.html"
+          href="https://htmlpreview.github.io/?https://github.com/mcorning/prototyping/blob/master/out/Specification.html"
           target="_blank"
           >LCT Specification</a
         ></v-card-text
