@@ -278,14 +278,19 @@ export default {
         // and we want an empty string
         // so it is written
         // so it shall be done
-        let x = this.state?.roomId;
-        return !x || x == 'null' ? '' : x;
+        let roomId = this.state?.roomId;
+        if (roomId) {
+          // roomId isn't yet available to methods, so pass the arg here explicitly
+          this.openMyRoom(roomId);
+        }
+        return roomId;
       },
       set(newVal) {
         // if we have a newVal, use it
         if (newVal) {
           // static update function on Room model
           Room.update(newVal).catch((e) => console.log(e));
+          this.openMyRoom(newVal);
         }
         // else delete the last used roomId (then delete the roomId in state)
         else {
@@ -480,6 +485,21 @@ export default {
 
   methods: {
     // main methods
+    openMyRoom(yourID) {
+      let payload = {
+        event: 'openMyRoom',
+        message: yourID,
+        ack: (ack) => {
+          this.log(ack);
+          this.alertColor = 'success';
+          this.alertMessage = ack;
+          this.alertIcon = 'mdi-email-open';
+          this.alert = true;
+        },
+      };
+      this.$socket.emit(payload.event, payload.message, payload.ack);
+    },
+
     changeRoom(val) {
       let msg;
       if (!val || this.rooms.length > 1) {

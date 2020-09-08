@@ -12,10 +12,13 @@ import SoteriaIcon from './components/svg/SoteriaLogo.vue';
 Vue.component('soteria-icon', SoteriaIcon);
 
 Vue.config.productionTip = false;
+let local = false;
+let url = local ? config.ioServerUrl : config.ngrokUrlUbuntu;
+console.log('url:', url);
 Vue.use(
   new VueSocketIO({
     debug: true,
-    connection: SocketIO(config.socketUrl), //options object is Optional
+    connection: SocketIO(url), //options object is Optional
     // vuex: {
     //   store,
     //   actionPrefix: 'SOCKET_',
