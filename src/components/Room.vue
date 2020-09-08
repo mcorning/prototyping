@@ -195,12 +195,14 @@
     </v-card>
     <v-system-bar color="secondary">
       <!-- <v-icon small>mdi-transit-connection-variant </v-icon> -->
-
-      <span class="small">Socket: {{ $socket.id }}</span>
-      <v-spacer></v-spacer>
-      <v-btn @click="testSocket" text
-        ><v-icon>mdi-check-network-outline</v-icon></v-btn
-      >
+      <v-row align="center">
+        <v-col cols="10">Socket: {{ $socket.id }}</v-col>
+        <v-col cols="2" class="text-right"
+          ><v-btn @click="testSocket" text
+            ><v-icon>mdi-check-network-outline</v-icon></v-btn
+          >
+        </v-col>
+      </v-row>
     </v-system-bar>
     <v-card>
       <v-card-title>Audit Trail</v-card-title>
@@ -457,9 +459,9 @@ export default {
         if (!visitor) {
           return;
         }
-        let msg = `${visitor}, you may have been exposed to Covid on ${moment(
-          visit.sentTime
-        ).format('llll')}`;
+        let msg = `${visitor}, as of ${moment(visit.sentTime).format(
+          'llll'
+        )}, BE ADVISED: you may have been exposed to Covid. Self quarantine.`;
         this.emit({
           event: 'alertVisitor',
           message: {

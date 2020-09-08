@@ -83,7 +83,7 @@
             :disabled="!messages.length"
           >
             Warn
-            <v-icon>mdi-alert</v-icon> Rooms
+            <v-icon>mdi-home-alert</v-icon> Rooms
           </v-btn>
         </v-card-actions>
         <v-card-actions>
