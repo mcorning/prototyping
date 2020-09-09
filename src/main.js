@@ -12,7 +12,7 @@ import SoteriaIcon from './components/svg/SoteriaLogo.vue';
 Vue.component('soteria-icon', SoteriaIcon);
 
 Vue.config.productionTip = false;
-let local = true;
+let local = false;
 let url = local ? config.ioServerUrl : config.ngrokUrlUbuntu;
 console.log('url:', url);
 Vue.use(

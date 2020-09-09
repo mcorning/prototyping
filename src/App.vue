@@ -51,24 +51,28 @@
           prepend-icon="mdi-tm"
           primary
           lighten-2
-          py-4
+          py-2
           text-center
           white--text
           xs12
         >
-          <v-row no-gutters>
+          <v-row no-gutters justify="space-between">
+            <v-col>
+              <small> Patron: <strong>Secours.io</strong></small>
+            </v-col>
             <v-col>
               <small>Version {{ ver }}</small>
             </v-col>
 
-            <v-col>
-              &copy; {{ new Date().getFullYear() }} —
-              <strong>Soteria.id</strong>
+            <v-col cols="auto">
+              <small>{{ shipString }}</small>
             </v-col>
 
-            <v-col> Major supporter: <strong>Secours.io</strong> </v-col>
             <v-col>
-              <small>{{ shipString }}</small>
+              <small>
+                &copy; {{ new Date().getFullYear() }} —
+                <strong>Soteria.id</strong></small
+              >
             </v-col>
           </v-row>
         </v-flex>
