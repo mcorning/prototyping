@@ -1,6 +1,6 @@
 <template>
   <v-container>
-    <v-card>
+    <v-card max-width="350" outlined>
       <v-card-title>Supporting Documents</v-card-title>
       <v-card-text
         ><a

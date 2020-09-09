@@ -9,7 +9,7 @@
         {{ hasRoomManager }}</v-checkbox
       > -->
         </v-col>
-        <v-col>IO:{{ socketUrl }}</v-col>
+        <v-col>IO:{{ $socket.io.uri }}</v-col>
         <v-col class="text-right">{{ ver }} </v-col>
       </v-row>
     </v-system-bar>
@@ -78,12 +78,13 @@
 
           <v-alert
             :value="alert"
+            dark
             dismissible
             border="left"
             :color="alertColor"
             elevation="2"
             colored-border
-            icon="mdi-alert"
+            :icon="alertIcon"
             transition="scale-transition"
             ><span color="gray">{{ alertMessage }}</span>
           </v-alert>
@@ -361,12 +362,14 @@ export default {
     alert: false,
     alertColor: 'error',
     alertMessage: '',
+    alertIcon: 'mdi-alert',
+
     ver: config.ver,
     isConnected: false,
     cons: [],
     socketId: '',
     occupancy: 1, // assuming a person opens the Room
-    socketUrl: config.socketUrl,
+    socketUri: '',
     hasRoomManager: false,
     daysBack: 0,
     today: 'YYYY-MM-DD',
@@ -395,8 +398,18 @@ export default {
     // Vuetify provides validation
     rules: {
       required: (value) => !!value || 'Required.',
-      counter: (value) => value.length <= 20 || 'Max 20 characters',
-      nameDelimiter: (value) => value.includes('.'),
+      counter: (value) => {
+        if (!value) {
+          return false;
+        }
+        value?.length <= 20 || 'Max 20 characters';
+      },
+      nameDelimiter: (value) => {
+        if (!value) {
+          return false;
+        }
+        value.includes('.');
+      },
       email: (value) => {
         const pattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         return pattern.test(value) || 'Invalid e-mail.';
@@ -408,6 +421,7 @@ export default {
     // socket.io reserved events
     connect() {
       this.socketId = this.$socket.id;
+
       this.log(`Server connected on socket ${this.socketId}`);
     },
 
@@ -420,14 +434,10 @@ export default {
 
     // Visitor routine events
     checkIn(msg) {
-      ++this.occupancy;
-      // this.log(`Room count is now ${this.occupancy}`);
       this.messages = msg;
     },
 
     checkOut(msg) {
-      --this.occupancy;
-      // this.log(`Room count is now ${this.occupancy}`);
       this.messages = msg;
     },
     //
@@ -441,6 +451,13 @@ export default {
       this.log(`Available Rooms: ${rooms}`);
     },
 
+    updatedOccupancy(payload) {
+      if (payload.room == this.roomId) {
+        this.occupancy = payload.occupancy;
+      }
+      this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
+    },
+
     // Server forwarded from Visitor a Room occupied on given dates
     // Visitor sends this alert for each occupied Room
     // This function replies to server for each visitor that occpied the Room on those dates
@@ -448,6 +465,7 @@ export default {
       this.alertMessage =
         'Visitor warning triggered Exposure Alert to all other visitors';
       this.alertColor = 'warning';
+      this.alertIcon = 'mdi-home-alert';
       this.alert = true;
       // map over the dates
       // from all cached messages, get Visitor(s) on each exposure date

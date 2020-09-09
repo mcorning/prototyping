@@ -2,7 +2,7 @@
   <v-container>
     <v-system-bar color="secondary">
       <v-row align="center">
-        <v-col cols="8">{{ socketUrl }}</v-col>
+        <v-col cols="8">{{ $socket.io.uri }}</v-col>
         <v-col class="text-right">{{ ver }} </v-col>
       </v-row>
 
@@ -41,6 +41,9 @@
               :items="rooms"
               label="Visit Room"
             ></v-select>
+          </v-col>
+          <v-col cols="2">
+            <v-text-field label="Occupancy" :value="occupancy"></v-text-field>
           </v-col>
           <v-col>
             <div v-show="roomIsReadyToEnter" class="text-center">
@@ -95,15 +98,16 @@
             </template>
           </v-banner>
         </v-card-actions>
-        <v-card-text class="text-center mb-4">
+        <v-card-text class=" mb-4">
           <v-alert
             :value="alert"
+            light
             dismissible
             border="left"
             :color="alertColor"
-            elevation="2"
+            elevation="5"
             colored-border
-            icon="mdi-alert"
+            :icon="alertIcon"
             transition="scale-transition"
             >{{ alertMessage }}
           </v-alert>
@@ -308,7 +312,7 @@ export default {
   data: () => ({
     rating: 3,
     dialog: true,
-    alertIcon: '',
+    alertIcon: 'mdi-alert',
     alertColor: '',
     alert: false,
     alertMessage: '',
@@ -321,7 +325,6 @@ export default {
     daysBack: 0,
     socketServerOnline: false,
     dataUrl: config.dataUrl,
-    socketUrl: config.socketUrl,
     visitFormat: 'HH:mm on ddd, MMM DD',
     checkedOut: true,
     messageHeaders: [
@@ -378,6 +381,13 @@ export default {
       this.alertColor = 'error';
       this.alertMessage = alertMessage;
       this.log(alertMessage);
+    },
+
+    updatedOccupancy(payload) {
+      if (payload.room == this.roomId) {
+        this.occupancy = payload.occupancy;
+      }
+      this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
     },
   },
 
@@ -502,7 +512,6 @@ export default {
           this.log(ack.message);
         },
       });
-      event == 'enterRoom' ? this.occupancy++ : this.occupancy--;
       this.checkedOut = !this.checkedOut;
       let m = this.checkedOut ? 'out of' : 'into';
       this.log(`You checked ${m}  ${this.roomId}`);
