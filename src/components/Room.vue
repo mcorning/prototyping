@@ -368,7 +368,7 @@ export default {
     isConnected: false,
     cons: [],
     socketId: '',
-    occupancy: 1, // assuming a person opens the Room
+    occupancy: 0,
     socketUri: '',
     hasRoomManager: false,
     daysBack: 0,
@@ -572,10 +572,13 @@ export default {
     emit(payload) {
       if (!this.$socket.id) {
         // this.dialog = true;
-        alert('no socket');
+        alert('No socket. Attempting to reopen.');
         return;
       }
-      this.log(`Emitting ${payload.event} to ${payload.message.visitor}`);
+      let msg =
+        `Emitting ${payload.event}` +
+        (payload.message.visitor ? `to ${payload.message.visitor}` : '');
+      this.log(msg);
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 

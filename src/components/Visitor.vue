@@ -316,7 +316,7 @@ export default {
     alertColor: '',
     alert: false,
     alertMessage: '',
-    occupancy: 1,
+    occupancy: 0,
     socketId: '',
 
     // isConnected: false,
