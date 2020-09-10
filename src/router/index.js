@@ -3,6 +3,7 @@ import VueRouter from 'vue-router';
 import Home from '../views/Home.vue';
 import Visitor from '@/components/Visitor.vue';
 import Room from '@/components/Room.vue';
+import Admin from '@/components/Admin.vue';
 // import State from '@/models/State';
 
 Vue.use(VueRouter);
@@ -27,6 +28,11 @@ const routes = [
     path: '/home',
     name: 'Home',
     component: Home,
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin,
   },
   // {
   //   path: '/',

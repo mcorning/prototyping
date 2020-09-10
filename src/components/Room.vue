@@ -18,6 +18,8 @@
       <v-card-subtitle
         >Monitor Visitors and alert them as necessary</v-card-subtitle
       >
+      <v-btn @click="getAvailableRooms()">Available Rooms</v-btn>
+      <v-btn @click="getOccupiedRooms()">Occupied Rooms</v-btn>
       <v-card-text class="pb-0">
         <v-row>
           <v-col cols="6" class="col-md-3">
@@ -419,6 +421,32 @@ export default {
 
   sockets: {
     // socket.io reserved events
+    occupiedRoomsExposed(data) {
+      let msg =
+        'Occupied Rooms\n\n' +
+        'Room: ' +
+        data[0][0] +
+        '\nOccupying Sockets:\n' +
+        Object.keys(data[0][1].sockets)
+          .toString()
+          .split(',')
+          .join('\n');
+
+      alert(msg);
+    },
+
+    availableRoomsExposed(data) {
+      let msg =
+        'Online Unoccupied Rooms\n\n' +
+        (data
+          ? data
+              .toString()
+              .split(',')
+              .join('\n')
+          : 'No Rooms online right now.');
+      alert(msg);
+    },
+
     connect() {
       this.socketId = this.$socket.id;
 
@@ -458,37 +486,41 @@ export default {
       this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
     },
 
-    // Server forwarded from Visitor a Room occupied on given dates
-    // Visitor sends this alert for each occupied Room
-    // This function replies to server for each visitor that occpied the Room on those dates
-    notifyRoom(visit, ack) {
-      this.alertMessage =
-        'Visitor warning triggered Exposure Alert to all other visitors';
-      this.alertColor = 'warning';
-      this.alertIcon = 'mdi-home-alert';
-      this.alert = true;
-      // map over the dates
-      // from all cached messages, get Visitor(s) on each exposure date
-      let visitors = this.messages.map((message) => {
-        if (
-          message.message.toLowerCase() == 'entered' &&
-          moment(message.sentTime).format('YYYYMMDD') ==
-            moment(visit.sentTime).format('YYYYMMDD')
-        )
-          return message.visitor;
+    // Visitor iterates their messages taking one Room visit (viz., Room name and visit date) at a time.
+    // The Room receives the Visitor's visit date
+    notifyRoom(payload, ack) {
+      const { date, room } = payload;
+      // override the incoming date to format for comparing same day
+      let visitedKey = moment(date).format('YYYYMMDD');
+      console.log('Visit Date:', date, visitedKey);
+      console.log('All Messages');
+      console.table(this.messages);
+      console.log();
+
+      let entries = this.messages.filter(
+        (visit) =>
+          visit.room == room && visit.message.toLowerCase() == 'entered'
+      );
+      console.log(`Room entries for ${room}`);
+      console.table(entries);
+      console.log();
+
+      let visitorEntries = entries.filter((visit) => {
+        let visitKey = moment(visit.sentTime).format('YYYYMMDD');
+        console.log(visitKey);
+        return visitKey == visitedKey;
       });
+      console.log('visitors');
+      console.table(visitorEntries);
+      console.log();
+
       // now map over visitors for this date, and emit alertVisitor for each exposed visit
-      visitors.map((visitor) => {
-        if (!visitor) {
-          return;
-        }
-        let msg = `${visitor}, as of ${moment(visit.sentTime).format(
-          'llll'
-        )}, BE ADVISED: you may have been exposed to Covid. Self quarantine.`;
+      let notified = visitorEntries.map((entry) => {
+        let msg = `${entry.visitor}, on ${date}, BE ADVISED: you may have been exposed to Covid. Self quarantine.`;
         this.emit({
           event: 'alertVisitor',
           message: {
-            visitor: visitor,
+            visitor: entry.visitor,
             message: msg,
             sentTime: new Date().toISOString(),
           },
@@ -498,10 +530,24 @@ export default {
         });
       });
       if (ack) ack('alert sent');
+
+      this.alertMessage = notified.length
+        ? `Visitor warning triggered Exposure Alert to ${notified.length} other visitors to ${room} after ${date}`
+        : `Exposure Alert does not apply: No other visitor(s) to ${room} after ${date}`;
+      this.alertColor = 'warning';
+      this.alertIcon = 'mdi-home-alert';
+      this.alert = true;
     },
   },
 
   methods: {
+    getOccupiedRooms() {
+      this.$socket.emit('exposeOccupiedRooms');
+    },
+    getAvailableRooms() {
+      this.$socket.emit('exposeAvailableRooms');
+    },
+
     // main methods
     openMyRoom(yourID) {
       let payload = {

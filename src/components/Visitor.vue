@@ -595,7 +595,7 @@ export default {
   watch: {
     roomId() {
       if (!this.checkedOut) {
-        if (confirm('Should i act you out of', this.roomId, '?')) {
+        if (confirm('Should i check you out of', this.roomId, '?')) {
           this.checkedOut = !this.checkedOut;
           this.emit({
             event: 'leaveRoom',

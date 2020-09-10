@@ -65,7 +65,7 @@ To work properly, LCT must comport closely with human behavior.
 
 For example, a Visitor MAY enter a Room, but first, the Room MUST be open physically.
 
-On the other hand, there can be no restrictions on processing a virus exposure alert. To alert past occupants, a Room MAY be closed.
+On the other hand, there can be no restrictions on processing a virus exposure alert. To alert past occupants, MUST be online, but a Room MAY be closed.
 
 ### Visitor Conditions
 
