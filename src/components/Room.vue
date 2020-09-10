@@ -18,8 +18,7 @@
       <v-card-subtitle
         >Monitor Visitors and alert them as necessary</v-card-subtitle
       >
-      <v-btn @click="getAvailableRooms()">Available Rooms</v-btn>
-      <v-btn @click="getOccupiedRooms()">Occupied Rooms</v-btn>
+
       <v-card-text class="pb-0">
         <v-row>
           <v-col cols="6" class="col-md-3">
@@ -421,32 +420,6 @@ export default {
 
   sockets: {
     // socket.io reserved events
-    occupiedRoomsExposed(data) {
-      let msg =
-        'Occupied Rooms\n\n' +
-        'Room: ' +
-        data[0][0] +
-        '\nOccupying Sockets:\n' +
-        Object.keys(data[0][1].sockets)
-          .toString()
-          .split(',')
-          .join('\n');
-
-      alert(msg);
-    },
-
-    availableRoomsExposed(data) {
-      let msg =
-        'Online Unoccupied Rooms\n\n' +
-        (data
-          ? data
-              .toString()
-              .split(',')
-              .join('\n')
-          : 'No Rooms online right now.');
-      alert(msg);
-    },
-
     connect() {
       this.socketId = this.$socket.id;
 
@@ -541,13 +514,6 @@ export default {
   },
 
   methods: {
-    getOccupiedRooms() {
-      this.$socket.emit('exposeOccupiedRooms');
-    },
-    getAvailableRooms() {
-      this.$socket.emit('exposeAvailableRooms');
-    },
-
     // main methods
     openMyRoom(yourID) {
       let payload = {
