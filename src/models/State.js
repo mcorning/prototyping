@@ -13,8 +13,16 @@ export default class State extends Model {
       roomId: this.string(''),
       yourId: this.string(''),
       zipcode: this.string(''),
+      namespace: this.string('/'),
     };
   }
+  static async changeNamespace(val) {
+    let p = await this.$update({
+      data: { id: 0, namespace: val },
+    });
+    return p;
+  }
+
   static async updateOrg(val) {
     let p = await this.$update({
       data: { id: 0, organization: val },

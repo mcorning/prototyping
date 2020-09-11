@@ -20,12 +20,7 @@ console.log('url:', url);
 Vue.use(
   new VueSocketIO({
     debug: true,
-    connection: SocketIO(url), //options object is Optional
-    // vuex: {
-    //   store,
-    //   actionPrefix: 'SOCKET_',
-    //   mutationPrefix: 'SOCKET_',
-    // },
+    connection: SocketIO(url),
   })
 );
 new Vue({

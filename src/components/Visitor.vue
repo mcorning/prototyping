@@ -361,7 +361,7 @@ export default {
 
     // end socket.io reserved events
     // Server fires this event when a Room opens/closes
-    availableRooms(rooms) {
+    availableRoomsExposed(rooms) {
       this.log(`Available Rooms: ${rooms}`);
       Room.$deleteAll();
       console.log(this.rooms);

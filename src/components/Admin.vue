@@ -10,20 +10,23 @@
     <v-card>
       <v-card-title>Namespace Admin</v-card-title>
       <v-card-subtitle
-        >Manage the structural organization of your Local Contact Tracing
-        network</v-card-subtitle
+        >Network Admins, manage the structural organization of your Local
+        Contact Tracing network</v-card-subtitle
       >
       <v-card-text>
-        <v-list flat dense>
-          <v-subheader> Namespaces used in Socket.io Server </v-subheader>
-          <v-list-item-group v-model="namespace" color="primary">
+        <v-text-field
+          v-model="namespace"
+          label="Enter your organization structure name"
+        ></v-text-field>
+        <!-- <v-list flat dense> -->
+        <!-- <v-list-item-group v-model="namespace" color="primary">
             <v-list-item v-for="(item, i) in namespaces" :key="i">
               <v-list-item-content>
                 <v-list-item-title v-text="item"></v-list-item-title>
               </v-list-item-content>
             </v-list-item>
           </v-list-item-group>
-        </v-list>
+        </v-list> -->
       </v-card-text>
     </v-card>
     <v-card>
@@ -121,6 +124,8 @@
 import moment from 'moment';
 import config from '@/config.json';
 
+import State from '@/models/State';
+
 window.onerror = function(message) {
   /// what you want to do with error here
   alert('onerror: ' + message);
@@ -128,12 +133,24 @@ window.onerror = function(message) {
 
 export default {
   name: 'LctRoomAdmin',
+  computed: {
+    namespace: {
+      get() {
+        // this design has only one State entity record
+        // when we support multiple organizations/namespaces we may use multiple State records
+        return State.query().first()?.namespace;
+      },
+      set(newVal) {
+        // static changeNamespace function on State model
+        State.changeNamespace(newVal);
+      },
+    },
+  },
   data() {
     return {
       ver: config.ver,
 
-      namespace: '',
-      namespaces: ['/'],
+      // namespaces: ['/'],
       availableRooms: [],
       occupiedRooms: [],
       visitorsRooms: [],
@@ -187,13 +204,6 @@ export default {
       this.visitorsRooms = list;
       this.log(`Visitors Rooms: ${list}`);
     },
-
-    updatedOccupancy(payload) {
-      if (payload.room == this.roomId) {
-        this.occupancy = payload.occupancy;
-      }
-      this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
-    },
   },
 
   methods: {
@@ -221,8 +231,14 @@ export default {
     },
   },
 
-  async created() {},
+  async created() {
+    await State.$fetch();
+  },
 
-  async mounted() {},
+  async mounted() {
+    let nsp = State.query().first()?.namespace;
+    console.log('namespace', nsp);
+    this.$socket.emit('welcomeAdmin', nsp, (ack) => this.log(ack));
+  },
 };
 </script>

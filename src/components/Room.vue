@@ -446,11 +446,6 @@ export default {
     // Room event handlers
 
     // end socket.io reserved events
-    // Server fires this event when a Room opens/closes.
-    // Not sure how to incorporate this data in Room management protocol.
-    availableRooms(rooms) {
-      this.log(`Available Rooms: ${rooms}`);
-    },
 
     updatedOccupancy(payload) {
       if (payload.room == this.roomId) {
