@@ -370,7 +370,7 @@ export default {
         'Should have no rooms before update'
       );
       rooms.forEach((room) => {
-        Room.update(room);
+        Room.update(room.name);
       });
     },
 

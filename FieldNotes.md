@@ -6,19 +6,21 @@ Incorporate these field notes into ReadMe.md
 
 1. Start the **socket.io.server** project with F5
 2. In the soteria lct project
-   1. Set the `socketUrl` to "http://localhost:3003"
-   2. or open `main.js` and set the `local` variable to `true`
-   3. Choose the `serve` script in NPM SCRIPTS Explorer
-   4. Open the `localhost` or `IP` url for the client
+   1. Open `main.js` and set the `local` variable to `true`
+   2. Choose the `serve` script in NPM SCRIPTS Explorer
+   3. Open the `localhost` or `IP` url for the client
 
 ## Production
 
 1. On the VM command line enter: `git pull`
 2. Start socket.io server with `node .` command line entry
 3. Note ngrok server has good connections
-4. Make sure the LCT config file `socketUrl` variable points to the **ngrok server URL**
-5. Make sure the last good build of the client is uploaded to the **Azure Static Website**
-6. Start the clients from the **Azure URL**
+4. Enusre client app
+5. 1. `main.js` `local` = `false`
+
+6. Make sure the LCT config file `socketUrl` variable points to the **ngrok server URL**
+7. Make sure the last good build of the client is uploaded to the **Azure Static Website**
+8. Start the clients from the **Azure URL**
 
 ## Setup
 
@@ -29,5 +31,24 @@ Incorporate these field notes into ReadMe.md
 5. Clone lct repository
 6. Go to repo directory
 7. Install ngrok
-8. On command line enter: ./ngrok http 3003
-9. on command line enter: node .
+8. On command line enter: `./ngrok http 3003`
+9. on command line enter: `node .`
+
+## Testing
+
+Rooms can have the following state thread (in this order):
+
+1. Online
+   - connected to socket.io server
+   - socket.id is unguessable
+   - _Open Room_ button active in Room.vue
+2. Available
+   - connected to socket.io server
+   - socket.id = Room ID
+   - open for business
+   - _Close Room_ button active in Room.vue
+   - socket has length property = 1
+3. Occupied (open for business, and hosting at least one Visitor)
+   - socket.id is RoomId
+   - at least one Visitor
+   - socket has length property > 1

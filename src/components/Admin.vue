@@ -2,22 +2,90 @@
   <v-container>
     <v-system-bar color="secondary">
       <v-row>
-        <v-col v-if="hasRoomManager">
-          <!-- <span lass="small">Room Manager: {{ managedRoom }}</span>
-      <v-spacer></v-spacer>
-      <v-checkbox v-model="hasRoomManager" label="RM" small>
-        {{ hasRoomManager }}</v-checkbox
-      > -->
-        </v-col>
         <v-col>IO:{{ $socket.io.uri }}</v-col>
         <v-col class="text-right">{{ ver }} </v-col>
+        <v-col class="text-right">{{ $socket.id }} </v-col>
       </v-row>
     </v-system-bar>
     <v-card>
+      <v-card-title>Namespace Admin</v-card-title>
+      <v-card-subtitle
+        >Manage the structural organization of your Local Contact Tracing
+        network</v-card-subtitle
+      >
+      <v-card-text>
+        <v-list flat dense>
+          <v-subheader> Namespaces used in Socket.io Server </v-subheader>
+          <v-list-item-group v-model="namespace" color="primary">
+            <v-list-item v-for="(item, i) in namespaces" :key="i">
+              <v-list-item-content>
+                <v-list-item-title v-text="item"></v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list-item-group>
+        </v-list>
+      </v-card-text>
+    </v-card>
+    <v-card>
       <v-card-title>Room Admin</v-card-title>
       <v-card-subtitle>Monitor Socket.io Server</v-card-subtitle>
-      <v-btn @click="getAvailableRooms()">Available Rooms</v-btn>
-      <v-btn @click="getOccupiedRooms()">Occupied Rooms</v-btn>
+      <v-card-text>
+        <v-row>
+          <v-col>
+            <v-btn @click="getAvailableRooms()">Refresh Available Rooms</v-btn>
+          </v-col>
+          <v-col>
+            <v-data-table
+              :headers="availableRoomsHeaders"
+              :items="availableRooms"
+              multi-sort
+              item-key="name"
+              dense
+              :items-per-page="10"
+              class="elevation-1"
+            >
+            </v-data-table>
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-text>
+        <v-row>
+          <v-col>
+            <v-btn @click="getOccupiedRooms()">Refresh Occupied Rooms</v-btn>
+          </v-col>
+          <v-col>
+            <v-data-table
+              :headers="occupiedRoomsHeaders"
+              :items="occupiedRooms"
+              multi-sort
+              item-key="room"
+              dense
+              :items-per-page="5"
+              class="elevation-1"
+            >
+            </v-data-table>
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-text>
+        <v-row>
+          <v-col>
+            <v-btn @click="getVisitorRooms()">Refresh Visitor's Rooms</v-btn>
+          </v-col>
+          <v-col>
+            <v-data-table
+              :headers="visitorHeaders"
+              :items="visitorsRooms"
+              multi-sort
+              item-key="name"
+              dense
+              :items-per-page="10"
+              class="elevation-1"
+            >
+            </v-data-table>
+          </v-col>
+        </v-row>
+      </v-card-text>
     </v-card>
 
     <v-card>
@@ -51,6 +119,7 @@
 
 <script>
 import moment from 'moment';
+import config from '@/config.json';
 
 window.onerror = function(message) {
   /// what you want to do with error here
@@ -61,7 +130,27 @@ export default {
   name: 'LctRoomAdmin',
   data() {
     return {
+      ver: config.ver,
+
+      namespace: '',
+      namespaces: ['/'],
+      availableRooms: [],
+      occupiedRooms: [],
+      visitorsRooms: [],
       rating: 0,
+      occupiedRoomsHeaders: [
+        { text: 'Room', value: 'room' },
+        { text: 'Occupancy  ', value: 'occupancy' },
+        { text: 'Visitors  ', value: 'visitors' },
+      ],
+      availableRoomsHeaders: [
+        { text: 'Room', value: 'name' },
+        { text: 'Socket ID', value: 'id' },
+      ],
+      visitorHeaders: [
+        { text: 'Visitor', value: 'name' },
+        { text: 'Socket ID', value: 'id' },
+      ],
       logHeaders: [
         { text: 'Message', value: 'message' },
         { text: 'Sent  ', value: 'sentTime' },
@@ -70,35 +159,33 @@ export default {
     };
   },
   sockets: {
-    // socket.io reserved events
-    occupiedRoomsExposed(data) {
-      let msg =
-        'Occupied Rooms\n\n' +
-        'Room: ' +
-        data[0][0] +
-        '\nOccupying Sockets:\n' +
-        Object.keys(data[0][1].sockets)
-          .toString()
-          .split(',')
-          .join('\n');
-
-      alert(msg);
+    availableRoomsExposed(list) {
+      // let list = rooms.length ? rooms : ['No Rooms are online right now.'];
+      this.availableRooms = list;
+      this.log(`Available Rooms: ${list}`);
     },
 
-    availableRoomsExposed(data) {
-      let msg =
-        'Online Unoccupied Rooms\n\n' +
-        (data
-          ? data
-              .toString()
-              .split(',')
-              .join('\n')
-          : 'No Rooms online right now.');
-      alert(msg);
+    occupiedRoomsExposed(rooms) {
+      let list = rooms.map((c) => {
+        let x = {
+          room: c[0],
+          occupancy: c[1].length,
+          visitors: Object.keys(c[1].sockets)
+            .toString()
+            .split(',')
+            .join(', '),
+        };
+        return x;
+      });
+
+      this.occupiedRooms = list;
+      this.log(`Handled Occupied Rooms`);
     },
 
-    availableRooms(rooms) {
-      this.log(`Available Rooms: ${rooms}`);
+    visitorsRoomsExposed(list) {
+      // let list = rooms.length ? rooms : ['No Visitors yet today.'];
+      this.visitorsRooms = list;
+      this.log(`Visitors Rooms: ${list}`);
     },
 
     updatedOccupancy(payload) {
@@ -107,67 +194,17 @@ export default {
       }
       this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
     },
-
-    // Visitor iterates their messages taking one Room visit (viz., Room name and visit date) at a time.
-    // The Room receives the Visitor's visit date
-    notifyRoom(payload, ack) {
-      const { date, room } = payload;
-      // override the incoming date to format for comparing same day
-      let visitedKey = moment(date).format('YYYYMMDD');
-      console.log('Visit Date:', date, visitedKey);
-      console.log('All Messages');
-      console.table(this.messages);
-      console.log();
-
-      let entries = this.messages.filter(
-        (visit) =>
-          visit.room == room && visit.message.toLowerCase() == 'entered'
-      );
-      console.log(`Room entries for ${room}`);
-      console.table(entries);
-      console.log();
-
-      let visitorEntries = entries.filter((visit) => {
-        let visitKey = moment(visit.sentTime).format('YYYYMMDD');
-        console.log(visitKey);
-        return visitKey == visitedKey;
-      });
-      console.log('visitors');
-      console.table(visitorEntries);
-      console.log();
-
-      // now map over visitors for this date, and emit alertVisitor for each exposed visit
-      let notified = visitorEntries.map((entry) => {
-        let msg = `${entry.visitor}, on ${date}, BE ADVISED: you may have been exposed to Covid. Self quarantine.`;
-        this.emit({
-          event: 'alertVisitor',
-          message: {
-            visitor: entry.visitor,
-            message: msg,
-            sentTime: new Date().toISOString(),
-          },
-          ack: (ack) => {
-            this.log(ack);
-          },
-        });
-      });
-      if (ack) ack('alert sent');
-
-      this.alertMessage = notified.length
-        ? `Visitor warning triggered Exposure Alert to ${notified.length} other visitors to ${room} after ${date}`
-        : `Exposure Alert does not apply: No other visitor(s) to ${room} after ${date}`;
-      this.alertColor = 'warning';
-      this.alertIcon = 'mdi-home-alert';
-      this.alert = true;
-    },
   },
 
   methods: {
+    getAvailableRooms() {
+      this.$socket.emit('exposeAvailableRooms');
+    },
     getOccupiedRooms() {
       this.$socket.emit('exposeOccupiedRooms');
     },
-    getAvailableRooms() {
-      this.$socket.emit('exposeAvailableRooms');
+    getVisitorRooms() {
+      this.$socket.emit('exposeVisitorsRooms');
     },
 
     // helper methods
