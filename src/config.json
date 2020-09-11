@@ -5,5 +5,5 @@
     "ioServerAzureUrl": "http://soterialct.westus2.cloudapp.azure.com:3000/",
     "ngrokUrlLocal": "https://b579976476ed.ngrok.io",
     "defaultVue": "visitor",
-    "ver": "09.11.17.18"
+    "ver": "09.11.11.59"
 }
