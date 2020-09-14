@@ -16,11 +16,10 @@ Incorporate these field notes into ReadMe.md
 2. Start socket.io server with `node .` command line entry
 3. Note ngrok server has good connections
 4. Enusre client app
-5. 1. `main.js` `local` = `false`
-
-6. Make sure the LCT config file `socketUrl` variable points to the **ngrok server URL**
-7. Make sure the last good build of the client is uploaded to the **Azure Static Website**
-8. Start the clients from the **Azure URL**
+   1. Does `main.js` show `local` = `false`?
+   2. Make sure the LCT config file `socketUrl` variable points to the **ngrok server URL**
+   3. Make sure the last good build of the client is uploaded to the **Azure Static Website**
+   4. Start the clients from the **Azure URL**
 
 ## Setup
 
