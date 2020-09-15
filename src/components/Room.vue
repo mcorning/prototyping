@@ -33,7 +33,7 @@
             ></v-combobox>
           </v-col>
           <v-col class="col-md-4 pl-10">
-            <div v-if="rooms.length" class="text-center">
+            <div v-if="roomId" class="text-center">
               <v-btn
                 :color="closed ? 'success' : 'warning'"
                 fab
@@ -679,6 +679,7 @@ export default {
   async created() {},
 
   async mounted() {
+    console.log('Room.vue mounted');
     let self = this;
     if (!self.$socket.id) {
       self.connectToServer();

@@ -364,7 +364,6 @@ export default {
     availableRoomsExposed(rooms) {
       this.log(`Available Rooms: ${rooms}`);
       Room.$deleteAll();
-      console.log(this.rooms);
       console.assert(
         this.rooms.length == 0,
         'Should have no rooms before update'
@@ -595,7 +594,7 @@ export default {
   watch: {
     roomId() {
       if (!this.checkedOut) {
-        if (confirm('Should i check you out of', this.roomId, '?')) {
+        if (confirm('Do you want to check you out of', this.roomId, '?')) {
           this.checkedOut = !this.checkedOut;
           this.emit({
             event: 'leaveRoom',
