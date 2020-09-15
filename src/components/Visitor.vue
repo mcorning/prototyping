@@ -198,11 +198,11 @@ import Room from '@/models/Room';
 import State from '@/models/State';
 
 // window.onerror = function(message, source, lineno, colno, error) {
-window.onerror = function(message) {
+window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
+  console.log(error.stack);
   alert('onerror: ' + message);
 };
-
 export default {
   name: 'LctVisitor',
   components: {},

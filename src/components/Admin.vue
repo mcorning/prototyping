@@ -5,8 +5,52 @@
         <v-col>IO:{{ $socket.io.uri }}</v-col>
         <v-col class="text-right">{{ ver }} </v-col>
         <v-col class="text-right">{{ $socket.id }} </v-col>
-      </v-row>
-    </v-system-bar>
+      </v-row> </v-system-bar
+    ><v-card>
+      <v-card-title>World Clock</v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col>
+            <v-text-field
+              :value="sistersTime"
+              label="Sisters"
+              readonly
+            ></v-text-field>
+            <clock
+              ref="sistersClock"
+              :time="sistersClock"
+              :bg="getClockBg(sistersTime)"
+              :color="getClockColor(sistersTime)"
+            ></clock>
+          </v-col>
+          <v-col>
+            <v-text-field
+              :value="zuluTime"
+              readonly
+              label="Zulu "
+            ></v-text-field>
+            <!-- <clock :time="zuluClock"></clock> -->
+            <clock
+              :time="zuluClock"
+              :bg="getClockBg(zuluTime)"
+              :color="getClockColor(zuluTime)"
+            ></clock>
+          </v-col>
+          <v-col>
+            <v-text-field
+              :value="singaporeTime"
+              label="Singapore "
+              readonly
+            ></v-text-field>
+            <clock
+              :time="singaporeClock"
+              :bg="getClockBg(singaporeTime)"
+              :color="getClockColor(singaporeTime)"
+            ></clock>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
     <v-card>
       <v-card-title>Namespace Admin</v-card-title>
       <v-card-subtitle
@@ -122,17 +166,23 @@
 
 <script>
 import moment from 'moment';
+import mtz from 'moment-timezone';
+import Clock from 'vue-clock2';
+
 import config from '@/config.json';
 
 import State from '@/models/State';
 
-window.onerror = function(message) {
+window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
+  console.log(error.stack);
   alert('onerror: ' + message);
 };
 
 export default {
   name: 'LctRoomAdmin',
+  components: { Clock },
+
   computed: {
     namespace: {
       get() {
@@ -148,6 +198,24 @@ export default {
   },
   data() {
     return {
+      sistersClock: this.getSistersTime(),
+      sistersTime: mtz
+        .utc()
+        .tz('America/Los_Angeles')
+        .format('llll'),
+
+      zuluClock: this.getZuluTime(),
+      zuluTime: mtz
+        .utc()
+        .tz('Europe/London')
+        .format('llll'),
+
+      singaporeClock: null,
+      singaporeTime: mtz
+        .utc()
+        .tz('Asia/Singapore')
+        .format('llll'),
+
       ver: config.ver,
 
       // namespaces: ['/'],
@@ -183,6 +251,10 @@ export default {
     },
 
     occupiedRoomsExposed(rooms) {
+      if (!rooms) {
+        this.log('No occupied Rooms');
+        return;
+      }
       let list = rooms.map((c) => {
         let x = {
           room: c[0],
@@ -207,6 +279,12 @@ export default {
   },
 
   methods: {
+    getClockBg(thisClock) {
+      return thisClock.includes('PM') ? 'lightGray' : 'white';
+    },
+    getClockColor(thisClock) {
+      return thisClock.includes('PM') ? 'black' : 'gray';
+    },
     getAvailableRooms() {
       this.$socket.emit('exposeAvailableRooms');
     },
@@ -229,6 +307,31 @@ export default {
       let x = moment(new Date(date)).format(this.visitFormat);
       return x;
     },
+
+    getSistersTime() {
+      let t = mtz
+        .utc()
+        .tz('America/Los_Angeles')
+        .format('hh:mm');
+      this.sistersClock = t;
+      return t;
+    },
+    getZuluTime() {
+      let t = mtz
+        .utc()
+        .tz('Europe/London')
+        .format('hh:mm');
+      this.zuluClock = t;
+      return t;
+    },
+    getSingaporeTime() {
+      let t = mtz
+        .utc()
+        .tz('Asia/Singapore')
+        .format('hh:mm');
+      this.singaporeClock = t;
+      return t;
+    },
   },
 
   async created() {
@@ -236,9 +339,19 @@ export default {
   },
 
   async mounted() {
-    let nsp = State.query().first()?.namespace;
-    console.log('namespace', nsp);
-    this.$socket.emit('welcomeAdmin', nsp, (ack) => this.log(ack));
+    let self = this;
+    // let nsp = State.query().first()?.namespace;
+    // console.log('namespace', nsp);
+    // this.$socket.emit('welcomeAdmin', nsp, (ack) => this.log(ack));
+
+    self.zuluClock = self.getZuluTime();
+    setInterval(self.getZuluTime, 60000);
+
+    self.sistersClock = self.getSistersTime();
+    setInterval(self.getSistersTime, 60000);
+
+    self.singaporeClock = self.getSingaporeTime();
+    setInterval(self.getSingaporeTime, 60000);
   },
 };
 </script>
