@@ -379,7 +379,6 @@ export default {
       this.alertIcon = 'mdi-alert';
       this.alertColor = 'error';
       this.alertMessage = alertMessage;
-      this.log(alertMessage);
     },
 
     updatedOccupancy(payload) {
@@ -418,6 +417,8 @@ export default {
     // Alert payload contains all the dates for that Room.
     // Server relays message to each Room.
     warnRooms() {
+      // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
+      this.alert = false;
       // Get unique list of visited Rooms
       new Set(this.messages.map((v) => v.room)).forEach((room) => {
         // for each Room...
