@@ -62,7 +62,7 @@
               <small> Patron: <strong>Secours.io</strong></small>
             </v-col>
             <v-col>
-              <small>Version {{ ver }}</small>
+              <small>Build {{ $build }}</small>
             </v-col>
 
             <v-col cols="auto">
@@ -83,7 +83,6 @@
 </template>
 
 <script>
-import config from '@/config.json';
 import moment from 'moment';
 export default {
   name: 'App',
@@ -95,7 +94,6 @@ export default {
     },
   },
   data: () => ({
-    ver: config.ver,
     rating: 3,
     links: [
       {

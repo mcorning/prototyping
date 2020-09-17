@@ -3,7 +3,7 @@
     <v-system-bar color="secondary">
       <v-row align="center">
         <v-col cols="8">{{ $socket.io.uri }}</v-col>
-        <v-col class="text-right">{{ ver }} </v-col>
+        <v-col class="text-right">{{ $build }} </v-col>
       </v-row>
 
       <!-- <v-spacer></v-spacer>
@@ -189,7 +189,6 @@
 </template>
 
 <script>
-import config from '@/config.json';
 import moment from 'moment';
 
 import Message from '@/models/Message';
@@ -208,6 +207,16 @@ export default {
   components: {},
 
   computed: {
+    exposureWarnings() {
+      if (!this.messages.length) return {};
+      let payload = {
+        array: this.messages,
+        prop: 'room',
+        val: 'sentTime',
+      };
+      return this.groupBy(payload);
+    },
+
     firstTime() {
       return !this.names.length;
     },
@@ -320,11 +329,9 @@ export default {
     socketId: '',
 
     // isConnected: false,
-    ver: config.ver,
     cons: [],
     daysBack: 0,
     socketServerOnline: false,
-    dataUrl: config.dataUrl,
     visitFormat: 'HH:mm on ddd, MMM DD',
     checkedOut: true,
     messageHeaders: [
@@ -390,6 +397,29 @@ export default {
   },
 
   methods: {
+    // this is a (more?) functional way to do grouping
+    groupByFn(arr, fn) {
+      return arr
+        .map(typeof fn === 'function' ? fn : (val) => val[fn])
+        .reduce((acc, val, i) => {
+          acc[val] = (acc[val] || []).concat(arr[i]);
+          return acc;
+        }, {});
+    },
+
+    groupBy(payload) {
+      const { array, prop, val } = payload;
+
+      return array.reduce(function(acc, obj) {
+        let key = obj[prop];
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(obj[val]);
+        return acc;
+      }, {});
+    },
+
     // Server on.connection() does not know the name of the new connection.
     // So we fire this event right after connection is made to pass the name of the room to the server.
     // The Server needs this name to alert Visitors.
@@ -417,6 +447,13 @@ export default {
     // Alert payload contains all the dates for that Room.
     // Server relays message to each Room.
     warnRooms() {
+      console.table(this.exposureWarnings);
+      Object.entries(this.exposureWarnings).forEach((room) => {
+        console.log(room[0]);
+        let dates = room[1].map((v) => moment(v).format('YYYY.MM.DD'));
+        console.log(dates);
+      });
+
       // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
       this.alert = false;
       // Get unique list of visited Rooms

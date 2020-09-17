@@ -1,10 +1,10 @@
 <template>
   <v-container>
     <v-system-bar color="secondary">
-      <v-row>
+      <v-row justify="space-between">
         <v-col>IO:{{ $socket.io.uri }}</v-col>
-        <v-col class="text-right">{{ ver }} </v-col>
-        <v-col class="text-right">{{ $socket.id }} </v-col>
+        <v-col>Build: {{ $build }} </v-col>
+        <v-col>Socket: {{ $socket.id }} </v-col>
       </v-row> </v-system-bar
     ><v-card>
       <v-card-title>World Clock</v-card-title>
@@ -169,8 +169,6 @@ import moment from 'moment';
 import mtz from 'moment-timezone';
 import Clock from 'vue-clock2';
 
-import config from '@/config.json';
-
 import State from '@/models/State';
 
 window.onerror = function(message, url, lineNo, columnNo, error) {
@@ -216,8 +214,6 @@ export default {
         .tz('Asia/Singapore')
         .format('llll'),
 
-      ver: config.ver,
-
       // namespaces: ['/'],
       availableRooms: [],
       occupiedRooms: [],
@@ -244,6 +240,21 @@ export default {
     };
   },
   sockets: {
+    // socket.io reserved events
+    connect() {
+      this.socketId = this.$socket.id;
+
+      this.log(`Server connected on socket ${this.socketId}`);
+    },
+
+    disconnect() {
+      this.log(
+        'The server disconnected your socket (probably because you refreshed the browser).'
+      );
+    },
+    // end socket.io reserved events
+
+    //App event handlers
     availableRoomsExposed(list) {
       // let list = rooms.length ? rooms : ['No Rooms are online right now.'];
       this.availableRooms = list;
@@ -279,6 +290,11 @@ export default {
   },
 
   methods: {
+    connectToServer() {
+      this.log('Connecting to Server...');
+      this.$socket.connect();
+    },
+
     getClockBg(thisClock) {
       return thisClock.includes('PM') ? 'lightGray' : 'white';
     },
@@ -340,6 +356,13 @@ export default {
 
   async mounted() {
     let self = this;
+    if (!self.$socket.id) {
+      self.connectToServer();
+    } else {
+      // we may need to refesh this vue's property if we come from the other vue
+      self.socketId = self.$socket.id;
+      self.log(`Mounted with socket ${self.socketId}`);
+    }
     // let nsp = State.query().first()?.namespace;
     // console.log('namespace', nsp);
     // this.$socket.emit('welcomeAdmin', nsp, (ack) => this.log(ack));
@@ -352,6 +375,8 @@ export default {
 
     self.singaporeClock = self.getSingaporeTime();
     setInterval(self.getSingaporeTime, 60000);
+
+    console.log('Admin.vue mounted');
   },
 };
 </script>

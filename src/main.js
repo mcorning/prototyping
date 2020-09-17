@@ -13,7 +13,9 @@ Vue.component('soteria-icon', SoteriaIcon);
 
 Vue.config.productionTip = false;
 
+Vue.prototype.$build = '09.15.18.00';
 let local = true;
+
 let url = local ? config.ioServerUrl : config.ngrokUrlUbuntu;
 console.log('url:', url);
 

@@ -7,17 +7,15 @@
       <v-spacer></v-spacer>
       <v-checkbox v-model="hasRoomManager" label="RM" small>
         {{ hasRoomManager }}</v-checkbox
-      > -->
+          >-->
         </v-col>
         <v-col>IO:{{ $socket.io.uri }}</v-col>
-        <v-col class="text-right">{{ ver }} </v-col>
+        <v-col class="text-right">{{ $build }}</v-col>
       </v-row>
     </v-system-bar>
     <v-card>
       <v-card-title>Room Control</v-card-title>
-      <v-card-subtitle
-        >Monitor Visitors and alert them as necessary</v-card-subtitle
-      >
+      <v-card-subtitle>Monitor Visitors and alert them as necessary</v-card-subtitle>
 
       <v-card-text class="pb-0">
         <v-row>
@@ -34,32 +32,27 @@
           </v-col>
           <v-col class="col-md-4 pl-10">
             <div v-if="roomId" class="text-center">
-              <v-btn
-                :color="closed ? 'success' : 'warning'"
-                fab
-                dark
-                @click="act"
-              >
+              <v-btn :color="closed ? 'success' : 'warning'" fab dark @click="act">
                 <v-icon>{{ btnType }}</v-icon>
               </v-btn>
-              <span class="pl-3">{{
+              <span class="pl-3">
+                {{
                 closed ? 'Open Room' : 'Close Room'
-              }}</span>
+                }}
+              </span>
             </div>
             <v-card v-else>
               <v-card-title>First Time?</v-card-title>
-              <v-card-text
-                >Enter your two-part Room name (e.g., Building.Room).
-              </v-card-text>
+              <v-card-text>Enter your two-part Room name (e.g., Building.Room).</v-card-text>
               <v-card-text>
                 You can manage more than one Room, but you can only open one
                 Room at a time. You can delete an entry with the X
-                button.</v-card-text
-              >
-              <v-card-text
-                >When you open a Room, the Server adds your Room to Visitor
-                pages so they can enter.</v-card-text
-              >
+                button.
+              </v-card-text>
+              <v-card-text>
+                When you open a Room, the Server adds your Room to Visitor
+                pages so they can enter.
+              </v-card-text>
             </v-card>
           </v-col>
 
@@ -75,7 +68,7 @@
                 <p class="pb-0">Visitor exposure alerts are automatic.</p>
               </v-card-text>
             </v-card>
-          </v-col> -->
+          </v-col>-->
 
           <v-alert
             :value="alert"
@@ -87,7 +80,8 @@
             colored-border
             :icon="alertIcon"
             transition="scale-transition"
-            ><span color="gray">{{ alertMessage }}</span>
+          >
+            <span color="gray">{{ alertMessage }}</span>
           </v-alert>
           <!-- <v-dialog v-model="dialog" persistent max-width="290">
             <v-card>
@@ -105,13 +99,10 @@
                 >
               </v-card-actions>
             </v-card>
-          </v-dialog> -->
+          </v-dialog>-->
           <v-col cols="6" v-if="hasRoomManager">
-            <v-text-field
-              label="Room Manager ID"
-              v-model="managedRoom"
-            ></v-text-field
-          ></v-col>
+            <v-text-field label="Room Manager ID" v-model="managedRoom"></v-text-field>
+          </v-col>
         </v-row>
       </v-card-text>
       <v-row dense>
@@ -120,20 +111,16 @@
             <v-subheader>
               <v-row align="center" justify="space-between">
                 <v-col cols="auto">
-                  <span
-                    >Today's Visitor Log - {{ entered }} visits [{{
-                      uniqueVisitorNames.length
+                  <span>
+                    Today's Visitor Log - {{ entered }} visits [{{
+                    uniqueVisitorNames.length
                     }}
-                    unique visitor(s)]</span
-                  ></v-col
-                >
+                    unique visitor(s)]
+                  </span>
+                </v-col>
                 <v-col>
-                  <v-checkbox
-                    :value="allVisits"
-                    label="See all visits"
-                    @change="toggleVisits"
-                  ></v-checkbox
-                ></v-col>
+                  <v-checkbox :value="seeAllVisits" label="See all visits" @change="toggleVisits"></v-checkbox>
+                </v-col>
               </v-row>
             </v-subheader>
             <v-data-table
@@ -143,13 +130,9 @@
               dense
               class="elevation-1"
             >
-              <template v-slot:item.sentTime="{ item }">
-                {{ visitedDate(item.sentTime) }}
-              </template>
+              <template v-slot:item.sentTime="{ item }">{{ visitedDate(item.sentTime) }}</template>
               <template v-slot:item.action="{ item }">
-                <v-icon @click="deleteMessage(item.id)">
-                  mdi-delete
-                </v-icon>
+                <v-icon @click="deleteMessage(item.id)">mdi-delete</v-icon>
               </template>
             </v-data-table>
           </v-card-text>
@@ -160,10 +143,7 @@
 
             <v-list dense max-height="2" height="2">
               <v-list-item-group v-model="uniqueVisitorNames" color="primary">
-                <v-list-item
-                  v-for="(visitor, i) in uniqueVisitorNames"
-                  :key="i"
-                >
+                <v-list-item v-for="(visitor, i) in uniqueVisitorNames" :key="i">
                   <v-list-item-content>
                     <v-list-item-title v-text="visitor"></v-list-item-title>
                   </v-list-item-content>
@@ -182,9 +162,7 @@
           dense
           class="elevation-1"
         >
-          <template v-slot:item.sentTime="{ item }">
-            {{ visitedDate(item.sentTime) }}
-          </template>
+          <template v-slot:item.sentTime="{ item }">{{ visitedDate(item.sentTime) }}</template>
         </v-data-table>
       </v-card-text>
       <!-- <v-card-actions>
@@ -193,16 +171,16 @@
         <v-btn color="error" fab dark>
           <v-icon x-large>mdi-alert</v-icon>
         </v-btn>
-      </v-card-actions> -->
+      </v-card-actions>-->
     </v-card>
     <v-system-bar color="secondary">
       <!-- <v-icon small>mdi-transit-connection-variant </v-icon> -->
       <v-row align="center">
         <v-col cols="10">Socket: {{ $socket.id }}</v-col>
-        <v-col cols="2" class="text-right"
-          ><v-btn @click="testSocket" text
-            ><v-icon>mdi-check-network-outline</v-icon></v-btn
-          >
+        <v-col cols="2" class="text-right">
+          <v-btn @click="testSocket" text>
+            <v-icon>mdi-check-network-outline</v-icon>
+          </v-btn>
         </v-col>
       </v-row>
     </v-system-bar>
@@ -217,42 +195,32 @@
         :items-per-page="5"
         class="elevation-1"
       >
-        <template v-slot:item.sentTime="{ item }">
-          {{ visitedDate(item.sentTime) }}
-        </template>
+        <template v-slot:item.sentTime="{ item }">{{ visitedDate(item.sentTime) }}</template>
       </v-data-table>
       <div class="text-center">
         How are we doing on the Room experience?
-
-        <v-rating
-          v-model="rating"
-          background-color="primary lighten-3"
-          color="primary"
-          large
-        ></v-rating>
+        <v-rating v-model="rating" background-color="primary lighten-3" color="primary" large></v-rating>
       </div>
     </v-card>
   </v-container>
 </template>
 
 <script>
-import config from '@/config.json';
+import moment from "moment";
 
-import moment from 'moment';
+import Message from "@/models/Message";
+import Name from "@/models/Name";
+import Room from "@/models/Room";
+import State from "@/models/State";
 
-import Message from '@/models/Message';
-import Name from '@/models/Name';
-import Room from '@/models/Room';
-import State from '@/models/State';
-
-window.onerror = function(message, url, lineNo, columnNo, error) {
+window.onerror = function (message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
   console.log(error.stack);
-  alert('onerror: ' + message);
+  alert("onerror: " + message);
 };
 
 export default {
-  name: 'LctRoom',
+  name: "LctRoom",
   components: {},
   computed: {
     roomisEmpty() {
@@ -297,7 +265,7 @@ export default {
         }
         // else delete the last used roomId (then delete the roomId in state)
         else {
-          Room.delete(this.roomId).then((r) => console.log('rooms', r));
+          Room.delete(this.roomId).then((r) => console.log("rooms", r));
         }
         // change the roomId after we don't need the old value
         // (e.g., when deleting a Room from IndexDB)
@@ -314,7 +282,7 @@ export default {
       },
     },
 
-    allVisits() {
+    seeAllVisits() {
       return this.daysBack != 0;
     },
     messages: {
@@ -328,32 +296,25 @@ export default {
     },
 
     visits() {
-      let allVisits = this.messages.filter((v) => this.isBetween(v.sentTime));
-      if (this.daysBack == 0) {
-        return allVisits.filter((v) => this.roomId == v.room);
+      if (!this.messages.length) {
+        return [];
       }
-      return this.allVisits;
-    },
 
-    entered() {
-      return null;
-      // this.visits
-      //   ? this.visits.filter((v) => v.message == 'Entered').length
-      //   : 0;
-    },
-
-    departed() {
-      return null;
-      // this.visits
-      //   ? this.visits.filter((v) => v.message == 'Departed').length
-      //   : 0;
+      if (this.daysBack == 0) {
+        // limit visits to those of the current Room (previous vues may have used different Rooms)
+        let roomVisits = this.messages.filter((v) => {
+          return this.roomId == v.room && this.isToday(v.sentTime);
+        });
+        return roomVisits;
+      }
+      return this.messages;
     },
 
     uniqueVisitorNames() {
       return Array.from(new Set(this.messages.map((v) => v.visitor)));
     },
     btnType() {
-      return this.closed ? 'mdi-door-open' : 'mdi-door-closed-lock';
+      return this.closed ? "mdi-door-open" : "mdi-door-closed-lock";
     },
   },
 
@@ -362,59 +323,58 @@ export default {
     deleting: false,
     dialog: false,
     alert: false,
-    alertColor: 'error',
-    alertMessage: '',
-    alertIcon: 'mdi-alert',
+    alertColor: "error",
+    alertMessage: "",
+    alertIcon: "mdi-alert",
 
-    ver: config.ver,
     isConnected: false,
     cons: [],
-    socketId: '',
+    socketId: "",
     occupancy: 0,
-    socketUri: '',
+    socketUri: "",
     hasRoomManager: false,
     daysBack: 0,
-    today: 'YYYY-MM-DD',
+    today: "YYYY-MM-DD",
     closed: true,
 
     listUniqueVisitors: false,
-    visitFormat: 'HH:mm on ddd, MMM DD',
+    visitFormat: "HH:mm on ddd, MMM DD",
     messageHeaders: [
-      { text: 'Visitor', value: 'visitor' },
-      { text: 'Message', value: 'message' },
-      { text: 'Sent  ', value: 'sentTime' },
-      { text: 'Room', value: 'room' },
-      { text: 'Delete', value: 'action' },
+      { text: "Visitor", value: "visitor" },
+      { text: "Message", value: "message" },
+      { text: "Sent  ", value: "sentTime" },
+      { text: "Room", value: "room" },
+      { text: "Delete", value: "action" },
     ],
     logHeaders: [
-      { text: 'Message', value: 'message' },
-      { text: 'Sent  ', value: 'sentTime' },
+      { text: "Message", value: "message" },
+      { text: "Sent  ", value: "sentTime" },
     ],
     alertHeaders: [
-      { text: 'Date of Alert', value: 'sentTime' },
-      { text: 'Visitor', value: 'visitor' },
+      { text: "Date of Alert", value: "sentTime" },
+      { text: "Visitor", value: "visitor" },
     ],
     alerts: [],
-    yourId: '',
+    yourId: "",
 
     // Vuetify provides validation
     rules: {
-      required: (value) => !!value || 'Required.',
+      required: (value) => !!value || "Required.",
       counter: (value) => {
         if (!value) {
           return false;
         }
-        value?.length <= 20 || 'Max 20 characters';
+        value?.length <= 20 || "Max 20 characters";
       },
       nameDelimiter: (value) => {
         if (!value) {
           return false;
         }
-        value.includes('.');
+        value.includes(".");
       },
       email: (value) => {
         const pattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return pattern.test(value) || 'Invalid e-mail.';
+        return pattern.test(value) || "Invalid e-mail.";
       },
     },
   }),
@@ -429,7 +389,7 @@ export default {
 
     disconnect() {
       this.log(
-        'The server disconnected your socket (probably because you refreshed the browser).'
+        "The server disconnected your socket (probably because you refreshed the browser)."
       );
     },
     // end socket.io reserved events
@@ -462,25 +422,20 @@ export default {
       this.alert = false;
       const { exposureDate, room } = payload;
       // exposureDate is local ISO string
-      let visitedKey = moment(exposureDate).format('YYYYMMDD');
+      let visitedKey = moment(exposureDate).format("YYYYMMDD");
       console.log(
-        'Visit exposureDate (visitKey):',
+        "Visit exposureDate (visitKey):",
         exposureDate,
         `${visitedKey}`
       );
-      console.log('All Messages');
+      console.log("All Messages");
       console.table(this.messages);
       console.log();
-
-      // let entries = this.messages.filter(
-      //   (visit) =>
-      //     visit.room == room && visit.message.toLowerCase() == 'entered'
-      // );
 
       let entries = this.messages.reduce((accumulator, currentValue) => {
         if (
           currentValue.room == room &&
-          currentValue.message.toLowerCase() == 'entered'
+          currentValue.message.toLowerCase() == "entered"
         ) {
           accumulator.push({
             visitor: currentValue.visitor,
@@ -490,24 +445,28 @@ export default {
         return accumulator;
       }, []);
 
-      console.log(`Room entries for visitors to ${room}`);
+      console.log(`Visitor Entries to ${room}`);
       console.table(entries);
       console.log();
 
       let exposures = entries.filter((visit) => {
-        let visitKey = moment(visit.sentTime).format('YYYYMMDD');
+        let visitKey = moment(visit.sentTime).format("YYYYMMDD");
         console.log(visitKey);
         return visitKey == visitedKey;
       });
-      console.log('Exposed Visitors:');
+      console.log("Exposed Visitors:");
       console.table(exposures);
       console.log();
 
       // now map over visitors for this exposureDate, and emit alertVisitor for each exposed visit
       let notified = exposures.map((exposed) => {
-        let msg = `${exposed.visitor}, on ${exposureDate}, BE ADVISED: you may have been exposed to Covid. Self quarantine.`;
+        let msg = `${exposed.visitor}, BE ADVISED: on ${moment(
+          exposureDate
+        ).format(
+          "llll"
+        )}, you may have been exposed to Covid. Self quarantine.`;
         this.emit({
-          event: 'alertVisitor',
+          event: "alertVisitor",
           message: {
             visitor: exposed.visitor,
             message: msg,
@@ -518,13 +477,13 @@ export default {
           },
         });
       });
-      if (ack) ack('alert sent');
+      if (ack) ack("alert sent");
 
       this.alertMessage = notified.length
         ? `Visitor warning triggered Exposure Alert to ${notified.length} visitors to ${room} after ${exposureDate}`
         : `Exposure Alert does not apply: No other visitor(s) to ${room} after ${exposureDate}`;
-      this.alertColor = 'warning';
-      this.alertIcon = 'mdi-home-alert';
+      this.alertColor = "warning";
+      this.alertIcon = "mdi-home-alert";
       this.alert = true;
     },
   },
@@ -533,13 +492,13 @@ export default {
     // main methods
     openMyRoom(yourID) {
       let payload = {
-        event: 'openMyRoom',
+        event: "openMyRoom",
         message: yourID,
         ack: (ack) => {
           this.log(ack);
-          this.alertColor = 'success';
+          this.alertColor = "success";
           this.alertMessage = ack;
-          this.alertIcon = 'mdi-email-open';
+          this.alertIcon = "mdi-email-open";
           this.alert = true;
         },
       };
@@ -551,17 +510,17 @@ export default {
       if (!val || this.rooms.length > 1) {
         msg = {
           room: this.roomId,
-          message: val ? 'Closed' : 'Deleted',
+          message: val ? "Closed" : "Deleted",
           sentTime: new Date().toISOString(),
         };
         this.emit({
-          event: 'closeRoom',
+          event: "closeRoom",
           message: msg,
           ack: (ack) => {
             this.closed = ack.error.length;
             let msg = `${ack.message}  ${ack.error}`;
             this.alertMessage = msg;
-            this.alertColor = val ? 'success' : 'warning';
+            this.alertColor = val ? "success" : "warning";
             this.alert = true;
             this.log(`Closed Room ${this.roomId}`);
           },
@@ -570,19 +529,19 @@ export default {
       if (val && this.rooms.length) {
         msg = {
           room: this.roomId,
-          message: 'Opened',
+          message: "Opened",
           sentTime: new Date().toISOString(),
         };
         this.emit({
-          event: 'openRoom',
+          event: "openRoom",
           message: msg,
           ack: (ack) => {
             this.closed = ack.error.length;
             let msg = `${ack.message}  ${ack.error}`;
             this.alertMessage = msg;
-            this.alertColor = 'success';
+            this.alertColor = "success";
             this.alert = true;
-            this.log('Opened Room');
+            this.log("Opened Room");
           },
         });
       }
@@ -593,21 +552,21 @@ export default {
     },
 
     connectToServer() {
-      this.log('Connecting to Server...');
+      this.log("Connecting to Server...");
       this.$socket.connect();
     },
 
     emit(payload) {
       if (!this.$socket.id) {
         // this.dialog = true;
-        alert('No socket. Attempting to reopen.');
+        alert("No socket. Attempting to reopen.");
         return;
       }
       let msg =
         `Emitting ${payload.event}` +
         (payload.message.visitor
           ? ` to server for ${payload.message.visitor}`
-          : '');
+          : "");
       this.log(msg);
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
@@ -615,17 +574,17 @@ export default {
     act() {
       let msg = {
         room: this.roomId,
-        message: this.closed ? 'Opened' : 'Closed',
+        message: this.closed ? "Opened" : "Closed",
         sentTime: new Date().toISOString(),
       };
       this.messages = msg;
 
-      let event = this.closed ? 'openRoom' : 'closeRoom';
+      let event = this.closed ? "openRoom" : "closeRoom";
       this.emit({
         event: event,
         message: msg,
         ack: (ack) => {
-          this.alertColor = 'success';
+          this.alertColor = "success";
           this.alertMessage = ack.message;
           this.alert = true;
         },
@@ -654,9 +613,9 @@ export default {
     pingServer() {
       this.log(`Using socket ${this.$socket.id}...`);
       this.$socket.emit(
-        'pingServer',
+        "pingServer",
         this.roomId,
-        (ack) => '...' + this.log(ack)
+        (ack) => "..." + this.log(ack)
       );
     },
 
@@ -667,21 +626,15 @@ export default {
 
     isToday(date) {
       let x = moment(date).format(this.today);
-      let y = moment()
-        .add(-this.daysBack, 'day')
-        .format(this.today);
+      let y = moment().add(-this.daysBack, "day").format(this.today);
       return x == y;
     },
 
     isBetween(date) {
       let visit = moment(date);
 
-      let past = moment()
-        .add(-this.daysBack, 'day')
-        .format('YYYY-MM-DD');
-      let tomorrow = moment()
-        .add(1, 'day')
-        .format('YYYY-MM-DD');
+      let past = moment().add(-this.daysBack, "day").format("YYYY-MM-DD");
+      let tomorrow = moment().add(1, "day").format("YYYY-MM-DD");
       let test = visit.isBetween(past, tomorrow);
       return test;
     },
@@ -702,7 +655,7 @@ export default {
   async created() {},
 
   async mounted() {
-    console.log('Room.vue mounted');
+    console.log("Room.vue mounted");
     let self = this;
     if (!self.$socket.id) {
       self.connectToServer();
