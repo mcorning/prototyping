@@ -447,26 +447,45 @@ export default {
     // Alert payload contains all the dates for that Room.
     // Server relays message to each Room.
     warnRooms() {
+      const room = 0;
+      const dates = 1;
       console.table(this.exposureWarnings);
-      Object.entries(this.exposureWarnings).forEach((room) => {
-        console.log(room[0]);
-        let dates = room[1].map((v) => moment(v).format('YYYY.MM.DD'));
-        console.log(dates);
+      Object.entries(this.exposureWarnings).forEach((warning) => {
+        console.log(warning[room]);
+        let warningDates = warning[dates].map((v) =>
+          moment(v).format('YYYY-MM-DD')
+        );
+        console.log(warningDates);
+        this.emit({
+          event: 'exposureWarning2',
+          message: {
+            visitor: this.yourId,
+            room: warning[room],
+            warningDates: warningDates,
+            sentTime: new Date().toISOString(),
+          },
+          ack: (ack) => {
+            this.alert = true;
+            this.alertIcon = 'mdi-alert';
+            this.alertColor = 'warning';
+            this.alertMessage = ack;
+          },
+        });
       });
 
-      // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
-      this.alert = false;
-      // Get unique list of visited Rooms
-      new Set(this.messages.map((v) => v.room)).forEach((room) => {
-        // for each Room...
-        this.messages
-          //...get the Room's 'entered' messages
-          .filter((v) => this.getEnteredMessages(room, v))
-          // alert on each visit
-          .forEach((v) => {
-            this.emitExposureWarning(v);
-          });
-      });
+      // // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
+      // this.alert = false;
+      // // Get unique list of visited Rooms
+      // new Set(this.messages.map((v) => v.room)).forEach((room) => {
+      //   // for each Room...
+      //   this.messages
+      //     //...get the Room's 'entered' messages
+      //     .filter((v) => this.getEnteredMessages(room, v))
+      //     // alert on each visit
+      //     .forEach((v) => {
+      //       this.emitExposureWarning(v);
+      //     });
+      // });
     },
 
     getEnteredMessages(room, v) {
