@@ -1,3 +1,6 @@
+Vue.prototype.$build = '09.17.17.20';
+let local = true; // as soon as local changes to true, the server will start responding
+
 import Vue from 'vue';
 import App from './App.vue';
 import './registerServiceWorker';
@@ -12,9 +15,6 @@ import SoteriaIcon from './components/svg/SoteriaLogo.vue';
 Vue.component('soteria-icon', SoteriaIcon);
 
 Vue.config.productionTip = false;
-
-Vue.prototype.$build = '09.15.18.00';
-let local = true;
 
 let url = local ? config.ioServerUrl : config.ngrokUrlUbuntu;
 console.log('url:', url);

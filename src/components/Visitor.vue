@@ -447,6 +447,8 @@ export default {
     // Alert payload contains all the dates for that Room.
     // Server relays message to each Room.
     warnRooms() {
+      // // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
+      this.alert = false;
       const room = 0;
       const dates = 1;
       console.table(this.exposureWarnings);

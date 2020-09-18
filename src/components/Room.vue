@@ -449,6 +449,8 @@ export default {
     },
 
     notifyRoom(data, ack) {
+      this.alert = false;
+
       const { exposureDates, room, visitor } = data[0];
 
       let messageDates = this.groupBy({
@@ -488,6 +490,12 @@ export default {
       }
 
       if (ack) ack(`${room} alerted`);
+      this.alertMessage = messageDates.length
+        ? `Visitor warning triggered Exposure Alert to ${messageDates.length} visitors to ${room} after ${messageDates}`
+        : `Exposure Alert does not apply: No other visitor(s) to ${room} after ${messageDates}`;
+      this.alertColor = 'warning';
+      this.alertIcon = 'mdi-home-alert';
+      this.alert = true;
     },
 
     // Visitor iterates their messages taking one Room visit (viz., Room name and visit date) at a time.
