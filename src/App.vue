@@ -5,14 +5,14 @@
                               width="40"
 -->
 
-      <div class="d-flex align-center">
+      <div class="d-flex align-left">
         <v-btn text to="/admin">
           <v-img
             alt="Enduring Net Logo"
             class="shrink mr-2"
             contain
             src="@/assets/Enduring-Net-Logo-Vertical-Purple-RGB-BG.png"
-            max-width="120"
+            max-width="100"
         /></v-btn>
         <!-- <soteria-icon /> -->
       </div>

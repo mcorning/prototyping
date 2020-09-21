@@ -12,7 +12,7 @@
     <v-card dark>
       <v-card-title>Your Travel Diary</v-card-title>
       <v-card-subtitle
-        >Log each Room you visit. Warn Rooms if you go into quarantine.
+        >Log each Room you visit. Warn Rooms if you quarantine.
       </v-card-subtitle>
       <!-- <v-btn @click="testSocket">Ping</v-btn> -->
 
@@ -166,17 +166,27 @@
         :headers="logHeaders"
         :items="cons"
         multi-sort
+        must-sort
+        :sort-by="['sentTime', 'type']"
+        :sort-desc="[true, false]"
         item-key="id"
         dense
-        :items-per-page="5"
+        :items-per-page="15"
         class="elevation-1"
       >
         <template v-slot:item.sentTime="{ item }">
-          {{ visitedDate(item.sentTime) }}
+          <v-card flat min-width="200">
+            {{ visitedDate(item.sentTime) }}</v-card
+          >
+        </template>
+        <template v-slot:item.type="{ item }">
+          <v-icon :color="item.type == 'alert' ? 'red' : ''"
+            >mdi-{{ item.type }}</v-icon
+          >
         </template>
       </v-data-table>
       <div class="text-center">
-        Haw are we doing on the Visiter experience?
+        How are we doing on the Visiter experience?
         <v-rating
           v-model="rating"
           background-color="primary lighten-3"
@@ -207,6 +217,10 @@ export default {
   components: {},
 
   computed: {
+    availableRooms() {
+      return Room.findIn(Object.keys(this.exposureWarnings));
+    },
+
     exposureWarnings() {
       if (!this.messages.length) return {};
       let payload = {
@@ -343,6 +357,7 @@ export default {
     ],
     logHeaders: [
       { text: 'Message', value: 'message' },
+      { text: 'Type', value: 'type' },
       { text: 'Sent  ', value: 'sentTime' },
     ],
   }),
@@ -369,7 +384,7 @@ export default {
     // end socket.io reserved events
     // Server fires this event when a Room opens/closes
     availableRoomsExposed(rooms) {
-      this.log(`Available Rooms: ${rooms}`);
+      this.log(`Available Rooms: ${rooms.map((v) => v.name)}`);
       Room.$deleteAll();
       console.assert(
         this.rooms.length == 0,
@@ -397,6 +412,10 @@ export default {
   },
 
   methods: {
+    isAvailable(room) {
+      return this.availableRooms.filter((v) => v.roomId == room);
+    },
+
     // this is a (more?) functional way to do grouping
     groupByFn(arr, fn) {
       return arr
@@ -449,45 +468,38 @@ export default {
     warnRooms() {
       // // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
       this.alert = false;
-      const room = 0;
-      const dates = 1;
-      console.table(this.exposureWarnings);
-      Object.entries(this.exposureWarnings).forEach((warning) => {
-        console.log(warning[room]);
-        let warningDates = warning[dates].map((v) =>
-          moment(v).format('YYYY-MM-DD')
-        );
-        console.log(warningDates);
-        this.emit({
-          event: 'exposureWarning2',
-          message: {
-            visitor: this.yourId,
-            room: warning[room],
-            warningDates: warningDates,
-            sentTime: new Date().toISOString(),
-          },
-          ack: (ack) => {
-            this.alert = true;
-            this.alertIcon = 'mdi-alert';
-            this.alertColor = 'warning';
-            this.alertMessage = ack;
-          },
-        });
-      });
+      // returns something like this:
+      // exposureWarnings = {
+      //   visitor: 'Michael',
+      //   warnings: {
+      //     'Fika.Outside': ['2020-09-21T05:49:49.352Z'],
+      //   },
+      //   sentTime: '2020-09-21T05:51:18.558Z',
+      // };
 
-      // // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
-      // this.alert = false;
-      // // Get unique list of visited Rooms
-      // new Set(this.messages.map((v) => v.room)).forEach((room) => {
-      //   // for each Room...
-      //   this.messages
-      //     //...get the Room's 'entered' messages
-      //     .filter((v) => this.getEnteredMessages(room, v))
-      //     // alert on each visit
-      //     .forEach((v) => {
-      //       this.emitExposureWarning(v);
-      //     });
-      // });
+      console.table(this.exposureWarnings);
+      this.log(
+        `Warning: ${Object.entries(this.exposureWarnings)
+          .toString()
+          .split(',')
+          .join(', ')}`,
+        'alert'
+      );
+
+      this.emit({
+        event: 'exposureWarning3',
+        message: {
+          visitor: this.yourId,
+          warnings: this.exposureWarnings,
+          sentTime: new Date().toISOString(),
+        },
+        ack: (ack) => {
+          this.alert = true;
+          this.alertIcon = 'mdi-alert';
+          this.alertColor = 'warning';
+          this.alertMessage = ack;
+        },
+      });
     },
 
     getEnteredMessages(room, v) {
@@ -580,9 +592,10 @@ export default {
     },
 
     // helper methods
-    log(msg) {
+    log(msg, type = 'information') {
       this.cons.push({
         sentTime: moment(),
+        type: type,
         message: msg,
       });
     },
@@ -667,9 +680,7 @@ export default {
       }
     },
   },
-  async created() {},
-
-  async mounted() {
+  async created() {
     let self = this;
     if (!self.socketId) {
       this.log('Connecting to Server...');
@@ -679,11 +690,14 @@ export default {
       this.socketId = this.$socket.id;
       self.log(`Mounted with socket ${self.socketId}`);
     }
+  },
 
+  async mounted() {
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
     await Message.$fetch();
+    this.$socket.emit('exposeAvailableRooms');
   },
 };
 </script>

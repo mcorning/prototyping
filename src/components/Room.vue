@@ -210,15 +210,25 @@
       <v-data-table
         :headers="logHeaders"
         :items="cons"
+        :sort-by="['sentTime', 'type']"
+        :sort-desc="[true, false]"
         multi-sort
+        must-sort
         item-key="id"
         dense
-        :items-per-page="5"
+        :items-per-page="15"
         class="elevation-1"
       >
-        <template v-slot:item.sentTime="{ item }">{{
-          visitedDate(item.sentTime)
-        }}</template>
+        <template v-slot:item.sentTime="{ item }">
+          <v-card flat min-width="200">
+            {{ visitedDate(item.sentTime) }}</v-card
+          >
+        </template>
+        <template v-slot:item.type="{ item }">
+          <v-icon :color="item.type == 'alert' ? 'red' : ''"
+            >mdi-{{ item.type }}</v-icon
+          >
+        </template>
       </v-data-table>
       <div class="text-center">
         How are we doing on the Room experience?
@@ -381,6 +391,7 @@ export default {
     ],
     logHeaders: [
       { text: 'Message', value: 'message' },
+      { text: 'Type', value: 'type' },
       { text: 'Sent  ', value: 'sentTime' },
     ],
     alertHeaders: [
@@ -458,22 +469,36 @@ export default {
         prop: 'sentTime',
         val: 'visitor',
       });
+      if (!Object.keys(messageDates).length) {
+        alert(
+          'UNEXEPECTED STATE: \nThere should be messages from the alerting Visitor.'
+        );
+        return;
+      }
       console.log('messageDates:', messageDates);
-      let roomSet = [...new Set(exposureDates)]; // eliminate duplicate exposure dates
-      console.log('Alert Dates', roomSet);
-      console.log('Here are the necessary Exposure Alerts');
+
       let alerts = new Map();
-      roomSet.forEach((d) => {
-        messageDates[d]?.forEach((v) => {
+      // of only a single incoming date, make a Set with that
+      // otherwise use the object for the Set
+      let exposureDatesSet =
+        typeof exposureDates == 'string'
+          ? new Set().add(moment(exposureDates).format(this.today))
+          : new Set(exposureDates);
+
+      console.log('Alert Dates', exposureDatesSet);
+      console.log('Here are the necessary Exposure Alerts');
+      exposureDatesSet.forEach((date) => {
+        messageDates[date]?.forEach((v) => {
           let phrase =
             v != visitor
-              ? 'you may have been exposed to the virus'
-              : 'you may have exposed others to the virus';
-          let msg = `${v}, BE ADVISED: ${phrase} on ${d}`;
+              ? 'BE ADVISED: you may have been exposed to the virus'
+              : 'CONFIRMING: you may have exposed others to the virus';
+          let msg = `${v}, ${phrase} on ${date}`;
           let alert = alerts.get(v);
-          alerts.set(v, alert ? alert.concat(`, ${d}`) : msg);
+          alerts.set(v, alert ? alert.concat(`, ${date}`) : msg);
         });
       });
+
       // iterate the Map pass the message in the
       for (let [key, value] of alerts.entries()) {
         this.emit({
@@ -484,15 +509,17 @@ export default {
             sentTime: new Date().toISOString(),
           },
           ack: (ack) => {
-            this.log(ack);
+            this.log(ack, 'alert');
           },
         });
       }
 
-      if (ack) ack(`${room} alerted`);
-      this.alertMessage = messageDates.length
-        ? `Visitor warning triggered Exposure Alert to ${messageDates.length} visitors to ${room} after ${messageDates}`
-        : `Exposure Alert does not apply: No other visitor(s) to ${room} after ${messageDates}`;
+      if (ack) ack(`${visitor}, ${room} alerted`);
+      this.alertMessage = Object.keys(messageDates).length
+        ? `Visitor warning triggered Exposure Alert for ${
+            Object.keys(messageDates).length
+          } exposure date(s) in ${room}.`
+        : `Exposure Alert does not apply: No other visitor(s) to ${room} during exposure dates.`;
       this.alertColor = 'warning';
       this.alertIcon = 'mdi-home-alert';
       this.alert = true;
@@ -500,75 +527,75 @@ export default {
 
     // Visitor iterates their messages taking one Room visit (viz., Room name and visit date) at a time.
     // The Room receives the Visitor's visit date
-    notifyRoomX(payload, ack) {
-      // reset alert in case close button was pushed
-      this.alert = false;
-      const { exposureDate, room } = payload;
-      // exposureDate is local ISO string
-      let visitedKey = moment(exposureDate).format('YYYYMMDD');
-      console.log(
-        'Visit exposureDate (visitKey):',
-        exposureDate,
-        `${visitedKey}`
-      );
-      console.log('All Messages');
-      console.table(this.messages);
-      console.log();
+    // notifyRoomX(payload, ack) {
+    //   // reset alert in case close button was pushed
+    //   this.alert = false;
+    //   const { exposureDate, room } = payload;
+    //   // exposureDate is local ISO string
+    //   let visitedKey = moment(exposureDate).format('YYYYMMDD');
+    //   console.log(
+    //     'Visit exposureDate (visitKey):',
+    //     exposureDate,
+    //     `${visitedKey}`
+    //   );
+    //   console.log('All Messages');
+    //   console.table(this.messages);
+    //   console.log();
 
-      let entries = this.messages.reduce((accumulator, currentValue) => {
-        if (
-          currentValue.room == room &&
-          currentValue.message.toLowerCase() == 'entered'
-        ) {
-          accumulator.push({
-            visitor: currentValue.visitor,
-            sentTime: currentValue.sentTime,
-          });
-        }
-        return accumulator;
-      }, []);
+    //   let entries = this.messages.reduce((accumulator, currentValue) => {
+    //     if (
+    //       currentValue.room == room &&
+    //       currentValue.message.toLowerCase() == 'entered'
+    //     ) {
+    //       accumulator.push({
+    //         visitor: currentValue.visitor,
+    //         sentTime: currentValue.sentTime,
+    //       });
+    //     }
+    //     return accumulator;
+    //   }, []);
 
-      console.log(`Visitor Entries to ${room}`);
-      console.table(entries);
-      console.log();
+    //   console.log(`Visitor Entries to ${room}`);
+    //   console.table(entries);
+    //   console.log();
 
-      let exposures = entries.filter((visit) => {
-        let visitKey = moment(visit.sentTime).format('YYYYMMDD');
-        console.log(visitKey);
-        return visitKey == visitedKey;
-      });
-      console.log('Exposed Visitors:');
-      console.table(exposures);
-      console.log();
+    //   let exposures = entries.filter((visit) => {
+    //     let visitKey = moment(visit.sentTime).format('YYYYMMDD');
+    //     console.log(visitKey);
+    //     return visitKey == visitedKey;
+    //   });
+    //   console.log('Exposed Visitors:');
+    //   console.table(exposures);
+    //   console.log();
 
-      // now map over visitors for this exposureDate, and emit alertVisitor for each exposed visit
-      let notified = exposures.map((exposed) => {
-        let msg = `${exposed.visitor}, BE ADVISED: on ${moment(
-          exposureDate
-        ).format(
-          'llll'
-        )}, you may have been exposed to Covid. Self quarantine.`;
-        this.emit({
-          event: 'alertVisitor',
-          message: {
-            visitor: exposed.visitor,
-            message: msg,
-            sentTime: new Date().toISOString(),
-          },
-          ack: (ack) => {
-            this.log(ack);
-          },
-        });
-      });
-      if (ack) ack('alert sent');
+    //   // now map over visitors for this exposureDate, and emit alertVisitor for each exposed visit
+    //   let notified = exposures.map((exposed) => {
+    //     let msg = `${exposed.visitor}, BE ADVISED: on ${moment(
+    //       exposureDate
+    //     ).format(
+    //       'llll'
+    //     )}, you may have been exposed to Covid. Self quarantine.`;
+    //     this.emit({
+    //       event: 'alertVisitor',
+    //       message: {
+    //         visitor: exposed.visitor,
+    //         message: msg,
+    //         sentTime: new Date().toISOString(),
+    //       },
+    //       ack: (ack) => {
+    //         this.log(ack, 'alert');
+    //       },
+    //     });
+    //   });
+    //   if (ack) ack('alert sent');
 
-      this.alertMessage = notified.length
-        ? `Visitor warning triggered Exposure Alert to ${notified.length} visitors to ${room} after ${exposureDate}`
-        : `Exposure Alert does not apply: No other visitor(s) to ${room} after ${exposureDate}`;
-      this.alertColor = 'warning';
-      this.alertIcon = 'mdi-home-alert';
-      this.alert = true;
-    },
+    //   this.alertMessage = notified.length
+    //     ? `Visitor warning triggered Exposure Alert to ${notified.length} visitors to ${room} after ${exposureDate}`
+    //     : `Exposure Alert does not apply: No other visitor(s) to ${room} after ${exposureDate}`;
+    //   this.alertColor = 'warning';
+    //   this.alertIcon = 'mdi-home-alert';
+    //   this.alert = true;
+    // },
   },
 
   methods: {
@@ -696,9 +723,11 @@ export default {
     // end main methods
 
     // helper methods
-    log(msg) {
+    log(msg, type = 'information') {
       this.cons.push({
         sentTime: moment(),
+        type: type,
+
         message: msg,
       });
     },
