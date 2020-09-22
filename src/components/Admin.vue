@@ -94,6 +94,23 @@
             </v-data-table>
           </v-col>
         </v-row>
+        <v-row>
+          <v-col>
+            <v-btn @click="getPendingRooms()">Refresh Pending Rooms</v-btn>
+          </v-col>
+          <v-col>
+            <v-data-table
+              item-key="name"
+              :headers="pendingRoomsHeaders"
+              :items="pendingRooms"
+              multi-sort
+              dense
+              :items-per-page="10"
+              class="elevation-1"
+            >
+            </v-data-table>
+          </v-col>
+        </v-row>
       </v-card-text>
       <v-card-text>
         <v-row>
@@ -216,6 +233,7 @@ export default {
 
       // namespaces: ['/'],
       availableRooms: [],
+      pendingRooms: [],
       occupiedRooms: [],
       visitorsRooms: [],
       rating: 0,
@@ -228,6 +246,7 @@ export default {
         { text: 'Room', value: 'name' },
         { text: 'Socket ID', value: 'id' },
       ],
+      pendingRoomsHeaders: [{ text: 'Room', value: 'name' }],
       visitorHeaders: [
         { text: 'Visitor', value: 'name' },
         { text: 'Socket ID', value: 'id' },
@@ -261,6 +280,16 @@ export default {
       this.log(`Available Rooms: ${list}`);
     },
 
+    pendingRoomWarningsExposed(list) {
+      // let list = rooms.length ? rooms : ['No Rooms are online right now.'];
+      this.pendingRooms = list.map((v) => {
+        let x = {};
+        x['name'] = v;
+        return x;
+      });
+      this.log(`Pending Rooms: ${list}`);
+    },
+
     occupiedRoomsExposed(rooms) {
       if (!rooms) {
         this.log('No occupied Rooms');
@@ -290,6 +319,13 @@ export default {
   },
 
   methods: {
+    refresh() {
+      this.$socket.emit('exposeAvailableRooms');
+      this.$socket.emit('exposePendingRooms');
+      this.$socket.emit('exposeOccupiedRooms');
+      this.$socket.emit('exposeVisitorsRooms');
+    },
+
     connectToServer() {
       this.log('Connecting to Server...');
       this.$socket.connect();
@@ -303,6 +339,9 @@ export default {
     },
     getAvailableRooms() {
       this.$socket.emit('exposeAvailableRooms');
+    },
+    getPendingRooms() {
+      this.$socket.emit('exposePendingRooms');
     },
     getOccupiedRooms() {
       this.$socket.emit('exposeOccupiedRooms');
@@ -363,6 +402,8 @@ export default {
       self.socketId = self.$socket.id;
       self.log(`Mounted with socket ${self.socketId}`);
     }
+
+    this.refresh();
     // let nsp = State.query().first()?.namespace;
     // console.log('namespace', nsp);
     // this.$socket.emit('welcomeAdmin', nsp, (ack) => this.log(ack));

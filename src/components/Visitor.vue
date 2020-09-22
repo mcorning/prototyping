@@ -169,20 +169,25 @@
         must-sort
         :sort-by="['sentTime', 'type']"
         :sort-desc="[true, false]"
+        calculate-widths
         item-key="id"
         dense
         :items-per-page="15"
+        group-by="type"
         class="elevation-1"
       >
+        <template v-slot:item.message="{ item }">
+          <v-card flat min-width="200" :class="getColor(item.type)">
+            {{ item.message }}</v-card
+          >
+        </template>
         <template v-slot:item.sentTime="{ item }">
-          <v-card flat min-width="200">
+          <v-card flat min-width="200" :class="getColor(item.type)">
             {{ visitedDate(item.sentTime) }}</v-card
           >
         </template>
         <template v-slot:item.type="{ item }">
-          <v-icon :color="item.type == 'alert' ? 'red' : ''"
-            >mdi-{{ item.type }}</v-icon
-          >
+          <v-icon :color="getColor(item.type)">mdi-{{ item.type }}</v-icon>
         </template>
       </v-data-table>
       <div class="text-center">
@@ -396,7 +401,7 @@ export default {
     },
 
     exposureAlert(alertMessage) {
-      this.log(alertMessage);
+      this.log(alertMessage, 'alert');
       this.alert = true;
       this.alertIcon = 'mdi-alert';
       this.alertColor = 'error';
@@ -414,6 +419,10 @@ export default {
   methods: {
     isAvailable(room) {
       return this.availableRooms.filter((v) => v.roomId == room);
+    },
+
+    getColor(type) {
+      return type == 'alert' ? 'red--text' : '';
     },
 
     // this is a (more?) functional way to do grouping
@@ -487,7 +496,7 @@ export default {
       );
 
       this.emit({
-        event: 'exposureWarning3',
+        event: 'exposureWarning',
         message: {
           visitor: this.yourId,
           warnings: this.exposureWarnings,

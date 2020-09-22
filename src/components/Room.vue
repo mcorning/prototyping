@@ -33,7 +33,7 @@
             ></v-combobox>
           </v-col>
           <v-col class="col-md-4 pl-10">
-            <div v-if="roomId" class="text-center">
+            <!-- <div v-if="roomId" class="text-center">
               <v-btn
                 :color="closed ? 'success' : 'warning'"
                 fab
@@ -45,9 +45,9 @@
               <span class="pl-3">
                 {{ closed ? 'Open Room' : 'Close Room' }}
               </span>
-            </div>
-            <v-card v-else>
-              <v-card-title>First Time?</v-card-title>
+            </div> -->
+            <v-card v-if="!roomId">
+              <v-card-title>First time (or starting over)?</v-card-title>
               <v-card-text
                 >Enter your two-part Room name (e.g.,
                 Building.Room).</v-card-text
@@ -217,17 +217,21 @@
         item-key="id"
         dense
         :items-per-page="15"
+        group-by="type"
         class="elevation-1"
       >
+        <template v-slot:item.message="{ item }">
+          <v-card flat min-width="200" :class="getColor(item.type)">
+            {{ item.message }}</v-card
+          >
+        </template>
         <template v-slot:item.sentTime="{ item }">
-          <v-card flat min-width="200">
+          <v-card flat min-width="200" :class="getColor(item.type)">
             {{ visitedDate(item.sentTime) }}</v-card
           >
         </template>
         <template v-slot:item.type="{ item }">
-          <v-icon :color="item.type == 'alert' ? 'red' : ''"
-            >mdi-{{ item.type }}</v-icon
-          >
+          <v-icon :color="getColor(item.type)">mdi-{{ item.type }}</v-icon>
         </template>
       </v-data-table>
       <div class="text-center">
@@ -432,9 +436,7 @@ export default {
     },
 
     disconnect() {
-      this.log(
-        'The server disconnected your socket (probably because you refreshed the browser).'
-      );
+      this.log('The server disconnected your socket.', 'alert');
     },
     // end socket.io reserved events
 
@@ -461,8 +463,9 @@ export default {
 
     notifyRoom(data, ack) {
       this.alert = false;
+      // data can be on object or an array
 
-      const { exposureDates, room, visitor } = data[0];
+      const { exposureDates, room, visitor } = data.length ? data[0] : data;
 
       let messageDates = this.groupBy({
         array: this.messages,
@@ -599,6 +602,9 @@ export default {
   },
 
   methods: {
+    getColor(type) {
+      return type == 'alert' ? 'red--text' : '';
+    },
     groupBy(payload) {
       const { array, prop, val } = payload;
 
@@ -615,10 +621,10 @@ export default {
     },
 
     // main methods
-    openMyRoom(yourID) {
+    openMyRoom(roomId) {
       let payload = {
         event: 'openMyRoom',
-        message: yourID,
+        message: roomId,
         ack: (ack) => {
           this.log(ack);
           this.alertColor = 'success';
@@ -797,6 +803,7 @@ export default {
       self.socketId = self.$socket.id;
       self.log(`Mounted with socket ${self.socketId}`);
     }
+
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
