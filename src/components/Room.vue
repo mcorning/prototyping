@@ -199,8 +199,8 @@
       <v-row align="center">
         <v-col cols="10">Socket: {{ $socket.id }}</v-col>
         <v-col cols="2" class="text-right">
-          <v-btn @click="testSocket" text>
-            <v-icon>mdi-check-network-outline</v-icon>
+          <v-btn @click="disconnectFromServer" text>
+            <v-icon>mdi-door-closed-lock</v-icon>
           </v-btn>
         </v-col>
       </v-row>
@@ -485,13 +485,13 @@ export default {
       // otherwise use the object for the Set
       let exposureDatesSet =
         typeof exposureDates == 'string'
-          ? new Set().add(moment(exposureDates).format(this.today))
+          ? new Set().add(exposureDates)
           : new Set(exposureDates);
 
       console.log('Alert Dates', exposureDatesSet);
       console.log('Here are the necessary Exposure Alerts');
       exposureDatesSet.forEach((date) => {
-        messageDates[date]?.forEach((v) => {
+        messageDates[moment(date).format(this.today)]?.forEach((v) => {
           let phrase =
             v != visitor
               ? 'BE ADVISED: you may have been exposed to the virus'
@@ -502,7 +502,7 @@ export default {
         });
       });
 
-      // iterate the Map pass the message in the
+      // iterate the Map and emit alertVisitor event
       for (let [key, value] of alerts.entries()) {
         this.emit({
           event: 'alertVisitor',
@@ -527,78 +527,6 @@ export default {
       this.alertIcon = 'mdi-home-alert';
       this.alert = true;
     },
-
-    // Visitor iterates their messages taking one Room visit (viz., Room name and visit date) at a time.
-    // The Room receives the Visitor's visit date
-    // notifyRoomX(payload, ack) {
-    //   // reset alert in case close button was pushed
-    //   this.alert = false;
-    //   const { exposureDate, room } = payload;
-    //   // exposureDate is local ISO string
-    //   let visitedKey = moment(exposureDate).format('YYYYMMDD');
-    //   console.log(
-    //     'Visit exposureDate (visitKey):',
-    //     exposureDate,
-    //     `${visitedKey}`
-    //   );
-    //   console.log('All Messages');
-    //   console.table(this.messages);
-    //   console.log();
-
-    //   let entries = this.messages.reduce((accumulator, currentValue) => {
-    //     if (
-    //       currentValue.room == room &&
-    //       currentValue.message.toLowerCase() == 'entered'
-    //     ) {
-    //       accumulator.push({
-    //         visitor: currentValue.visitor,
-    //         sentTime: currentValue.sentTime,
-    //       });
-    //     }
-    //     return accumulator;
-    //   }, []);
-
-    //   console.log(`Visitor Entries to ${room}`);
-    //   console.table(entries);
-    //   console.log();
-
-    //   let exposures = entries.filter((visit) => {
-    //     let visitKey = moment(visit.sentTime).format('YYYYMMDD');
-    //     console.log(visitKey);
-    //     return visitKey == visitedKey;
-    //   });
-    //   console.log('Exposed Visitors:');
-    //   console.table(exposures);
-    //   console.log();
-
-    //   // now map over visitors for this exposureDate, and emit alertVisitor for each exposed visit
-    //   let notified = exposures.map((exposed) => {
-    //     let msg = `${exposed.visitor}, BE ADVISED: on ${moment(
-    //       exposureDate
-    //     ).format(
-    //       'llll'
-    //     )}, you may have been exposed to Covid. Self quarantine.`;
-    //     this.emit({
-    //       event: 'alertVisitor',
-    //       message: {
-    //         visitor: exposed.visitor,
-    //         message: msg,
-    //         sentTime: new Date().toISOString(),
-    //       },
-    //       ack: (ack) => {
-    //         this.log(ack, 'alert');
-    //       },
-    //     });
-    //   });
-    //   if (ack) ack('alert sent');
-
-    //   this.alertMessage = notified.length
-    //     ? `Visitor warning triggered Exposure Alert to ${notified.length} visitors to ${room} after ${exposureDate}`
-    //     : `Exposure Alert does not apply: No other visitor(s) to ${room} after ${exposureDate}`;
-    //   this.alertColor = 'warning';
-    //   this.alertIcon = 'mdi-home-alert';
-    //   this.alert = true;
-    // },
   },
 
   methods: {
@@ -729,6 +657,11 @@ export default {
     // end main methods
 
     // helper methods
+    disconnectFromServer() {
+      console.log('Disconnection from Server');
+      this.$socket.disconnect();
+    },
+
     log(msg, type = 'information') {
       this.cons.push({
         sentTime: moment(),
@@ -803,7 +736,7 @@ export default {
       self.socketId = self.$socket.id;
       self.log(`Mounted with socket ${self.socketId}`);
     }
-
+    self.log(navigator.userAgent);
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();

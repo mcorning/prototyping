@@ -707,6 +707,7 @@ export default {
     await State.$fetch();
     await Message.$fetch();
     this.$socket.emit('exposeAvailableRooms');
+    this.log(navigator.userAgent);
   },
 };
 </script>

@@ -280,8 +280,7 @@ export default {
       this.log(`Available Rooms: ${list}`);
     },
 
-    pendingRoomWarningsExposed(list) {
-      // let list = rooms.length ? rooms : ['No Rooms are online right now.'];
+    pendingRoomsExposed(list = ['No Rooms are online right now.']) {
       this.pendingRooms = list.map((v) => {
         let x = {};
         x['name'] = v;
