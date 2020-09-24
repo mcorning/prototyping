@@ -2,8 +2,13 @@
   <v-container>
     <v-system-bar color="secondary">
       <v-row align="center">
-        <v-col cols="8">{{ $socket.io.uri }}</v-col>
-        <v-col class="text-right">{{ $build }} </v-col>
+        <v-col class="text-left">{{ $socket.io.uri }}</v-col>
+        <v-col class="text-center">UA: {{ userAgent }}</v-col>
+        <v-col class="text-right">
+          <v-btn text @click="refreshConnection(true)">{{
+            $build
+          }}</v-btn></v-col
+        >
       </v-row>
 
       <!-- <v-spacer></v-spacer>
@@ -40,6 +45,7 @@
               v-model="roomId"
               :items="rooms"
               label="Visit Room"
+              @change="changingRoom = true"
             ></v-select>
           </v-col>
           <v-col cols="2">
@@ -52,7 +58,7 @@
                 :color="checkedOut ? 'success' : 'warning'"
                 fab
                 dark
-                @click="act"
+                @click="act(roomId)"
               >
                 <v-icon>{{ btnType }}</v-icon>
               </v-btn>
@@ -77,24 +83,26 @@
             </v-card>
           </v-col>
         </v-row>
+
         <v-card-actions>
-          <v-btn
-            color="error"
-            block
-            dark
-            @click="warnRooms"
-            :disabled="!messages.length"
-          >
-            Warn
-            <v-icon>mdi-home-alert</v-icon> Rooms
-          </v-btn>
-        </v-card-actions>
-        <v-card-actions>
-          <v-banner v-if="dialog" class="text-center">
+          <v-banner v-if="disconnected" class="text-center">
             At the moment, the Server doesn't know about you. Reconnect?
             <template v-slot:actions>
               <v-btn text color="secondary" @click="connectToServer">Yes</v-btn>
-              <v-btn text color="secondary" @click="dialog = false">No</v-btn>
+              <v-btn text color="secondary" @click="disconnected = false"
+                >No</v-btn
+              >
+            </template>
+          </v-banner>
+          <v-banner
+            v-if="changingRoom === 1"
+            color="primary"
+            class="text-center"
+          >
+            Do you want to enter {{ roomId }} now?
+            <template v-slot:actions>
+              <v-btn text color="secondary" @click="changeRoom">Yes</v-btn>
+              <v-btn text color="secondary" @click="doNotChangeRoom">No</v-btn>
             </template>
           </v-banner>
         </v-card-actions>
@@ -113,21 +121,56 @@
           </v-alert>
         </v-card-text>
       </v-card-text>
+      <v-card-actions>
+        <v-btn
+          color="error"
+          block
+          dark
+          @click="warnRooms"
+          :disabled="!messages.length"
+        >
+          Warn
+          <v-icon>mdi-home-alert</v-icon> Rooms
+        </v-btn>
+      </v-card-actions>
       <v-card-text>
         <v-list dense>
-          <v-row align="center" dense>
-            <v-col>
+          <v-row align="center" justify="space-between" dense>
+            <v-col cols="5">
               <span
                 >{{ daysBack == 0 ? 'Today' : 'All' }} {{ entered }} visits
               </span></v-col
             >
-            <v-col cols="6">
-              <v-checkbox
-                :value="allVisits"
-                label="See all visits"
-                @change="toggleVisits"
-              ></v-checkbox
+            <v-col>
+              <div class="text-center">
+                <v-checkbox
+                  :value="allVisits"
+                  label="See all visits"
+                  @change="toggleVisits"
+                ></v-checkbox></div
             ></v-col>
+
+            <v-col>
+              <div class="text-center">
+                <v-btn
+                  fab
+                  color="primary"
+                  small
+                  @click="refreshConnection(false)"
+                  ><v-icon>mdi-email-sync-outline</v-icon></v-btn
+                >
+              </div>
+            </v-col>
+            <v-col>
+              <div class="text-center">
+                <v-btn
+                  color="warning"
+                  :disabled="!allVisits || !messages.length"
+                  @click="deleteAllMessages"
+                  >Delete all visits</v-btn
+                >
+              </div></v-col
+            >
           </v-row>
           <v-data-table
             :headers="messageHeaders"
@@ -222,8 +265,21 @@ export default {
   components: {},
 
   computed: {
-    availableRooms() {
-      return Room.findIn(Object.keys(this.exposureWarnings));
+    userAgent() {
+      let ua = navigator.userAgent;
+      let userAgent;
+      if (ua.includes('Edg')) {
+        userAgent = 'Edge';
+      } else if (ua.includes('Firefox/82')) {
+        userAgent = 'Firefox Dev';
+      } else if (ua.includes('Firefox/80')) {
+        userAgent = 'Firefox';
+      } else if (ua.includes('Chrome')) {
+        userAgent = 'Chrome';
+      } else {
+        userAgent = 'Unknown ';
+      }
+      return userAgent;
     },
 
     exposureWarnings() {
@@ -338,8 +394,10 @@ export default {
   },
 
   data: () => ({
+    oldRoomId: '',
+    changingRoom: false,
     rating: 3,
-    dialog: true,
+    disconnected: true,
     alertIcon: 'mdi-alert',
     alertColor: '',
     alert: false,
@@ -389,7 +447,6 @@ export default {
     // end socket.io reserved events
     // Server fires this event when a Room opens/closes
     availableRoomsExposed(rooms) {
-      this.log(`Available Rooms: ${rooms.map((v) => v.name)}`);
       Room.$deleteAll();
       console.assert(
         this.rooms.length == 0,
@@ -417,8 +474,8 @@ export default {
   },
 
   methods: {
-    isAvailable(room) {
-      return this.availableRooms.filter((v) => v.roomId == room);
+    refreshConnection(hard) {
+      window.location.reload(hard);
     },
 
     getColor(type) {
@@ -457,10 +514,10 @@ export default {
         message: yourID,
         ack: (ack) => {
           this.log(ack);
-          this.alertColor = 'success';
-          this.alertMessage = ack;
-          this.alertIcon = 'mdi-email-open';
-          this.alert = true;
+          // this.alertColor = 'success';
+          // this.alertMessage = ack;
+          // this.alertIcon = 'mdi-email-open';
+          // this.alert = true;
         },
       };
       this.$socket.emit(payload.event, payload.message, payload.ack);
@@ -537,14 +594,14 @@ export default {
     },
 
     connectToServer() {
-      this.dialog = false;
+      this.disconnected = false;
       // this is async, so let the connect() function set the isConnected property
       this.$socket.connect();
     },
 
     emit(payload) {
       if (!this.$socket.id) {
-        this.dialog = true;
+        this.disconnected = true;
         return;
       }
       this.$socket.emit(payload.event, payload.message, payload.ack);
@@ -554,7 +611,7 @@ export default {
       // open up the message list beyond today
       this.daysBack = 14;
       // get a random number of days back for test data
-      let days = this.getRandomInt(5);
+      let days = this.getRandomIntBetween(2, 14);
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
@@ -573,10 +630,10 @@ export default {
       });
     },
 
-    act() {
+    act(roomId = this.roomId) {
       let msg = {
         visitor: this.yourId,
-        room: this.roomId,
+        room: roomId,
         message: this.checkedOut ? 'Entered' : 'Departed',
         sentTime: new Date().toISOString(),
       };
@@ -593,7 +650,7 @@ export default {
       });
       this.checkedOut = !this.checkedOut;
       let m = this.checkedOut ? 'out of' : 'into';
-      this.log(`You checked ${m}  ${this.roomId}`);
+      this.log(`You checked ${m}  ${roomId}`);
     },
 
     toggleVisits() {
@@ -609,8 +666,9 @@ export default {
       });
     },
 
-    getRandomInt(max) {
-      return Math.floor(Math.random() * Math.floor(max));
+    getRandomIntBetween(min, max) {
+      // return Math.floor(Math.random() * Math.floor(max))-1;
+      return Math.random() * (max - min) + min;
     },
 
     visitedDate(date) {
@@ -632,14 +690,14 @@ export default {
     },
 
     deleteMessage(id) {
-      if (this.daysBack == 0) {
-        let m = `Deleting message ${id}`;
-        this.log(m);
-        Message.delete(id);
-      } else {
-        this.log(`Deleting all messages`);
-        Message.deleteAll();
-      }
+      let m = `Deleting message ${id}`;
+      this.log(m);
+      Message.delete(id);
+    },
+
+    deleteAllMessages() {
+      this.log(`Deleting all messages`);
+      Message.deleteAll();
     },
 
     isBetween(date) {
@@ -670,22 +728,33 @@ export default {
       // this.log('pinging server');
       // this.$socket.emit('ping');
     },
+
+    changeRoom() {
+      this.changingRoom = 0;
+      if (this.oldRoomId) {
+        this.checkedOut = false;
+        // will act on roomId. which one?
+        this.act(this.oldRoomId);
+      }
+      this.checkedOut = true;
+      this.act();
+    },
+    doNotChangeRoom() {
+      // this.checkedOut = !this.checkedOut;
+      this.roomId = this.oldRoomId || this.roomId;
+      this.changingRoom = -1;
+    },
   },
 
   watch: {
-    roomId() {
-      if (!this.checkedOut) {
-        if (confirm('Do you want to check you out of', this.roomId, '?')) {
-          this.checkedOut = !this.checkedOut;
-          this.emit({
-            event: 'leaveRoom',
-            message: this.yourId,
-            ack: (ack) => {
-              let m = `Checked out of: ${ack}`;
-              this.log(m);
-            },
-          });
-        }
+    roomId(newRoomId, oldRoomId) {
+      if (this.changingRoom === -1) {
+        this.changingRoom = 0;
+        return;
+      }
+      this.oldRoomId = oldRoomId;
+      if (newRoomId || oldRoomId) {
+        this.changingRoom = 1;
       }
     },
   },

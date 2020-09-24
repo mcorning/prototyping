@@ -1,16 +1,14 @@
 <template>
   <v-container>
     <v-system-bar color="secondary">
-      <v-row>
-        <v-col v-if="hasRoomManager">
-          <!-- <span class="small">Room Manager: {{ managedRoom }}</span>
-      <v-spacer></v-spacer>
-      <v-checkbox v-model="hasRoomManager" label="RM" small>
-        {{ hasRoomManager }}</v-checkbox
-          >-->
-        </v-col>
-        <v-col>IO:{{ $socket.io.uri }}</v-col>
-        <v-col class="text-right">{{ $build }}</v-col>
+      <v-row align="center">
+        <v-col class="text-left">{{ $socket.io.uri }}</v-col>
+        <v-col class="text-center">UA: {{ userAgent }}</v-col>
+        <v-col class="text-right">
+          <v-btn text @click="refreshConnection(true)">{{
+            $build
+          }}</v-btn></v-col
+        >
       </v-row>
     </v-system-bar>
     <v-card>
@@ -120,7 +118,7 @@
           <v-card-text class="pb-0">
             <v-subheader>
               <v-row align="center" justify="space-between">
-                <v-col cols="auto">
+                <v-col>
                   <span>
                     Today's Visitor Log - {{ entered }} visits [{{
                       uniqueVisitorNames.length
@@ -135,6 +133,15 @@
                     @change="toggleVisits"
                   ></v-checkbox>
                 </v-col>
+                <div class="text-center">
+                  <v-btn
+                    fab
+                    color="primary"
+                    small
+                    @click="refreshConnection(false)"
+                    ><v-icon>mdi-email-sync-outline</v-icon></v-btn
+                  >
+                </div>
               </v-row>
             </v-subheader>
             <v-data-table
@@ -265,6 +272,23 @@ export default {
   name: 'LctRoom',
   components: {},
   computed: {
+    userAgent() {
+      let ua = navigator.userAgent;
+      let userAgent;
+      if (ua.includes('Edg')) {
+        userAgent = 'Edge';
+      } else if (ua.includes('Firefox/82')) {
+        userAgent = 'Firefox Dev';
+      } else if (ua.includes('Firefox/80')) {
+        userAgent = 'Firefox';
+      } else if (ua.includes('Chrome')) {
+        userAgent = 'Chrome';
+      } else {
+        userAgent = 'Unknown ';
+      }
+      return userAgent;
+    },
+
     roomisEmpty() {
       return !this.rooms.length;
     },
@@ -496,7 +520,7 @@ export default {
             v != visitor
               ? 'BE ADVISED: you may have been exposed to the virus'
               : 'CONFIRMING: you may have exposed others to the virus';
-          let msg = `${v}, ${phrase} on ${date}`;
+          let msg = `${v}, ${phrase} on ${moment(date).format('llll')}`;
           let alert = alerts.get(v);
           alerts.set(v, alert ? alert.concat(`, ${date}`) : msg);
         });
@@ -530,6 +554,10 @@ export default {
   },
 
   methods: {
+    refreshConnection(hard) {
+      window.location.reload(hard);
+    },
+
     getColor(type) {
       return type == 'alert' ? 'red--text' : '';
     },
