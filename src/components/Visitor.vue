@@ -611,7 +611,7 @@ export default {
       // open up the message list beyond today
       this.daysBack = 14;
       // get a random number of days back for test data
-      let days = this.getRandomIntBetween(2, 14);
+      let days = this.getRandomIntBetween(2, 4);
       let msg = {
         visitor: this.yourId,
         room: this.roomId,
@@ -698,6 +698,7 @@ export default {
     deleteAllMessages() {
       this.log(`Deleting all messages`);
       Message.deleteAll();
+      this.refreshConnection(true);
     },
 
     isBetween(date) {

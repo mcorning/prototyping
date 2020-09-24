@@ -2,6 +2,10 @@
 
 Incorporate these field notes into ReadMe.md
 
+## Known Issues
+
+1. Enter confirmation dialog appears when the Room dropdown is empty.
+
 ## Local Debugging
 
 1. Start the **socket.io.server** project with F5
