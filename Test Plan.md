@@ -6,23 +6,40 @@ Based on the Invariants in the Specification.md file, we will run the following 
 
 Rooms:
 
-| Room               | userAgent   | url                             |
-| ------------------ | ----------- | ------------------------------- |
-| Heathlands.Medical | Chrome      | http://localhost:8080/room      |
-| ABMS.Medical       | Edge        | http://localhost:8080/room      |
-| AirGas             | FireFox Dev | http://localhost:8080/visitor   |
-| Nurse Diesel       | Chrome      | http://192.168.1.9:8080/visitor |
-| Nurse Jackie       | FireFox 80  | http://localhost:8080/visitor   |
+| Room               | userAgent   | url                               | mode     |
+| ------------------ | ----------- | --------------------------------- | -------- |
+| Heathlands.Medical | Chrome\*    | <http://localhost:8080/visitor>\* | Desktop  |
+| ABMS.Medical       | Edge        | <http://localhost:8080/room>      | Desktop  |
+| AirGas             | FireFox Dev | <http://192.168.1.9:8080/room>    | iPad     |
+| Nurse Diesel       | FireFox Dev | <http://localhost:8080/visitor>   | Galaxy 9 |
+| Nurse Jackie       | FireFox 80  | <http://localhost:8080/visitor>   | iPhone   |
+
+- Default browser during VS Code debugging
 
 ## Build Verification Tests
 
-It is important to **restart the socket.io server** to accurately run BVTs.
+For accurate and reliable BVTs, all tests must start with a known good state. The BVTs test state changes themselves. Incorporating the vagaries of the real world is the domain of acceptance testing.
+
+### Last Known State
+
+We must reset the state of the socket.io server and of all the web clients in the BVT.
+
+#### Socket.io Server
+
+It is important to **restart the socket.io server** to accurately run BVTs. From the socket.io workspace in VS Code (VSC):
+
+- at the command line, enter `nodemon .` to start the server without debugging, or
+- hit `F5` to start the VSC debugger
+
+> NOTE: use `nodemon` (instead of `node`) so that when you call `git pull` on the VM the socket.io server will reatart automatically
 
 With a Room vue open, when the server starts, it will reconnect with the Room. This will send an event to all Visitors that the Room is now open, and the `Visit Room` dropdown will include the name of Room.
 
-Next, ensure the Visitor vues are initialized:
+#### Room and Visitor Vues
 
-1. Check the `See all visits` box in all Visitor vues
+We use .vue files to hold code for Room. and Visitors. To ensure the Visitor vues are initialized:
+
+1. Check the `See all visits` box in all **Room** and **Visitor** vues
 2. If there are no old visits listed
    1. Click the `Refresh` button else
    2. Click the `DELETE ALL VISITS` button (this will delete visits and refresh the page)

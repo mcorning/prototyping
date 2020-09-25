@@ -5,6 +5,7 @@ Incorporate these field notes into ReadMe.md
 ## Known Issues
 
 1. Enter confirmation dialog appears when the Room dropdown is empty.
+2. Warning dialog has extraneous dates
 
 ## Local Debugging
 

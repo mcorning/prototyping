@@ -5,9 +5,9 @@
         <v-col class="text-left">{{ $socket.io.uri }}</v-col>
         <v-col class="text-center">UA: {{ userAgent }}</v-col>
         <v-col class="text-right">
-          <v-btn text @click="refreshConnection(true)">{{
-            $build
-          }}</v-btn></v-col
+          <v-btn text @click="refreshConnection(true)"
+            ><v-icon>mdi-block-helper</v-icon>{{ $build }}</v-btn
+          ></v-col
         >
       </v-row>
     </v-system-bar>
@@ -142,6 +142,16 @@
                     ><v-icon>mdi-email-sync-outline</v-icon></v-btn
                   >
                 </div>
+                <v-col>
+                  <div class="text-center">
+                    <v-btn
+                      color="warning"
+                      :disabled="!seeAllVisits || !messages.length"
+                      @click="deleteAllMessages"
+                      >Delete all visits</v-btn
+                    >
+                  </div></v-col
+                >
               </v-row>
             </v-subheader>
             <v-data-table
@@ -214,9 +224,20 @@
     </v-system-bar>
     <v-card>
       <v-card-title>Audit Trail</v-card-title>
+      <v-card-title>
+        <v-text-field
+          v-model="search"
+          append-icon="fa-search"
+          label="Search"
+          single-line
+          hide-details
+        ></v-text-field>
+      </v-card-title>
       <v-data-table
+        :search="search"
         :headers="logHeaders"
         :items="cons"
+        group-by="type"
         :sort-by="['sentTime', 'type']"
         :sort-desc="[true, false]"
         multi-sort
@@ -224,21 +245,26 @@
         item-key="id"
         dense
         :items-per-page="15"
-        group-by="type"
         class="elevation-1"
       >
         <template v-slot:item.message="{ item }">
-          <v-card flat min-width="200" :class="getColor(item.type)">
-            {{ item.message }}</v-card
+          <v-textarea
+            auto-grow
+            full-width
+            :value="item.message"
+            background-color="grey lighten-3"
+            color="red"
+          >
+            <span class="red--text">{{ item.message }}</span></v-textarea
           >
         </template>
         <template v-slot:item.sentTime="{ item }">
-          <v-card flat min-width="200" :class="getColor(item.type)">
+          <v-card flat min-width="200" class="text-right">
             {{ visitedDate(item.sentTime) }}</v-card
           >
         </template>
         <template v-slot:item.type="{ item }">
-          <v-icon :color="getColor(item.type)">mdi-{{ item.type }}</v-icon>
+          <v-icon :color="getTextColor(item.type)">mdi-{{ item.type }}</v-icon>
         </template>
       </v-data-table>
       <div class="text-center">
@@ -279,7 +305,7 @@ export default {
         userAgent = 'Edge';
       } else if (ua.includes('Firefox/82')) {
         userAgent = 'Firefox Dev';
-      } else if (ua.includes('Firefox/80')) {
+      } else if (ua.includes('Firefox') || ua.includes('KHTML')) {
         userAgent = 'Firefox';
       } else if (ua.includes('Chrome')) {
         userAgent = 'Chrome';
@@ -520,9 +546,14 @@ export default {
             v != visitor
               ? 'BE ADVISED: you may have been exposed to the virus'
               : 'CONFIRMING: you may have exposed others to the virus';
-          let msg = `${v}, ${phrase} on ${moment(date).format('llll')}`;
+          let msg = `${v}, ${phrase} on date(s): ${moment(date).format(
+            'llll'
+          )}`;
           let alert = alerts.get(v);
-          alerts.set(v, alert ? alert.concat(`, ${date}`) : msg);
+          alerts.set(
+            v,
+            alert ? alert.concat(`, ${moment(date).format('llll')}`) : msg
+          );
         });
       });
 
@@ -558,7 +589,7 @@ export default {
       window.location.reload(hard);
     },
 
-    getColor(type) {
+    getTextColor(type) {
       return type == 'alert' ? 'red--text' : '';
     },
     groupBy(payload) {
@@ -687,14 +718,13 @@ export default {
     // helper methods
     disconnectFromServer() {
       console.log('Disconnection from Server');
-      this.$socket.disconnect();
+      this.$socket.disconnect(true); // passing true closes underlying connnection
     },
 
     log(msg, type = 'information') {
       this.cons.push({
         sentTime: moment(),
         type: type,
-
         message: msg,
       });
     },
@@ -740,15 +770,17 @@ export default {
     },
 
     deleteMessage(id) {
-      if (this.daysBack == 0) {
-        let m = `Deleting message ${id}`;
-        this.log(m);
-        Message.delete(id);
-      } else {
-        this.log(`Deleting all messages`);
-        Message.deleteAll();
-      }
+      let m = `Deleting message ${id}`;
+      this.log(m);
+      Message.delete(id);
     },
+
+    deleteAllMessages() {
+      this.log(`Deleting all messages`);
+      Message.deleteAll();
+      this.refreshConnection(true);
+    },
+
     // end helper methods
   },
 
@@ -764,11 +796,12 @@ export default {
       self.socketId = self.$socket.id;
       self.log(`Mounted with socket ${self.socketId}`);
     }
-    self.log(navigator.userAgent);
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
     await Message.$fetch();
+    // log the useragent in case we can't recognize it
+    self.log(navigator.userAgent);
   },
 };
 </script>

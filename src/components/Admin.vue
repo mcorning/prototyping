@@ -5,8 +5,84 @@
         <v-col>IO:{{ $socket.io.uri }}</v-col>
         <v-col>Build: {{ $build }} </v-col>
         <v-col>Socket: {{ $socket.id }} </v-col>
-      </v-row> </v-system-bar
-    ><v-card>
+      </v-row>
+    </v-system-bar>
+
+    <v-card>
+      <v-card-title>Room Admin</v-card-title>
+      <v-card-subtitle>Monitor Socket.io Server</v-card-subtitle>
+      <v-card-text>
+        <v-row>
+          <v-col>
+            <v-row>
+              <v-col>
+                <v-btn block @click="getAvailableRooms()"
+                  >Refresh Available Rooms</v-btn
+                ></v-col
+              ></v-row
+            >
+            <v-row>
+              <v-col>
+                <v-btn block @click="getVisitorRooms()"
+                  >Refresh Visitor's Rooms</v-btn
+                ></v-col
+              ></v-row
+            >
+          </v-col>
+          <v-col>
+            <v-data-table
+              :headers="availableRoomsHeaders"
+              :items="listedRooms"
+              multi-sort
+              item-key="name"
+              dense
+              group-by="type"
+              :items-per-page="10"
+              class="elevation-1"
+            >
+            </v-data-table>
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-text>
+        <v-row>
+          <v-col>
+            <v-btn @click="getOccupiedRooms()">Refresh Occupied Rooms</v-btn>
+          </v-col>
+          <v-col>
+            <v-data-table
+              :headers="occupiedRoomsHeaders"
+              :items="occupiedRooms"
+              multi-sort
+              item-key="room"
+              dense
+              :items-per-page="5"
+              class="elevation-1"
+            >
+            </v-data-table>
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-text>
+        <v-row>
+          <v-col>
+            <v-btn @click="getPendingRooms()">Refresh Pending Rooms</v-btn>
+          </v-col>
+          <v-col>
+            <v-data-table
+              item-key="name"
+              :headers="pendingRoomsHeaders"
+              :items="pendingRooms"
+              multi-sort
+              dense
+              :items-per-page="10"
+              class="elevation-1"
+            >
+            </v-data-table>
+          </v-col> </v-row
+      ></v-card-text>
+    </v-card>
+    <v-card>
       <v-card-title>World Clock</v-card-title>
       <v-card-text>
         <v-row>
@@ -74,97 +150,38 @@
       </v-card-text>
     </v-card>
     <v-card>
-      <v-card-title>Room Admin</v-card-title>
-      <v-card-subtitle>Monitor Socket.io Server</v-card-subtitle>
-      <v-card-text>
-        <v-row>
-          <v-col>
-            <v-btn @click="getAvailableRooms()">Refresh Available Rooms</v-btn>
-          </v-col>
-          <v-col>
-            <v-data-table
-              :headers="availableRoomsHeaders"
-              :items="availableRooms"
-              multi-sort
-              item-key="name"
-              dense
-              :items-per-page="10"
-              class="elevation-1"
-            >
-            </v-data-table>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-btn @click="getPendingRooms()">Refresh Pending Rooms</v-btn>
-          </v-col>
-          <v-col>
-            <v-data-table
-              item-key="name"
-              :headers="pendingRoomsHeaders"
-              :items="pendingRooms"
-              multi-sort
-              dense
-              :items-per-page="10"
-              class="elevation-1"
-            >
-            </v-data-table>
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-text>
-        <v-row>
-          <v-col>
-            <v-btn @click="getOccupiedRooms()">Refresh Occupied Rooms</v-btn>
-          </v-col>
-          <v-col>
-            <v-data-table
-              :headers="occupiedRoomsHeaders"
-              :items="occupiedRooms"
-              multi-sort
-              item-key="room"
-              dense
-              :items-per-page="5"
-              class="elevation-1"
-            >
-            </v-data-table>
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-text>
-        <v-row>
-          <v-col>
-            <v-btn @click="getVisitorRooms()">Refresh Visitor's Rooms</v-btn>
-          </v-col>
-          <v-col>
-            <v-data-table
-              :headers="visitorHeaders"
-              :items="visitorsRooms"
-              multi-sort
-              item-key="name"
-              dense
-              :items-per-page="10"
-              class="elevation-1"
-            >
-            </v-data-table>
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
-
-    <v-card>
       <v-card-title>Audit Trail</v-card-title>
+      <v-card-title>
+        <v-text-field
+          v-model="search"
+          append-icon="mdi-magnify"
+          label="Search"
+          single-line
+          hide-details
+        ></v-text-field>
+      </v-card-title>
       <v-data-table
+        :search="search"
         :headers="logHeaders"
         :items="cons"
+        group-by="type"
         multi-sort
         item-key="id"
         dense
-        :items-per-page="5"
+        :items-per-page="15"
         class="elevation-1"
       >
+        <template v-slot:item.message="{ item }">
+          <v-textarea
+            :value="item.message"
+            background-color="grey lighten-3"
+          ></v-textarea>
+        </template>
+
         <template v-slot:item.sentTime="{ item }">
-          {{ visitedDate(item.sentTime) }}
+          <v-card flat min-width="200" class="text-right">
+            {{ visitedDate(item.sentTime) }}</v-card
+          >
         </template>
       </v-data-table>
       <div class="text-center">
@@ -213,6 +230,9 @@ export default {
   },
   data() {
     return {
+      visitFormat: 'HH:mm on ddd, MMM DD',
+
+      search: '',
       sistersClock: this.getSistersTime(),
       sistersTime: mtz
         .utc()
@@ -233,6 +253,7 @@ export default {
 
       // namespaces: ['/'],
       availableRooms: [],
+      listedRooms: [],
       pendingRooms: [],
       occupiedRooms: [],
       visitorsRooms: [],
@@ -243,14 +264,12 @@ export default {
         { text: 'Visitors  ', value: 'visitors' },
       ],
       availableRoomsHeaders: [
-        { text: 'Room', value: 'name' },
+        { text: 'Type', value: 'type' },
+        { text: 'Room/Visitor', value: 'name' },
         { text: 'Socket ID', value: 'id' },
       ],
       pendingRoomsHeaders: [{ text: 'Room', value: 'name' }],
-      visitorHeaders: [
-        { text: 'Visitor', value: 'name' },
-        { text: 'Socket ID', value: 'id' },
-      ],
+
       logHeaders: [
         { text: 'Message', value: 'message' },
         { text: 'Sent  ', value: 'sentTime' },
@@ -274,21 +293,37 @@ export default {
     // end socket.io reserved events
 
     //App event handlers
+    // list looks like this: '[{"name":"Heathlands.Medical","id":"P9AdUxzLaJqE3i1PAAAA"}]'
     availableRoomsExposed(list) {
       // let list = rooms.length ? rooms : ['No Rooms are online right now.'];
-      this.availableRooms = list;
-      this.log(`Available Rooms: ${list}`);
+      this.availableRooms = list.map((v) => {
+        v['type'] = 'available';
+        return v;
+      });
+      this.log(`Visitors Rooms: ${JSON.stringify(list, null, '\t')}`, 'debug');
     },
-
+    // list looks like this: '[{"name":"AirGas","id":"UDCFuaoF-qJt4360AAAR"}]'
+    visitorsRoomsExposed(list) {
+      // let list = rooms.length ? rooms : ['No Visitors yet today.'];
+      this.visitorsRooms = list.map((v) => {
+        v['type'] = 'visitor';
+        return v;
+      });
+      this.listedRooms = [...this.availableRooms, ...this.visitorsRooms];
+      this.log(`Visitors Rooms: ${JSON.stringify(list, null, '\t')}`, 'debug');
+    },
     pendingRoomsExposed(list = ['No Rooms are online right now.']) {
       this.pendingRooms = list.map((v) => {
         let x = {};
         x['name'] = v;
+        x['type'] = 'pending';
         return x;
       });
+
       this.log(`Pending Rooms: ${list}`);
     },
 
+    // rooms looks like this: '[["ABMS.Medical",{"sockets":{"9hc2HMTpeMGUQgg2AAAS":true,"UDCFuaoF-qJt4360AAAR":true},"length":2}]]'
     occupiedRoomsExposed(rooms) {
       if (!rooms) {
         this.log('No occupied Rooms');
@@ -309,15 +344,16 @@ export default {
       this.occupiedRooms = list;
       this.log(`Handled Occupied Rooms`);
     },
-
-    visitorsRoomsExposed(list) {
-      // let list = rooms.length ? rooms : ['No Visitors yet today.'];
-      this.visitorsRooms = list;
-      this.log(`Visitors Rooms: ${list}`);
-    },
   },
 
   methods: {
+    getTextColor(type) {
+      return type == 'alert'
+        ? 'red--text'
+        : type == 'debug'
+        ? 'orange--text'
+        : '';
+    },
     refresh() {
       this.$socket.emit('exposeAvailableRooms');
       this.$socket.emit('exposePendingRooms');
@@ -350,9 +386,10 @@ export default {
     },
 
     // helper methods
-    log(msg) {
+    log(msg, type = 'information') {
       this.cons.push({
         sentTime: moment(),
+        type: type,
         message: msg,
       });
     },

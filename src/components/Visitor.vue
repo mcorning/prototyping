@@ -5,9 +5,9 @@
         <v-col class="text-left">{{ $socket.io.uri }}</v-col>
         <v-col class="text-center">UA: {{ userAgent }}</v-col>
         <v-col class="text-right">
-          <v-btn text @click="refreshConnection(true)">{{
-            $build
-          }}</v-btn></v-col
+          <v-btn text @click="refreshConnection(true)"
+            ><v-icon>mdi-block-helper</v-icon>{{ $build }}</v-btn
+          ></v-col
         >
       </v-row>
 
@@ -84,7 +84,7 @@
           </v-col>
         </v-row>
 
-        <v-card-actions>
+        <v-card-text class=" py-1">
           <v-banner v-if="disconnected" class="text-center">
             At the moment, the Server doesn't know about you. Reconnect?
             <template v-slot:actions>
@@ -105,8 +105,7 @@
               <v-btn text color="secondary" @click="doNotChangeRoom">No</v-btn>
             </template>
           </v-banner>
-        </v-card-actions>
-        <v-card-text class=" mb-4">
+
           <v-alert
             :value="alert"
             light
@@ -121,7 +120,7 @@
           </v-alert>
         </v-card-text>
       </v-card-text>
-      <v-card-actions>
+      <v-card-actions class="py-1">
         <v-btn
           color="error"
           block
@@ -205,7 +204,17 @@
     </v-system-bar>
     <v-card>
       <v-card-title>Audit Trail</v-card-title>
+      <v-card-title>
+        <v-text-field
+          v-model="search"
+          append-icon="fa-search"
+          label="Search"
+          single-line
+          hide-details
+        ></v-text-field>
+      </v-card-title>
       <v-data-table
+        :search="search"
         :headers="logHeaders"
         :items="cons"
         multi-sort
@@ -220,17 +229,20 @@
         class="elevation-1"
       >
         <template v-slot:item.message="{ item }">
-          <v-card flat min-width="200" :class="getColor(item.type)">
-            {{ item.message }}</v-card
-          >
+          <v-textarea
+            auto-grow
+            full-width
+            :value="item.message"
+            background-color="grey lighten-3"
+          ></v-textarea>
         </template>
         <template v-slot:item.sentTime="{ item }">
-          <v-card flat min-width="200" :class="getColor(item.type)">
+          <v-card flat min-width="200" class="text-right">
             {{ visitedDate(item.sentTime) }}</v-card
           >
         </template>
         <template v-slot:item.type="{ item }">
-          <v-icon :color="getColor(item.type)">mdi-{{ item.type }}</v-icon>
+          <v-icon :color="getTextColor(item.type)">mdi-{{ item.type }}</v-icon>
         </template>
       </v-data-table>
       <div class="text-center">
@@ -272,12 +284,12 @@ export default {
         userAgent = 'Edge';
       } else if (ua.includes('Firefox/82')) {
         userAgent = 'Firefox Dev';
-      } else if (ua.includes('Firefox/80')) {
+      } else if (ua.includes('Firefox') || ua.includes('KHTML')) {
         userAgent = 'Firefox';
       } else if (ua.includes('Chrome')) {
         userAgent = 'Chrome';
       } else {
-        userAgent = 'Unknown ';
+        userAgent = 'Unknown';
       }
       return userAgent;
     },
@@ -478,7 +490,7 @@ export default {
       window.location.reload(hard);
     },
 
-    getColor(type) {
+    getTextColor(type) {
       return type == 'alert' ? 'red--text' : '';
     },
 
@@ -777,6 +789,7 @@ export default {
     await State.$fetch();
     await Message.$fetch();
     this.$socket.emit('exposeAvailableRooms');
+    // log the useragent in case we can't recognize it
     this.log(navigator.userAgent);
   },
 };
