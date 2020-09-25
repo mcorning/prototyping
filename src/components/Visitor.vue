@@ -229,12 +229,9 @@
         class="elevation-1"
       >
         <template v-slot:item.message="{ item }">
-          <v-textarea
-            auto-grow
-            full-width
-            :value="item.message"
-            background-color="grey lighten-3"
-          ></v-textarea>
+          <v-card flat :class="getTextColor(item.type)">
+            {{ item.message }}
+          </v-card>
         </template>
         <template v-slot:item.sentTime="{ item }">
           <v-card flat min-width="200" class="text-right">
@@ -242,7 +239,7 @@
           >
         </template>
         <template v-slot:item.type="{ item }">
-          <v-icon :color="getTextColor(item.type)">mdi-{{ item.type }}</v-icon>
+          <v-icon :color="getIconColor(item.type)">mdi-{{ item.type }}</v-icon>
         </template>
       </v-data-table>
       <div class="text-center">
@@ -282,12 +279,12 @@ export default {
       let userAgent;
       if (ua.includes('Edg')) {
         userAgent = 'Edge';
+      } else if (ua.includes('Chrome')) {
+        userAgent = 'Chrome';
       } else if (ua.includes('Firefox/82')) {
         userAgent = 'Firefox Dev';
       } else if (ua.includes('Firefox') || ua.includes('KHTML')) {
         userAgent = 'Firefox';
-      } else if (ua.includes('Chrome')) {
-        userAgent = 'Chrome';
       } else {
         userAgent = 'Unknown';
       }
@@ -492,6 +489,9 @@ export default {
 
     getTextColor(type) {
       return type == 'alert' ? 'red--text' : '';
+    },
+    getIconColor(type) {
+      return type == 'alert' ? 'red' : 'gray';
     },
 
     // this is a (more?) functional way to do grouping
