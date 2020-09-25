@@ -2,6 +2,7 @@
   <v-container>
     <v-card max-width="350" outlined>
       <v-card-title>Supporting Documents</v-card-title>
+
       <v-card-text
         ><a
           href="https://htmlpreview.github.io/?https://github.com/mcorning/prototyping/blob/master/out/Specification.html"
@@ -58,9 +59,10 @@
             alt="Enduring Net Logo"
             class="shrink mr-2"
             contain
-            src="@/assets/Enduring-Net-Logo-Vertical-Purple-RGB-BG.png"
+            src="@/assets/Enduring-Net-Logo-Portrait-Purple-RGB-BG.png"
           />
         </a>
+
         <a href="https://secours.io/" target="_blank">
           <v-img
             alt="Secours Logo"

@@ -11,7 +11,7 @@
             alt="Enduring Net Logo"
             class="shrink mr-2"
             contain
-            src="@/assets/Enduring-Net-Logo-Vertical-Purple-RGB-BG.png"
+            src="@/assets/Enduring-Net-Logo-Portrait-Purple-RGB-BG.png"
             max-width="100"
         /></v-btn>
         <!-- <soteria-icon /> -->
