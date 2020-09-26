@@ -492,19 +492,11 @@ export default {
     checkOut(msg) {
       this.messages = msg;
     },
-    //
-
-    // Room event handlers
-
     // end socket.io reserved events
 
-    updatedOccupancy(payload) {
-      if (payload.room == this.roomId) {
-        this.occupancy = payload.occupancy;
-      }
-      this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
-    },
-
+    // Room event handlers
+    // Server sent notifyRoom (because Server received exposureWarning from Visitor)
+    // Room takes over and sends Server an alertVisitor event to all effected Visitors
     notifyRoom(data, ack) {
       this.alert = false;
       // data can be on object or an array
@@ -552,6 +544,8 @@ export default {
       });
 
       // iterate the Map and emit alertVisitor event
+      // Server will ensure a Visitor is online before forwarding event
+      // otherwise, cache Visitor until they login again
       for (let [key, value] of alerts.entries()) {
         this.emit({
           event: 'alertVisitor',
@@ -575,6 +569,14 @@ export default {
       this.alertColor = 'warning';
       this.alertIcon = 'mdi-home-alert';
       this.alert = true;
+    },
+
+    // used for UI only
+    updatedOccupancy(payload) {
+      if (payload.room == this.roomId) {
+        this.occupancy = payload.occupancy;
+      }
+      this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
     },
   },
 

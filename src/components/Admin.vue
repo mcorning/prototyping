@@ -9,8 +9,7 @@
     </v-system-bar>
 
     <v-card>
-      <v-card-title>Room Admin</v-card-title>
-      <v-card-subtitle>Monitor Socket.io Server</v-card-subtitle>
+      <v-card-title>Socket.io Server Monitor</v-card-title>
       <v-card-text>
         <v-row>
           <v-col>
@@ -43,6 +42,14 @@
             </v-data-table>
           </v-col>
         </v-row>
+      </v-card-text>
+      <v-card-text>
+        <v-card-subtitle>Pending Visitors</v-card-subtitle>
+        <v-textarea
+          auto-grow
+          color="red"
+          :value="JSON.stringify(pendingVisitors, null, '\t')"
+        ></v-textarea>
       </v-card-text>
       <v-card-text>
         <v-row>
@@ -230,6 +237,7 @@ export default {
   },
   data() {
     return {
+      pendingVisitors: new Map(),
       visitFormat: 'HH:mm on ddd, MMM DD',
 
       search: '',
@@ -293,6 +301,10 @@ export default {
     // end socket.io reserved events
 
     //App event handlers
+    pendingVisitorsExposed(list) {
+      this.pendingVisitors = [...this.pendingVisitors, ...list];
+    },
+
     // list looks like this: '[{"name":"Heathlands.Medical","id":"P9AdUxzLaJqE3i1PAAAA"}]'
     availableRoomsExposed(list) {
       // let list = rooms.length ? rooms : ['No Rooms are online right now.'];
@@ -452,7 +464,7 @@ export default {
 
     self.singaporeClock = self.getSingaporeTime();
     setInterval(self.getSingaporeTime, 60000);
-
+    this.log(this.pendingVisitors, 'alert');
     console.log('Admin.vue mounted');
   },
 };

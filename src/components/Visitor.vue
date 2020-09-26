@@ -105,7 +105,6 @@
               <v-btn text color="secondary" @click="doNotChangeRoom">No</v-btn>
             </template>
           </v-banner>
-
           <v-alert
             :value="alert"
             light
@@ -194,11 +193,16 @@
     </v-card>
     <v-system-bar color="secondary">
       <v-row align="center">
-        <v-col cols="10">Socket: {{ $socket.id }}</v-col>
-        <v-col cols="2" class="text-right"
+        <v-col>Socket: {{ $socket.id }}</v-col>
+        <v-col class="text-right"
           ><v-btn @click="addTestMessage" text
             ><v-icon>mdi-test-tube</v-icon></v-btn
           >
+        </v-col>
+        <v-col class="text-right">
+          <v-btn @click="disconnectFromServer" text>
+            <v-icon>mdi-door-closed-lock</v-icon>
+          </v-btn>
         </v-col>
       </v-row>
     </v-system-bar>
@@ -483,6 +487,11 @@ export default {
   },
 
   methods: {
+    disconnectFromServer() {
+      console.log('Disconnection from Server');
+      this.$socket.disconnect(true); // passing true closes underlying connnection
+    },
+
     refreshConnection(hard) {
       window.location.reload(hard);
     },
@@ -545,7 +554,10 @@ export default {
     // Server relays message to each Room.
     warnRooms() {
       // // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
+
+      //testing late alerts
       this.alert = false;
+
       // returns something like this:
       // exposureWarnings = {
       //   visitor: 'Michael',
