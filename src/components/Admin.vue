@@ -27,6 +27,11 @@
                 ></v-col
               ></v-row
             >
+            <v-row>
+              <v-col>
+                <v-btn block @click="getAllRooms()">Get All Rooms</v-btn></v-col
+              ></v-row
+            >
           </v-col>
           <v-col>
             <v-data-table
@@ -305,6 +310,15 @@ export default {
       this.pendingVisitors = [...this.pendingVisitors, ...list];
     },
 
+    // list looks like this: [{"name": "cMmtMjvRKxvSNRlUAAAA",		"id": "cMmtMjvRKxvSNRlUAAAA",		"type": ""	}],
+    allRoomsExposed(list) {
+      this.availableRooms = list.map((v) => {
+        v['type'] = 'raw';
+        return v;
+      });
+      this.listedRooms = [...this.availableRooms, ...this.visitorsRooms];
+      this.log(`All Rooms: ${JSON.stringify(list, null, '\t')}`, 'debug');
+    },
     // list looks like this: '[{"name":"Heathlands.Medical","id":"P9AdUxzLaJqE3i1PAAAA"}]'
     availableRoomsExposed(list) {
       // let list = rooms.length ? rooms : ['No Rooms are online right now.'];
@@ -312,7 +326,9 @@ export default {
         v['type'] = 'available';
         return v;
       });
-      this.log(`Visitors Rooms: ${JSON.stringify(list, null, '\t')}`, 'debug');
+      this.listedRooms = [...this.availableRooms, ...this.visitorsRooms];
+
+      this.log(`Available Rooms: ${JSON.stringify(list, null, '\t')}`, 'debug');
     },
     // list looks like this: '[{"name":"AirGas","id":"UDCFuaoF-qJt4360AAAR"}]'
     visitorsRoomsExposed(list) {
@@ -367,6 +383,7 @@ export default {
         : '';
     },
     refresh() {
+      this.$socket.emit('exposeAllRooms');
       this.$socket.emit('exposeAvailableRooms');
       this.$socket.emit('exposePendingRooms');
       this.$socket.emit('exposeOccupiedRooms');
@@ -383,6 +400,9 @@ export default {
     },
     getClockColor(thisClock) {
       return thisClock.includes('PM') ? 'black' : 'gray';
+    },
+    getAllRooms() {
+      this.$socket.emit('exposeAllRooms');
     },
     getAvailableRooms() {
       this.$socket.emit('exposeAvailableRooms');

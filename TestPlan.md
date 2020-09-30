@@ -6,13 +6,13 @@ Based on the Invariants in the Specification.md file, we will run the following 
 
 Rooms:
 
-| Room               | userAgent   | url                               | mode     |
-| ------------------ | ----------- | --------------------------------- | -------- |
-| Heathlands.Medical | Chrome\*    | <http://localhost:8080/visitor>\* | Desktop  |
-| ABMS.Medical       | Edge        | <http://localhost:8080/room>      | Desktop  |
-| AirGas             | FireFox Dev | <http://192.168.1.9:8080/room>    | iPad     |
-| Nurse Diesel       | FireFox Dev | <http://localhost:8080/visitor>   | Galaxy 9 |
-| Nurse Jackie       | FireFox 80  | <http://localhost:8080/visitor>   | iPhone   |
+| Room               | userAgent   | url                                | mode     |
+| ------------------ | ----------- | ---------------------------------- | -------- |
+| Heathlands.Medical | Chrome\*    | <http://localhost:8080/visitor>\*  | Desktop  |
+| ABMS.Medical       | Edge        | <http://localhost:8080/room>       | Desktop  |
+| AirGas             | FireFox Dev | <http://192.168.1.9:8080/room>     | iPad     |
+| Nurse Diesel       | FireFox Dev | <http://localhost:8080/visitor>    | Galaxy 9 |
+| Nurse Jackie       | FireFox 80  | <http://192.168.1.5:8080//visitor> | iPhone   |
 
 - Default browser during VS Code debugging
 
