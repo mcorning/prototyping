@@ -4,6 +4,10 @@
 // self-documenting behavior
 // ioClient event acknowledgements return state change
 // state change is basis of assertions
+const clc = require('cli-color');
+const error = clc.red.bold;
+const warn = clc.yellow;
+const notice = clc.blue;
 
 const io = require('socket.io-client');
 const ioClient = io.connect('http://localhost:3003/');
@@ -11,30 +15,48 @@ const DEBUG = 0; // use this to control some log spew
 const visitorName = 'Nurse Diesel';
 
 const EnterRoomTransition = (visitor) => new EnterRoom(visitor);
+const LeaveRoomTransition = (visitor) => new LeaveRoom(visitor);
 const DisconnectTransition = (visitor) => new Disconnect(visitor);
 const OpenMyRoomTransition = (visitor) => new OpenMyRoom(visitor);
 const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
 
+const transitions = [
+  ['Connect', [OpenMyRoomTransition, WarnRoomsTransition]],
+  ['OpenMyRoom', [EnterRoomTransition, WarnRoomsTransition]],
+  ['WarnRooms', []],
+  ['EnterRoom', [LeaveRoomTransition]],
+  ['LeaveRoom', [DisconnectTransition, EnterRoomTransition]],
+  ['Disconnect', []],
+];
+let enabledTransitionsFor = new Map(transitions);
+
+// entry point for state machine is inside socket.io connect event handler
 ioClient.on('connect', () => {
   console.log('Socket.io Client ID:', ioClient.id);
   console.log('Visitor Name:', visitorName);
   run();
 });
 
-// this test is driven from the socket.io server (when enabled)
-ioClient.on('exposureAlert', (alertMessage) => console.error(alertMessage));
-// end of server-driven test
+const fire = (visitor) => {
+  const { count, currentState } = visitor;
 
-// helper function for this.fireTransition() that can handle multiple enabled transitions:
-function fireFrom(visitor, enabledTransitions) {
-  const idx = Math.floor(Math.random() * enabledTransitions.length);
-  const transition = enabledTransitions[idx];
+  const et = enabledTransitionsFor.get(currentState.constructor.name);
+  const transition = et[Math.floor(Math.random() * et.length)];
   log.add(
-    `${visitor.count}) State: ${visitor.currentState.constructor.name} Transition: ${transition.name}`
+    `${count}) State: ${currentState.constructor.name} Transition: ${
+      transition ? transition.name : 'Finished'
+    }`
   );
+  if (transition) {
+    visitor.change(transition(visitor));
+  }
+};
 
-  visitor.change(transition(visitor));
-}
+// this test is driven from the socket.io server (when enabled)
+ioClient.on('exposureAlert', (alertMessage) =>
+  console.log(error('ALERT:', alertMessage))
+);
+// end of server-driven test
 
 // base class
 const Visitor = function(name, rooms) {
@@ -47,9 +69,9 @@ const Visitor = function(name, rooms) {
   console.log('============================================');
   console.log('Tested State/Transitions:');
 
+  // be sure you call Connect after setting all properties and methods a Visitor will need
   this.currentState = new Connect(this);
 
-  // be sure you call Connect after setting all properties and methods a Visitor will need
   this.change = function(state) {
     // limits number of changes
     if (!this.count--) return;
@@ -63,6 +85,7 @@ const Visitor = function(name, rooms) {
 };
 
 // State/Transition functions
+
 const Connect = function(visitor) {
   this.visitor = visitor;
   const { room } = visitor;
@@ -83,9 +106,8 @@ const Connect = function(visitor) {
     DEBUG && console.log(oracle);
   });
 
-  // sometimes fireTransition has more then one option. if so, delegate to fireFrom()
   this.fireTransition = function() {
-    fireFrom(visitor, [OpenMyRoomTransition, WarnRoomsTransition]);
+    fire(visitor);
   };
 };
 
@@ -105,34 +127,33 @@ const WarnRooms = function(visitor) {
     warnings: warnings,
   };
   ioClient.emit('exposureWarning', msg, (ack) => {
-    ack.slice(0, 7) == 'WARNING' ? console.error(ack) : console.log(ack);
+    ack.slice(0, 7) == 'WARNING'
+      ? console.log(error(ack))
+      : console.log(warn(ack));
   });
 
-  // sometimes fireTransition has more then one option. if so, delegate to fireFrom()
-  // other times, there's only one enabled transition
-  // so, for now, we ensure a Visitor always checks-in first thing
   this.fireTransition = function() {
-    log.add(`${visitor.count}) State: WarnRooms`);
-
-    visitor.change(new LeaveRoom(visitor));
+    fire(visitor);
+    ioClient.emit('disconnect');
   };
 };
 
 const OpenMyRoom = function(visitor) {
   this.visitor = visitor;
-  const { name, count } = visitor;
+  const { name } = visitor;
 
   // this call to openMyRoom is for a Visitor to map its ioClient.id to a human-readable name
   ioClient.emit('openMyRoom', name, (ack) => {
     console.log(ack.message);
   });
   this.fireTransition = function() {
-    log.add(`${count}) State: OpenMyRoom  Transition: EnterRoom`);
-    visitor.change(new EnterRoom(visitor));
+    fire(visitor);
   };
 };
 
 const EnterRoom = function(visitor) {
+  this.visitor = visitor;
+
   const { name, room } = visitor;
 
   const msg = {
@@ -148,9 +169,7 @@ const EnterRoom = function(visitor) {
   // NOTE: we could use the same enabledTransition scheme as LeaveRoom
   // but for now, we ensure a Visitor always checks-in
   this.fireTransition = function() {
-    log.add(`${visitor.count}) State: EnterRoom  Transition: LeaveRoom`);
-
-    visitor.change(new LeaveRoom(visitor));
+    fire(visitor);
   };
 };
 
@@ -159,17 +178,16 @@ const LeaveRoom = function(visitor) {
   this.visitor = visitor;
 
   this.fireTransition = function() {
-    fireFrom(visitor, [DisconnectTransition, EnterRoomTransition]);
+    fire(visitor);
   };
 };
 
 // disconnect from server (e.g., shut down browser)
 const Disconnect = function(visitor) {
+  this.visitor = visitor;
+
   this.fireTransition = function() {
-    visitor.count = 0;
-    log.add(
-      `${visitor.count}) State: Disconnect ${ioClient.id} Transition: none`
-    );
+    fire(visitor);
     ioClient.emit('disconnect');
   };
 };
