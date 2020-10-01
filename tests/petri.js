@@ -1,23 +1,30 @@
+// based on a true story: https://dofactory.com/javascript/design-patterns/state
+
 // Model-based test of Visitor
 // self-documenting behavior
-// socket event acknowledgements return state change
+// ioClient event acknowledgements return state change
 // state change is basis of assertions
 
 const io = require('socket.io-client');
-const socket = io.connect('http://localhost:3003/');
-const DEBUG = 0;
+const ioClient = io.connect('http://localhost:3003/');
+const DEBUG = 0; // use this to control some log spew
 const visitorName = 'Nurse Diesel';
 
-const EnterRoomCommand = (visitor) => new EnterRoom(visitor);
-const DisconnectCommand = (visitor) => new Disconnect(visitor);
+const EnterRoomTransition = (visitor) => new EnterRoom(visitor);
+const DisconnectTransition = (visitor) => new Disconnect(visitor);
 const OpenMyRoomTransition = (visitor) => new OpenMyRoom(visitor);
-const WarnRoomsCommand = (visitor) => new WarnRooms(visitor);
+const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
 
-// socket.on('seq-num', (msg) => console.info(msg));
+ioClient.on('connect', () => {
+  console.log('Socket.io Client ID:', ioClient.id);
+  console.log('Visitor Name:', visitorName);
+  run();
+});
 
-socket.on('connect', () =>
-  console.info('Socket.io telemetry:\nSocket.id:', socket.id)
-);
+// this test is driven from the socket.io server (when enabled)
+ioClient.on('exposureAlert', (alertMessage) => console.error(alertMessage));
+// end of server-driven test
+
 // helper function for this.fireTransition() that can handle multiple enabled transitions:
 function fireFrom(visitor, enabledTransitions) {
   const idx = Math.floor(Math.random() * enabledTransitions.length);
@@ -37,6 +44,7 @@ const Visitor = function(name, rooms) {
   const idx = Math.floor(Math.random() * this.rooms.length);
   this.room = this.rooms[idx];
   console.log('Chosen Room :>> ', this.room);
+  console.log('============================================');
   console.log('Tested State/Transitions:');
 
   this.currentState = new Connect(this);
@@ -59,10 +67,12 @@ const Connect = function(visitor) {
   this.visitor = visitor;
   const { room } = visitor;
 
-  // this call to openMyRoom is for a Room to map its socket.id to a human-readable name
+  // this call to openMyRoom is for a Room to map its ioClient.id to a human-readable name
   // to be less confusing, this event really should be in it's own State/Transition
   // NOTE: ack contains data for the assert
-  socket.emit('openMyRoom', room, (ack) => {
+  ioClient.emit('openMyRoom', room, (ack) => {
+    console.log('============================================');
+
     console.log('Available Rooms:');
     console.table(ack.rooms);
     const oracle = ack.rooms.filter((v) => v.name == room);
@@ -73,27 +83,34 @@ const Connect = function(visitor) {
     DEBUG && console.log(oracle);
   });
 
+  // sometimes fireTransition has more then one option. if so, delegate to fireFrom()
   this.fireTransition = function() {
-    fireFrom(visitor, [OpenMyRoomTransition, WarnRoomsCommand]);
+    fireFrom(visitor, [OpenMyRoomTransition, WarnRoomsTransition]);
   };
 };
 
 const WarnRooms = function(visitor) {
   this.visitor = visitor;
   const { name, room } = visitor;
-
+  const warnings = {};
+  warnings[room] = [
+    '2020-09-19T00:33:04.248Z',
+    '2020-09-19T00:35:38.078Z',
+    '2020-09-14T02:53:33.738Z',
+    '2020-09-18T02:53:35.050Z',
+  ];
   const msg = {
-    visitor: name,
-    room: room,
-    message: 'Entered',
     sentTime: new Date().toISOString(),
+    visitor: name,
+    warnings: warnings,
   };
-  socket.emit('exposureWarning', msg, (ack) => {
+  ioClient.emit('exposureWarning', msg, (ack) => {
     ack.slice(0, 7) == 'WARNING' ? console.error(ack) : console.log(ack);
   });
 
-  // NOTE: we could use the same enabledTransition scheme as LeaveRoom
-  // but for now, we ensure a Visitor always checks-in
+  // sometimes fireTransition has more then one option. if so, delegate to fireFrom()
+  // other times, there's only one enabled transition
+  // so, for now, we ensure a Visitor always checks-in first thing
   this.fireTransition = function() {
     log.add(`${visitor.count}) State: WarnRooms`);
 
@@ -105,12 +122,12 @@ const OpenMyRoom = function(visitor) {
   this.visitor = visitor;
   const { name, count } = visitor;
 
-  // this call to openMyRoom is for a Visitor to map its socket.id to a human-readable name
-  socket.emit('openMyRoom', name, (ack) => {
+  // this call to openMyRoom is for a Visitor to map its ioClient.id to a human-readable name
+  ioClient.emit('openMyRoom', name, (ack) => {
     console.log(ack.message);
   });
   this.fireTransition = function() {
-    log.add(`${count}) State: OpenMyRoom`);
+    log.add(`${count}) State: OpenMyRoom  Transition: EnterRoom`);
     visitor.change(new EnterRoom(visitor));
   };
 };
@@ -124,14 +141,14 @@ const EnterRoom = function(visitor) {
     message: 'Entered',
     sentTime: new Date().toISOString(),
   };
-  socket.emit('enterRoom', msg, (ack) => {
+  ioClient.emit('enterRoom', msg, (ack) => {
     console.log(ack);
   });
 
   // NOTE: we could use the same enabledTransition scheme as LeaveRoom
   // but for now, we ensure a Visitor always checks-in
   this.fireTransition = function() {
-    log.add(`${visitor.count}) EnterRoom`);
+    log.add(`${visitor.count}) State: EnterRoom  Transition: LeaveRoom`);
 
     visitor.change(new LeaveRoom(visitor));
   };
@@ -140,13 +157,9 @@ const EnterRoom = function(visitor) {
 // leave/change Room(s), but stay online
 const LeaveRoom = function(visitor) {
   this.visitor = visitor;
-  const enabledTransitions = [DisconnectCommand, EnterRoomCommand];
-  const idx = Math.floor(Math.random() * enabledTransitions.length);
-  const transition = enabledTransitions[idx];
-  this.fireTransition = function() {
-    log.add(`${visitor.count}) State: LeaveRoom`);
 
-    visitor.change(transition(visitor));
+  this.fireTransition = function() {
+    fireFrom(visitor, [DisconnectTransition, EnterRoomTransition]);
   };
 };
 
@@ -154,8 +167,10 @@ const LeaveRoom = function(visitor) {
 const Disconnect = function(visitor) {
   this.fireTransition = function() {
     visitor.count = 0;
-    log.add(`${visitor.count}) State: Disconnect ${socket}`);
-    socket.emit('disconnect');
+    log.add(
+      `${visitor.count}) State: Disconnect ${ioClient.id} Transition: none`
+    );
+    ioClient.emit('disconnect');
   };
 };
 
@@ -181,5 +196,3 @@ function run() {
 
   log.show();
 }
-
-run();
