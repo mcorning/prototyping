@@ -4,50 +4,63 @@
 // state change is basis of assertions
 
 const io = require('socket.io-client');
-const socket = io('http://localhost:3003/');
+const socket = io.connect('http://localhost:3003/');
 const DEBUG = 0;
 const visitorName = 'Nurse Diesel';
 
 const EnterRoomCommand = (visitor) => new EnterRoom(visitor);
 const DisconnectCommand = (visitor) => new Disconnect(visitor);
-const OpenMyRoomCommand = (visitor) => new OpenMyRoom(visitor);
+const OpenMyRoomTransition = (visitor) => new OpenMyRoom(visitor);
 const WarnRoomsCommand = (visitor) => new WarnRooms(visitor);
 
-const Visitor = function(name) {
-  this.count = 5;
-  this.name = name;
-  this.rooms = ['Heathlands.Medical', 'ABMS.Medical'];
-  const idx = Math.floor(Math.random() * this.rooms.length);
-  this.room = this.rooms[idx];
-  console.log('Chosen Room :>> ', this.room);
+// socket.on('seq-num', (msg) => console.info(msg));
 
-  // be sure you call Connect after setting all properties and methods a Visitor will need
-  let currentState = new Connect(this);
-
-  this.change = function(state) {
-    // limits number of changes
-    if (!this.count--) return;
-    currentState = state;
-    currentState.fireTransition();
-  };
-
-  this.start = function() {
-    currentState.fireTransition();
-  };
-};
-
+socket.on('connect', () =>
+  console.info('Socket.io telemetry:\nSocket.id:', socket.id)
+);
+// helper function for this.fireTransition() that can handle multiple enabled transitions:
 function fireFrom(visitor, enabledTransitions) {
   const idx = Math.floor(Math.random() * enabledTransitions.length);
   const transition = enabledTransitions[idx];
+  log.add(
+    `${visitor.count}) State: ${visitor.currentState.constructor.name} Transition: ${transition.name}`
+  );
 
   visitor.change(transition(visitor));
 }
 
+// base class
+const Visitor = function(name, rooms) {
+  this.count = 6;
+  this.name = name;
+  this.rooms = rooms;
+  const idx = Math.floor(Math.random() * this.rooms.length);
+  this.room = this.rooms[idx];
+  console.log('Chosen Room :>> ', this.room);
+  console.log('Tested State/Transitions:');
+
+  this.currentState = new Connect(this);
+
+  // be sure you call Connect after setting all properties and methods a Visitor will need
+  this.change = function(state) {
+    // limits number of changes
+    if (!this.count--) return;
+    this.currentState = state;
+    this.currentState.fireTransition();
+  };
+
+  this.start = function() {
+    this.currentState.fireTransition();
+  };
+};
+
+// State/Transition functions
 const Connect = function(visitor) {
   this.visitor = visitor;
   const { room } = visitor;
 
   // this call to openMyRoom is for a Room to map its socket.id to a human-readable name
+  // to be less confusing, this event really should be in it's own State/Transition
   // NOTE: ack contains data for the assert
   socket.emit('openMyRoom', room, (ack) => {
     console.log('Available Rooms:');
@@ -61,9 +74,7 @@ const Connect = function(visitor) {
   });
 
   this.fireTransition = function() {
-    log.add(`${visitor.count}) EnterRoom`);
-
-    fireFrom(visitor, [OpenMyRoomCommand, WarnRoomsCommand]);
+    fireFrom(visitor, [OpenMyRoomTransition, WarnRoomsCommand]);
   };
 };
 
@@ -77,14 +88,14 @@ const WarnRooms = function(visitor) {
     message: 'Entered',
     sentTime: new Date().toISOString(),
   };
-  socket.emit('enterRoom', msg, (ack) => {
-    console.log(ack);
+  socket.emit('exposureWarning', msg, (ack) => {
+    ack.slice(0, 7) == 'WARNING' ? console.error(ack) : console.log(ack);
   });
 
   // NOTE: we could use the same enabledTransition scheme as LeaveRoom
   // but for now, we ensure a Visitor always checks-in
   this.fireTransition = function() {
-    log.add(`${visitor.count}) EnterRoom`);
+    log.add(`${visitor.count}) State: WarnRooms`);
 
     visitor.change(new LeaveRoom(visitor));
   };
@@ -99,7 +110,7 @@ const OpenMyRoom = function(visitor) {
     console.log(ack.message);
   });
   this.fireTransition = function() {
-    log.add(`${count}) OpenMyRoom`);
+    log.add(`${count}) State: OpenMyRoom`);
     visitor.change(new EnterRoom(visitor));
   };
 };
@@ -133,7 +144,7 @@ const LeaveRoom = function(visitor) {
   const idx = Math.floor(Math.random() * enabledTransitions.length);
   const transition = enabledTransitions[idx];
   this.fireTransition = function() {
-    log.add(`${visitor.count}) LeaveRoom`);
+    log.add(`${visitor.count}) State: LeaveRoom`);
 
     visitor.change(transition(visitor));
   };
@@ -143,7 +154,8 @@ const LeaveRoom = function(visitor) {
 const Disconnect = function(visitor) {
   this.fireTransition = function() {
     visitor.count = 0;
-    log.add(`${visitor.count}) Disconnect`);
+    log.add(`${visitor.count}) State: Disconnect ${socket}`);
+    socket.emit('disconnect');
   };
 };
 
@@ -163,7 +175,8 @@ const log = (function() {
 })();
 
 function run() {
-  const visitor = new Visitor(visitorName);
+  const rooms = ['Heathlands.Medical', 'ABMS.Medical', 'Heathlands.Cafe'];
+  const visitor = new Visitor(visitorName, rooms);
   visitor.start();
 
   log.show();
