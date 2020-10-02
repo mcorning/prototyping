@@ -4,14 +4,21 @@
 // self-documenting behavior
 // ioClient event acknowledgements return state change
 // state change is basis of assertions
+console.clear();
+const helpers = require('./helpers');
+const { fire, log } = helpers;
+
 const clc = require('cli-color');
 const error = clc.red.bold;
 const warn = clc.yellow;
 const notice = clc.blue;
+const bold = clc.bold;
 
 const io = require('socket.io-client');
 const ioClient = io.connect('http://localhost:3003/');
 const DEBUG = 0; // use this to control some log spew
+
+// model properties
 const visitorName = 'Nurse Diesel';
 
 const EnterRoomTransition = (visitor) => new EnterRoom(visitor);
@@ -21,36 +28,21 @@ const OpenMyRoomTransition = (visitor) => new OpenMyRoom(visitor);
 const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
 
 const transitions = [
-  ['Connect', [OpenMyRoomTransition, WarnRoomsTransition]],
-  ['OpenMyRoom', [EnterRoomTransition, WarnRoomsTransition]],
-  ['WarnRooms', []],
-  ['EnterRoom', [LeaveRoomTransition]],
-  ['LeaveRoom', [DisconnectTransition, EnterRoomTransition]],
-  ['Disconnect', []],
+  ['Connect', [[OpenMyRoomTransition, WarnRoomsTransition], 0.7, 0.3]],
+  ['OpenMyRoom', [[EnterRoomTransition, WarnRoomsTransition], 0.7, 0.3]],
+  ['WarnRooms', [[], 1]],
+  ['EnterRoom', [[LeaveRoomTransition], 1]],
+  ['LeaveRoom', [[DisconnectTransition, EnterRoomTransition], 0.5, 0.5]],
+  ['Disconnect', [[], 1]],
 ];
-let enabledTransitionsFor = new Map(transitions);
+// end model properties
 
 // entry point for state machine is inside socket.io connect event handler
 ioClient.on('connect', () => {
-  console.log('Socket.io Client ID:', ioClient.id);
-  console.log('Visitor Name:', visitorName);
+  console.log(notice('Socket.io Client ID:', ioClient.id));
+  console.log(notice('Visitor Name:', visitorName));
   run();
 });
-
-const fire = (visitor) => {
-  const { count, currentState } = visitor;
-
-  const et = enabledTransitionsFor.get(currentState.constructor.name);
-  const transition = et[Math.floor(Math.random() * et.length)];
-  log.add(
-    `${count}) State: ${currentState.constructor.name} Transition: ${
-      transition ? transition.name : 'Finished'
-    }`
-  );
-  if (transition) {
-    visitor.change(transition(visitor));
-  }
-};
 
 // this test is driven from the socket.io server (when enabled)
 ioClient.on('exposureAlert', (alertMessage) =>
@@ -59,15 +51,17 @@ ioClient.on('exposureAlert', (alertMessage) =>
 // end of server-driven test
 
 // base class
-const Visitor = function(name, rooms) {
+const Visitor = function(name, rooms, transitions) {
   this.count = 6;
   this.name = name;
   this.rooms = rooms;
+  this.enabledTransitionsFor = new Map(transitions);
+
   const idx = Math.floor(Math.random() * this.rooms.length);
   this.room = this.rooms[idx];
-  console.log('Chosen Room :>> ', this.room);
-  console.log('============================================');
-  console.log('Tested State/Transitions:');
+  console.log(notice('Chosen Room :>> ', this.room));
+  console.log(notice('============================================'));
+  console.log(bold('Tested State/Transitions:'));
 
   // be sure you call Connect after setting all properties and methods a Visitor will need
   this.currentState = new Connect(this);
@@ -144,7 +138,7 @@ const OpenMyRoom = function(visitor) {
 
   // this call to openMyRoom is for a Visitor to map its ioClient.id to a human-readable name
   ioClient.emit('openMyRoom', name, (ack) => {
-    console.log(ack.message);
+    console.log(notice(ack.message));
   });
   this.fireTransition = function() {
     fire(visitor);
@@ -192,24 +186,9 @@ const Disconnect = function(visitor) {
   };
 };
 
-// log helper
-const log = (function() {
-  let log = '';
-
-  return {
-    add: function(msg) {
-      log += msg + '\n';
-    },
-    show: function() {
-      console.log(log);
-      log = '';
-    },
-  };
-})();
-
 function run() {
   const rooms = ['Heathlands.Medical', 'ABMS.Medical', 'Heathlands.Cafe'];
-  const visitor = new Visitor(visitorName, rooms);
+  const visitor = new Visitor(visitorName, rooms, transitions);
   visitor.start();
 
   log.show();
