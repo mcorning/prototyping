@@ -17,6 +17,18 @@ const bold = clc.bold;
 const io = require('socket.io-client');
 const ioClient = io.connect('http://localhost:3003/');
 const DEBUG = 0; // use this to control some log spew
+// entry point for state machine is inside socket.io connect event handler
+ioClient.on('connect', () => {
+  console.log(notice('Socket.io Client ID:', ioClient.id));
+  console.log(notice('Visitor Name:', visitorName));
+  run();
+});
+
+// this test is driven from the socket.io server (when enabled)
+ioClient.on('exposureAlert', (alertMessage) =>
+  console.log(error('ALERT:', alertMessage))
+);
+// end of server-driven test
 
 // model properties
 const visitorName = 'Nurse Diesel';
@@ -37,22 +49,9 @@ const transitions = [
 ];
 // end model properties
 
-// entry point for state machine is inside socket.io connect event handler
-ioClient.on('connect', () => {
-  console.log(notice('Socket.io Client ID:', ioClient.id));
-  console.log(notice('Visitor Name:', visitorName));
-  run();
-});
-
-// this test is driven from the socket.io server (when enabled)
-ioClient.on('exposureAlert', (alertMessage) =>
-  console.log(error('ALERT:', alertMessage))
-);
-// end of server-driven test
-
 // base class
 const Visitor = function(name, rooms, transitions) {
-  this.count = 6;
+  this.countDownFrom = 6;
   this.name = name;
   this.rooms = rooms;
   this.enabledTransitionsFor = new Map(transitions);
@@ -68,7 +67,7 @@ const Visitor = function(name, rooms, transitions) {
 
   this.change = function(state) {
     // limits number of changes
-    if (!this.count--) return;
+    if (!this.countDownFrom--) return;
     this.currentState = state;
     this.currentState.fireTransition();
   };
@@ -84,6 +83,7 @@ const Connect = function(visitor) {
   this.visitor = visitor;
   const { room } = visitor;
 
+  // to ensure the Visitor has a Room to enter, set up the needed room on the server right away.
   // this call to openMyRoom is for a Room to map its ioClient.id to a human-readable name
   // to be less confusing, this event really should be in it's own State/Transition
   // NOTE: ack contains data for the assert
@@ -140,6 +140,7 @@ const OpenMyRoom = function(visitor) {
   ioClient.emit('openMyRoom', name, (ack) => {
     console.log(notice(ack.message));
   });
+
   this.fireTransition = function() {
     fire(visitor);
   };
@@ -160,8 +161,6 @@ const EnterRoom = function(visitor) {
     console.log(ack);
   });
 
-  // NOTE: we could use the same enabledTransition scheme as LeaveRoom
-  // but for now, we ensure a Visitor always checks-in
   this.fireTransition = function() {
     fire(visitor);
   };

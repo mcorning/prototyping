@@ -1,6 +1,8 @@
 // state transition helper
-const fire = (visitor) => {
-  const { count, currentState, enabledTransitionsFor } = visitor;
+
+const DEBUG = 0;
+const fire = (context) => {
+  const { count, currentState, enabledTransitionsFor } = context;
 
   const et = enabledTransitionsFor.get(currentState.constructor.name);
   // et looks like this:
@@ -17,8 +19,8 @@ const fire = (visitor) => {
   const r = Math.random();
   console.log('r :>> ', r);
 
-  let w = reducedWeightedRandom(et.slice(1), r);
-  console.log('reduced i :>> ', w);
+  // let w = reducedWeightedRandom(et.slice(1), r);
+  // console.log('reduced i :>> ', w);
   let i = weightedRandom(spec, r);
   console.log('weighted i :>> ', i);
   const transition = et[0][i];
@@ -29,7 +31,7 @@ const fire = (visitor) => {
     }`
   );
   if (transition) {
-    visitor.change(transition(visitor));
+    context.change(transition(context));
   }
 };
 
@@ -49,11 +51,12 @@ function weightedRandom(spec, r) {
 // example spec: [0.6, 0.1, 0.1, 0.2]
 function reducedWeightedRandom(spec, r) {
   console.log('R spec :>> ', spec);
-  let x = spec.reduce((a, c, i, array) => {
+  let x = spec.reduce((a, c, i, s) => {
+    DEBUG && console.log(s);
     a += c;
     if (r <= a) {
       a = i;
-      array = array.splice(1);
+      s = s.splice(1);
     }
     return a;
   }, 0);
