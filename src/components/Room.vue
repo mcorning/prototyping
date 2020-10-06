@@ -526,7 +526,11 @@ export default {
 
       console.log('Alert Dates', exposureDatesSet);
       console.log('Here are the necessary Exposure Alerts');
+
+      // walk through the exposure dates from sick visitor..
       exposureDatesSet.forEach((date) => {
+        //... looking for other visitors in the room on those exposure dates
+        // remember, messageDates is grouped by visitor
         messageDates[moment(date).format(this.today)]?.forEach((v) => {
           let phrase =
             v != visitor

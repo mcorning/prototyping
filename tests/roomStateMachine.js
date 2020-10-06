@@ -8,13 +8,18 @@ console.clear();
 const moment = require('moment');
 
 const helpers = require('./helpers');
+const roomHelpers = require('./helpersRoom');
 const { fire, log } = helpers;
+const { getAlerts } = roomHelpers;
 
 const clc = require('cli-color');
+const success = clc.red.green;
 const error = clc.red.bold;
 const warn = clc.yellow;
 const notice = clc.blue;
 const bold = clc.bold;
+
+const DEBUG = 0; // use this to control some log spew
 
 const io = require('socket.io-client');
 const ioClient = io.connect('http://localhost:3003/');
@@ -23,7 +28,7 @@ const ioClient = io.connect('http://localhost:3003/');
 ioClient.on('connect', () => {
   console.log(notice('Socket.io Client ID:', ioClient.id));
   console.log(notice('Room Name:', name));
-  run();
+  runModel();
 });
 
 // this test is driven from the socket.io server (when enabled)
@@ -108,28 +113,6 @@ ioClient.on('updatedOccupancy', (message) => {
 
 // end of server-driven test
 
-const DEBUG = 0; // use this to control some log spew
-
-// model properties
-const name = 'Heathlands.Medical';
-
-const OpenRoomTransition = (room) => new OpenRoom(room);
-const CloseRoomTransition = (room) => new CloseRoom(room);
-const DisconnectTransition = (room) => new Disconnect(room);
-const OpenMyRoomTransition = (room) => new OpenMyRoom(room);
-const AlertVisitorTransition = (visitor) => new AlertVisitor(visitor);
-
-// these are emit method options in the Room.vue (as opposed the sockets on event handler options)
-const transitions = [
-  ['Connect', [[OpenMyRoomTransition, AlertVisitorTransition], 0.7, 0.3]],
-  ['OpenMyRoom', [[OpenRoomTransition, AlertVisitorTransition], 0.7, 0.3]],
-  ['AlertVisitor', [[], 1]],
-  ['OpenRoom', [[CloseRoomTransition], 1]],
-  ['CloseRoom', [[OpenRoomTransition, DisconnectTransition], 0.5, 0.5]],
-  ['Disconnect', [[], 1]],
-];
-// end model properties
-
 // base class
 const Room = function(name, visitors, transitions) {
   this.count = 6;
@@ -163,23 +146,6 @@ const Room = function(name, visitors, transitions) {
 const Connect = function(room) {
   this.room = room;
 
-  // // to ensure the Visitor has a Room to enter, set up the needed room on the server right away.
-  // // this call to openMyRoom is for a Room to map its ioClient.id to a human-readable name
-  // // to be less confusing, this event really should be in it's own State/Transition
-  // // NOTE: ack contains data for the assert
-  // ioClient.emit('openMyRoom', room, (ack) => {
-  //   console.log('============================================');
-
-  //   console.log('Available Rooms:');
-  //   console.table(ack.rooms);
-  //   const oracle = ack.rooms.filter((v) => v.name == room);
-  //   console.assert(
-  //     oracle.length,
-  //     `Expected ${room} in available Rooms: ${ack.rooms.map((v) => v.name)}`
-  //   );
-  //   DEBUG && console.log(oracle);
-  // });
-
   this.fireTransition = function() {
     fire(room);
   };
@@ -203,7 +169,7 @@ const OpenRoom = function(room) {
   this.room = room;
 
   const msg = {
-    room: room,
+    room: room.name,
     message: 'Opened',
     sentTime: new Date().toISOString(),
   };
@@ -219,7 +185,14 @@ const OpenRoom = function(room) {
 // leave/change Room(s), but stay online
 const CloseRoom = function(room) {
   this.room = room;
-
+  const msg = {
+    room: room.name,
+    message: 'Opened',
+    sentTime: new Date().toISOString(),
+  };
+  ioClient.emit('closeRoom', msg, (ack) => {
+    console.log(ack);
+  });
   this.fireTransition = function() {
     fire(room);
   };
@@ -237,23 +210,17 @@ const Disconnect = function(room) {
 
 // this is the only event that references visitor
 const AlertVisitor = function(visitor) {
-  const { name, room } = visitor;
-  const warnings = {};
-  warnings[room] = [
-    '2020-09-19T00:33:04.248Z',
-    '2020-09-19T00:35:38.078Z',
-    '2020-09-14T02:53:33.738Z',
-    '2020-09-18T02:53:35.050Z',
-  ];
-  const msg = {
-    sentTime: new Date().toISOString(),
-    visitor: name,
-    warnings: warnings,
-  };
-  ioClient.emit('alertVisitor', msg, (ack) => {
-    ack.slice(0, 7) == 'WARNING'
-      ? console.log(error(ack))
-      : console.log(warn(ack));
+  const alertsMap = getAlerts(visitor);
+  alertsMap.forEach(function(value, key) {
+    let message = {
+      visitor: visitor.visitor,
+      message: `${value}. To stop the spread, self-quarantine for 14 days.`,
+      sentTime: new Date().toISOString(),
+    };
+    ioClient.emit('alertVisitor', message, (ack) => {
+      ack.slice(0, 7) == 'WARNING' ? log.add(error(ack)) : log.add(warn(ack));
+    });
+    log.add(success(`Sent message to ${key}:`, message.message));
   });
 
   this.fireTransition = function() {
@@ -261,8 +228,28 @@ const AlertVisitor = function(visitor) {
   };
 };
 
-function run() {
-  const visitors = ['Nurse Diesel', 'Nurse Jackie', 'AirGas Inc'];
+// model properties
+const name = 'Heathlands.Medical';
+
+const OpenRoomTransition = (room) => new OpenRoom(room);
+const CloseRoomTransition = (room) => new CloseRoom(room);
+const DisconnectTransition = (room) => new Disconnect(room);
+const OpenMyRoomTransition = (room) => new OpenMyRoom(room);
+const AlertVisitorTransition = (visitor) => new AlertVisitor(visitor);
+
+// these are emit method options in the Room.vue (as opposed the sockets on event handler options)
+const transitions = [
+  ['Connect', [[OpenMyRoomTransition, AlertVisitorTransition], 0.7, 0.3]],
+  ['OpenMyRoom', [[OpenRoomTransition, AlertVisitorTransition], 0.5, 0.5]],
+  ['AlertVisitor', [[], 1]],
+  ['OpenRoom', [[CloseRoomTransition, AlertVisitorTransition], 1]],
+  ['CloseRoom', [[OpenRoomTransition, DisconnectTransition], 0.5, 0.5]],
+  ['Disconnect', [[], 1]],
+];
+// end model properties
+
+function runModel() {
+  const visitors = ['Nurse Diesel', 'Nurse Jackie'];
   const room = new Room(name, visitors, transitions);
   room.start();
 

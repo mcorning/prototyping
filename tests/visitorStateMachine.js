@@ -17,6 +17,7 @@ const bold = clc.bold;
 const io = require('socket.io-client');
 const ioClient = io.connect('http://localhost:3003/');
 const DEBUG = 0; // use this to control some log spew
+
 // entry point for state machine is inside socket.io connect event handler
 ioClient.on('connect', () => {
   console.log(notice('Socket.io Client ID:', ioClient.id));
@@ -39,6 +40,7 @@ const DisconnectTransition = (visitor) => new Disconnect(visitor);
 const OpenMyRoomTransition = (visitor) => new OpenMyRoom(visitor);
 const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
 
+// these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
 const transitions = [
   ['Connect', [[OpenMyRoomTransition, WarnRoomsTransition], 0.7, 0.3]],
   ['OpenMyRoom', [[EnterRoomTransition, WarnRoomsTransition], 0.7, 0.3]],

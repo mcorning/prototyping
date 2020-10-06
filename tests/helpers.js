@@ -1,4 +1,5 @@
 // state transition helper
+const moment = require('moment');
 
 const DEBUG = 0;
 const fire = (context) => {
@@ -19,8 +20,8 @@ const fire = (context) => {
   const r = Math.random();
   console.log('r :>> ', r);
 
-  // let w = reducedWeightedRandom(et.slice(1), r);
-  // console.log('reduced i :>> ', w);
+  let w = reducedWeightedRandom(et.slice(1), r);
+  console.log('reduced i :>> ', w);
   let i = weightedRandom(spec, r);
   console.log('weighted i :>> ', i);
   const transition = et[0][i];
@@ -30,6 +31,7 @@ const fire = (context) => {
       transition ? transition.name : 'Finished'
     }`
   );
+  log.show();
   if (transition) {
     context.change(transition(context));
   }
@@ -63,6 +65,21 @@ function reducedWeightedRandom(spec, r) {
   return x;
 }
 
+function groupBy(payload) {
+  const { array, prop, val } = payload;
+
+  return array
+    .filter((v) => v[val]) // ignore Room Opened/Closed messages
+    .reduce(function(a, c) {
+      let key = moment(c[prop]).format('YYYY-MM-DD');
+      if (!a[key]) {
+        a[key] = [];
+      }
+      a[key].push(c[val]);
+      return a;
+    }, {});
+}
+
 // log helper
 const log = (function() {
   let log = '';
@@ -80,5 +97,6 @@ const log = (function() {
 
 module.exports = {
   fire,
+  groupBy,
   log,
 };
