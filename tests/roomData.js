@@ -1,4 +1,12 @@
-const DEBUG = 0;
+let lastUsedRoom = 'Heathlands.Medical';
+const allKnownRooms = [
+  'Heathlands.Medical',
+  'Heathlands.Cafe',
+  'ABMS.Medical',
+  'ABMS.Lobby',
+];
+const visitors = ['Nurse Diesel', 'Nurse Jackie'];
+
 const messages = [
   {
     visitor: 'Nurse Diesel',
@@ -55,23 +63,42 @@ const messages = [
     sentTime: '2020-09-17T00:33:04.248Z',
   },
 ];
+
 function exposureDates(visitor) {
   return messages.filter((v) => v.visitor == visitor).map((v) => v.sentTime);
 }
+
 function exposureDatesSet(visitor) {
   return new Set(exposureDates(visitor));
+}
+
+function pickRoomName() {
+  const idx = Math.floor(Math.random() * allKnownRooms.length);
+  lastUsedRoom = allKnownRooms[idx];
+  return lastUsedRoom;
+}
+function pickVisitor() {
+  const idx = Math.floor(Math.random() * visitors.length);
+  return visitors[idx];
 }
 
 module.exports = {
   messages,
   exposureDates,
   exposureDatesSet,
+  allKnownRooms,
+  pickRoomName,
+  visitors,
+  pickVisitor,
 };
 
-function test() {
-  let y = exposureDatesSet('Nurse Diesel');
+const DEBUG = 0;
 
-  console.log('set', [...y]);
-  y.forEach((date) => console.log('date:', date));
+function test() {
+  console.log(pickVisitor());
+  // let y = exposureDatesSet('Nurse Diesel');
+
+  // console.log('set', [...y]);
+  // y.forEach((date) => console.log('date:', date));
 }
 DEBUG && test();
