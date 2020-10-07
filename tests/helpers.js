@@ -2,6 +2,29 @@
 const moment = require('moment');
 
 const DEBUG = 0;
+
+// helper helpers
+function getRandomIntBetween(min, max) {
+  // return Math.floor(Math.random() * Math.floor(max))-1;
+  return Math.random() * (max - min) + min;
+}
+
+// helpers
+function addTestMessage(yourId, roomId) {
+  // open up the message list beyond today
+  // get a random number of days back for test data
+  let days = getRandomIntBetween(2, 4);
+  let msg = {
+    visitor: yourId,
+    room: roomId,
+    message: 'Entered',
+    sentTime: moment()
+      .add(-days, 'day')
+      .toISOString(),
+  };
+  return msg;
+}
+
 const fire = (context) => {
   const { currentState, enabledTransitionsFor } = context;
 
@@ -72,6 +95,7 @@ const log = (function() {
 
 module.exports = {
   fire,
+  addTestMessage,
   groupBy,
   log,
 };

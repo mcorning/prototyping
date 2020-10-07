@@ -1,4 +1,5 @@
 const moment = require('moment');
+const { groupBy, log } = require('./helpers');
 
 const { messages, exposureDatesSet } = require('./visitorData');
 
@@ -35,21 +36,8 @@ function getAlerts(visitor) {
   return alerts;
 }
 
-function groupBy(payload) {
-  const { array, prop, val } = payload;
-
-  return array
-    .filter((v) => v[val]) // ignore Room Opened/Closed messages
-    .reduce(function(a, c) {
-      let key = moment(c[prop]).format('YYYY-MM-DD');
-      if (!a[key]) {
-        a[key] = [];
-      }
-      a[key].push(c[val]);
-      return a;
-    }, {});
-}
-
 module.exports = {
   getAlerts,
+  messages,
+  log,
 };

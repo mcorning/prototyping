@@ -1,16 +1,18 @@
 const io = require('socket.io-client');
 const moment = require('moment');
+console.log(`${moment().format('llll')} Opened visitorClientSocket`);
 
-const clientSocket = io('http://localhost:3003', {
-  query: { token: 'visitor' },
-});
-// clientSocket.on('connect'...) is in the stateMachine so the event handler
-// can run the model
+function OpenVisitorConnection(token) {
+  const clientSocket = io('http://localhost:3003', {
+    query: { token: token },
+  });
+  // clientSocket.on('connect'...) is in the stateMachine so the event handler
+  // can run the model
 
-clientSocket.on('disconnecting', () => {
-  console.log('Disconnecting:', clientSocket.id, name);
-});
+  clientSocket.on('disconnecting', () => {
+    console.log('Disconnecting:', clientSocket.id, name);
+  });
+  return clientSocket;
+}
 
-const VisitorSocket = clientSocket;
-
-module.exports = { VisitorSocket };
+module.exports = { OpenVisitorConnection };
