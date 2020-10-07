@@ -2,64 +2,47 @@
 
 // Model-based test of Visitor
 // self-documenting behavior
-// ioClient event acknowledgements return state change
+// io.VisitorSocket event acknowledgements return state change
 // state change is basis of assertions
 console.clear();
 const helpers = require('./helpers');
 const { fire, log } = helpers;
+const { pickVisitor } = require('./visitorData.js');
+const { pickRoomName } = require('./roomData.js');
 
 const clc = require('cli-color');
 const error = clc.red.bold;
 const warn = clc.yellow;
 const notice = clc.blue;
 const bold = clc.bold;
-
-const io = require('socket.io-client');
-const ioClient = io.connect('http://localhost:3003/');
 const DEBUG = 0; // use this to control some log spew
 
+const io = require('./visitorClientSocket');
 // entry point for state machine is inside socket.io connect event handler
-ioClient.on('connect', () => {
-  console.log(notice('Socket.io Client ID:', ioClient.id));
-  console.log(notice('Visitor Name:', visitorName));
+io.VisitorSocket.on('connect', () => {
+  console.log(notice('Visitor Socket.io Client ID:', io.VisitorSocket.id));
   run();
+});
+const ioRoom = require('./roomClientSocket');
+// entry point for state machine is inside socket.io connect event handler
+ioRoom.ClientSocket.on('connect', () => {
+  console.log(notice('Room Socket.io Client ID:', ioRoom.ClientSocket.id));
 });
 
 // this test is driven from the socket.io server (when enabled)
-ioClient.on('exposureAlert', (alertMessage) =>
+io.VisitorSocket.on('exposureAlert', (alertMessage) =>
   console.log(error('ALERT:', alertMessage))
 );
 // end of server-driven test
-
-// model properties
-const visitorName = 'Nurse Diesel';
-
-const EnterRoomTransition = (visitor) => new EnterRoom(visitor);
-const LeaveRoomTransition = (visitor) => new LeaveRoom(visitor);
-const DisconnectTransition = (visitor) => new Disconnect(visitor);
-const OpenMyRoomTransition = (visitor) => new OpenMyRoom(visitor);
-const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
-
-// these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
-const transitions = [
-  ['Connect', [[OpenMyRoomTransition, WarnRoomsTransition], 0.7, 0.3]],
-  ['OpenMyRoom', [[EnterRoomTransition, WarnRoomsTransition], 0.7, 0.3]],
-  ['WarnRooms', [[], 1]],
-  ['EnterRoom', [[LeaveRoomTransition], 1]],
-  ['LeaveRoom', [[DisconnectTransition, EnterRoomTransition], 0.5, 0.5]],
-  ['Disconnect', [[], 1]],
-];
-// end model properties
-
+let countDownFrom = 6;
+let name = '';
 // base class
 const Visitor = function(name, rooms, transitions) {
-  this.countDownFrom = 6;
   this.name = name;
   this.rooms = rooms;
   this.enabledTransitionsFor = new Map(transitions);
+  this.room = pickRoomName();
 
-  const idx = Math.floor(Math.random() * this.rooms.length);
-  this.room = this.rooms[idx];
   console.log(notice('Chosen Room :>> ', this.room));
   console.log(notice('============================================'));
   console.log(bold('Tested State/Transitions:'));
@@ -69,7 +52,7 @@ const Visitor = function(name, rooms, transitions) {
 
   this.change = function(state) {
     // limits number of changes
-    if (!this.countDownFrom--) return;
+    if (!countDownFrom--) return;
     this.currentState = state;
     this.currentState.fireTransition();
   };
@@ -83,24 +66,6 @@ const Visitor = function(name, rooms, transitions) {
 
 const Connect = function(visitor) {
   this.visitor = visitor;
-  const { room } = visitor;
-
-  // to ensure the Visitor has a Room to enter, set up the needed room on the server right away.
-  // this call to openMyRoom is for a Room to map its ioClient.id to a human-readable name
-  // to be less confusing, this event really should be in it's own State/Transition
-  // NOTE: ack contains data for the assert
-  ioClient.emit('openMyRoom', room, (ack) => {
-    console.log('============================================');
-
-    console.log('Available Rooms:');
-    console.table(ack.rooms);
-    const oracle = ack.rooms.filter((v) => v.name == room);
-    console.assert(
-      oracle.length,
-      `Expected ${room} in available Rooms: ${ack.rooms.map((v) => v.name)}`
-    );
-    DEBUG && console.log(oracle);
-  });
 
   this.fireTransition = function() {
     fire(visitor);
@@ -122,7 +87,7 @@ const WarnRooms = function(visitor) {
     visitor: name,
     warnings: warnings,
   };
-  ioClient.emit('exposureWarning', msg, (ack) => {
+  io.VisitorSocket.emit('exposureWarning', msg, (ack) => {
     ack.slice(0, 7) == 'WARNING'
       ? console.log(error(ack))
       : console.log(warn(ack));
@@ -130,7 +95,7 @@ const WarnRooms = function(visitor) {
 
   this.fireTransition = function() {
     fire(visitor);
-    ioClient.emit('disconnect');
+    io.VisitorSocket.emit('disconnect');
   };
 };
 
@@ -138,8 +103,8 @@ const OpenMyRoom = function(visitor) {
   this.visitor = visitor;
   const { name } = visitor;
 
-  // this call to openMyRoom is for a Visitor to map its ioClient.id to a human-readable name
-  ioClient.emit('openMyRoom', name, (ack) => {
+  // this call to openMyRoom is for a Visitor to map its io.VisitorSocket.id to a human-readable name
+  io.VisitorSocket.emit('openMyRoom', name, (ack) => {
     console.log(notice(ack.message));
   });
 
@@ -159,7 +124,7 @@ const EnterRoom = function(visitor) {
     message: 'Entered',
     sentTime: new Date().toISOString(),
   };
-  ioClient.emit('enterRoom', msg, (ack) => {
+  io.VisitorSocket.emit('enterRoom', msg, (ack) => {
     console.log(ack);
   });
 
@@ -183,13 +148,38 @@ const Disconnect = function(visitor) {
 
   this.fireTransition = function() {
     fire(visitor);
-    ioClient.emit('disconnect');
+    io.VisitorSocket.emit('disconnect');
   };
 };
 
+// model properties
+
+const EnterRoomTransition = (visitor) => new EnterRoom(visitor);
+const LeaveRoomTransition = (visitor) => new LeaveRoom(visitor);
+const DisconnectTransition = (visitor) => new Disconnect(visitor);
+const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
+
+// these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
+const transitions = [
+  ['Connect', [[EnterRoomTransition, WarnRoomsTransition], 0.7, 0.3]],
+  [
+    'EnterRoom',
+    [
+      [LeaveRoomTransition, DisconnectTransition, WarnRoomsTransition],
+      0.6,
+      0.3,
+      0.1,
+    ],
+  ],
+  ['LeaveRoom', [[DisconnectTransition, EnterRoomTransition], 0.5, 0.5]],
+  ['WarnRooms', [[], 1]],
+  ['Disconnect', [[], 1]],
+];
+// end model properties
+
 function run() {
   const rooms = ['Heathlands.Medical', 'ABMS.Medical', 'Heathlands.Cafe'];
-  const visitor = new Visitor(visitorName, rooms, transitions);
+  const visitor = new Visitor(pickVisitor(), rooms, transitions);
   visitor.start();
 
   log.show();

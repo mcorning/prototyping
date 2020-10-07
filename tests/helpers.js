@@ -3,7 +3,7 @@ const moment = require('moment');
 
 const DEBUG = 0;
 const fire = (context) => {
-  const { count, currentState, enabledTransitionsFor } = context;
+  const { currentState, enabledTransitionsFor } = context;
 
   const et = enabledTransitionsFor.get(currentState.constructor.name);
 
@@ -15,7 +15,7 @@ const fire = (context) => {
   const transition = et[0][i];
   console.log('-------------------------');
   log.add(
-    `${count}) State: ${currentState.constructor.name} Transition: ${
+    `State: ${currentState.constructor.name} Transition: ${
       transition ? transition.name : 'Finished'
     }`
   );

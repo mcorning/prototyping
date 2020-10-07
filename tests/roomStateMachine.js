@@ -9,14 +9,10 @@ console.clear();
 
 const { fire, log } = require('./helpers');
 const { getAlerts } = require('./helpersRoom');
-const {
-  lastUsedRoom,
-  pickRoomName,
-  visitors,
-  pickVisitor,
-} = require('./roomData.js');
+const { pickRoomName } = require('./roomData.js');
+const { visitors, pickVisitor } = require('./visitorData.js');
 
-let io = require('./ClientSocket');
+const io = require('./roomClientSocket');
 
 const clc = require('cli-color');
 const success = clc.red.green;
@@ -143,7 +139,7 @@ const AlertVisitor = function(visitor) {
 
 // model properties
 
-const OpenRoomTransition = (room) => new OpenRoom();
+const OpenRoomTransition = () => new OpenRoom();
 const CloseRoomTransition = (room) => new CloseRoom(room);
 const DisconnectTransition = (room) => new Disconnect(room);
 const AlertVisitorTransition = (visitor) => new AlertVisitor(visitor);

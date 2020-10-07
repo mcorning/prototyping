@@ -1,10 +1,8 @@
 const io = require('socket.io-client');
 const moment = require('moment');
 
-const { pickRoomName } = require('./roomData.js');
-
 const clientSocket = io('http://localhost:3003', {
-  query: { token: pickRoomName() },
+  query: { token: 'room' },
 });
 
 // clientSocket.on('connect'...) is in the stateMachine so the event handler

@@ -1,6 +1,6 @@
 const moment = require('moment');
 
-const { messages, exposureDatesSet } = require('./roomData.js');
+const { messages, exposureDatesSet } = require('./visitorData');
 
 function getAlerts(visitor) {
   // convert messages into alert map
