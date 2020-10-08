@@ -6,7 +6,7 @@
 // state change is basis of assertions
 console.clear();
 // require('./oracle')
-const { fire, addTestMessage, log } = require('./helpers');
+const { fire, addTestMessage, log, getNow, report } = require('./helpers');
 const { pickVisitor } = require('./visitorData.js');
 const { pickRoomName } = require('./roomData.js');
 
@@ -24,24 +24,37 @@ console.log(DEBUG ? 'Debugging enabled' : '');
 // this socket permits us to see broadcast messages to a namespace
 // don't forget the {}
 // otherwise js won't interpret the reference as the funtion it is in roomClientSocket.js
-const { OpenRoomConnection } = require('./roomClientSocket');
-let roomSocket = OpenRoomConnection('Admin');
-
+const {
+  OpenRoomConnection,
+  exposeAvailableRooms,
+} = require('./roomClientSocket');
 const { OpenVisitorConnection } = require('./visitorClientSocket');
-let visitorSocket = OpenVisitorConnection('Admin');
 
-let countDownFrom = 6;
+// NOTE: if you manually disconnect these sockets, you won't see any results
+// from the server after the run() method finishes
+let roomSocket = OpenRoomConnection('RoomAdmin');
+let visitorSocket = OpenVisitorConnection('VisitorAdmin');
+
+exposeAvailableRooms(roomSocket);
+
+let visitorsToTest = 6;
+let testCount = 3;
 
 // entry point for state machine is inside socket.io connect event handler
 visitorSocket.on('connect', () => {
+  console.log(visitorSocket.id);
   run();
 });
+
 roomSocket.on('connect', () => {
-  console.log('Admin', 'Connection open');
+  console.log(roomSocket.id);
+
+  console.log(highlight('Admin', 'Connection open'));
 });
 
 //
-visitorSocket.on('checkIn', (message) =>
+// visitorSocket.on('checkIn', (message) =>
+roomSocket.on('checkIn', (message) =>
   console.log(
     success(
       `${message.visitor} ${message.message} ${message.room} on ${moment(
@@ -55,6 +68,7 @@ visitorSocket.on('checkIn', (message) =>
 visitorSocket.on('exposureAlert', (alertMessage) =>
   console.log(error('ALERT:', alertMessage))
 );
+
 // end of server-driven test
 
 // base class
@@ -63,10 +77,8 @@ const Visitor = function(name, rooms, transitions) {
   this.rooms = rooms;
   this.enabledTransitionsFor = new Map(transitions);
   this.room = pickRoomName();
-  this.socket = OpenVisitorConnection(name).open();
-
+  console.log('\nTests left:', testCount);
   console.log(highlight('Visitor :>> ', this.name));
-  console.log(highlight('Visitor Socket.io Client ID:', this.socket.id));
   console.log(notice('Chosen Room :>> ', this.room));
   console.log(notice('============================================'));
   console.log(bold('Tested State/Transitions:'));
@@ -76,7 +88,9 @@ const Visitor = function(name, rooms, transitions) {
 
   this.change = function(state) {
     // limits number of changes
-    if (!countDownFrom--) return;
+    if (!visitorsToTest--) {
+      return;
+    }
     this.currentState = state;
     this.currentState.fireTransition();
   };
@@ -99,7 +113,9 @@ const Connect = function(visitor) {
 const WarnRooms = function(visitor) {
   this.visitor = visitor;
   const { name, room } = visitor;
+  console.log(warn('Warning room(s)', room));
   const warnings = {};
+  // these dates have to be based on previously run test with their random visiting dates
   warnings[room] = [
     '2020-09-19T00:33:04.248Z',
     '2020-09-19T00:35:38.078Z',
@@ -123,20 +139,6 @@ const WarnRooms = function(visitor) {
   };
 };
 
-// const OpenMyRoom = function(visitor) {
-//   this.visitor = visitor;
-//   const { name } = visitor;
-
-//   // this call to openMyRoom is for a Visitor to map its io.VisitorSocket.id to a human-readable name
-//   io.VisitorSocket.emit('openMyRoom', name, (ack) => {
-//     console.log(notice(ack.message));
-//   });
-
-//   this.fireTransition = function() {
-//     fire(visitor);
-//   };
-// };
-
 const EnterRoom = function(visitor) {
   this.visitor = visitor;
 
@@ -145,8 +147,13 @@ const EnterRoom = function(visitor) {
   const msg = addTestMessage(name, room);
 
   // open the Room if necessary
-  console.log('visitorSocket.id :>> ', visitorSocket.id);
-  console.log('room :>> ', room);
+  report(
+    'Enter Room Transition Data:',
+    visitor.name,
+    visitorSocket.id,
+    room,
+    roomSocket.id
+  );
   roomSocket.emit('openRoom', room);
 
   visitorSocket.emit('enterRoom', msg, (ack) => {
@@ -156,6 +163,9 @@ const EnterRoom = function(visitor) {
   this.fireTransition = function() {
     fire(visitor);
   };
+  roomSocket.on('connect', () => {
+    console.log('Connection open', roomSocket.id, '.');
+  });
 };
 
 // leave/change Room(s), but stay online
@@ -203,12 +213,21 @@ const transitions = [
 // end model properties
 
 function run() {
+  console.time('Tests ran');
   const rooms = ['Heathlands.Medical', 'ABMS.Medical', 'Heathlands.Cafe'];
-  let testCount = 3;
-  while (testCount--) {
+  do {
     const visitor = new Visitor(pickVisitor(), rooms, transitions);
     visitor.start();
-  }
+    testCount -= 1;
+  } while (testCount >= 0);
+  console.group('Tests Complete');
+  console.timeEnd('Tests ran');
 
+  console.log(success('Test complete'));
+
+  console.log('Test Results Log:');
   log.show();
+  console.groupEnd();
+
+  return;
 }

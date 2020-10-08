@@ -1,5 +1,5 @@
 const moment = require('moment');
-const { groupBy, log } = require('./helpers');
+const { groupBy, log, printJson, report } = require('./helpers');
 
 const { messages, exposureDatesSet } = require('./visitorData');
 
@@ -38,6 +38,9 @@ function getAlerts(visitor) {
 
 module.exports = {
   getAlerts,
+  groupBy,
   messages,
+  report,
+  printJson,
   log,
 };

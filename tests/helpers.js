@@ -25,6 +25,10 @@ function addTestMessage(yourId, roomId) {
   return msg;
 }
 
+const getNow = () => {
+  return moment().format('lll');
+};
+
 const fire = (context) => {
   const { currentState, enabledTransitionsFor } = context;
 
@@ -36,7 +40,7 @@ const fire = (context) => {
   let i = reducedWeightedRandom(et.slice(1), r);
 
   const transition = et[0][i];
-  console.log('-------------------------');
+  console.log('--------------------------------------------------');
   log.add(
     `State: ${currentState.constructor.name} Transition: ${
       transition ? transition.name : 'Finished'
@@ -84,7 +88,7 @@ const log = (function() {
 
   return {
     add: function(msg) {
-      log += msg + '\n';
+      log += msg;
     },
     show: function() {
       console.log(log);
@@ -93,9 +97,31 @@ const log = (function() {
   };
 })();
 
+function printJson(json) {
+  return JSON.stringify(json, null, '\t');
+}
+
+function report(title, a1, a2, b1, b2) {
+  function item(name, id) {
+    this.name = name;
+    this.id = id;
+  }
+  let items = {};
+  console.groupCollapsed(title);
+  items.visitor = new item(a1, a2);
+  items.room = new item(b1, b2);
+
+  console.table(items);
+
+  console.groupEnd();
+}
+
 module.exports = {
-  fire,
   addTestMessage,
+  getNow,
   groupBy,
+  fire,
   log,
+  printJson,
+  report,
 };

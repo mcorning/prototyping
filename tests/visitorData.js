@@ -4,7 +4,7 @@ const messages = [
   {
     visitor: 'Nurse Diesel',
     room: 'Heathlands.Medical',
-    message: 'Entered',
+    message: '',
     sentTime: '2020-09-19T00:33:04.248Z',
   },
   {
@@ -78,7 +78,7 @@ module.exports = {
   pickVisitor,
 };
 
-const DEBUG = 1;
+const DEBUG = 0;
 
 function test() {
   console.log(pickVisitor());

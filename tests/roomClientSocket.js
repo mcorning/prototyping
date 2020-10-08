@@ -1,4 +1,4 @@
-const { groupBy, log, messages } = require('./helpersRoom');
+const { groupBy, log, messages, printJson, report } = require('./helpersRoom');
 
 const io = require('socket.io-client');
 const moment = require('moment');
@@ -10,8 +10,24 @@ const notice = clc.blue;
 const highlight = clc.magenta;
 const bold = clc.bold;
 
+// methods called by state machine
+const exposeAvailableRooms = (clientSocket) => {
+  clientSocket.emit('exposeAvailableRooms', (rooms) => {
+    console.log('Available Rooms:');
+    console.table(rooms);
+  });
+};
+
+const exposeOccupiedRooms = (clientSocket) => {
+  clientSocket.emit('exposeOccupiedRooms', (rooms) => {
+    console.log('Occupied Rooms:');
+    console.table(rooms);
+  });
+};
+// end methods called by state machine
+
+// called by state machine
 function OpenRoomConnection(token) {
-  // does the server still open a room for toke?
   const clientSocket = io('http://localhost:3003', {
     query: { token: token },
   });
@@ -19,8 +35,23 @@ function OpenRoomConnection(token) {
   clientSocket.on('connect', () => {
     console.log(highlight('Room Socket.io Client ID:', clientSocket.id));
   });
-  clientSocket.on('disconnecting', () => {
-    console.log('Disconnecting:', clientSocket.id, name);
+
+  clientSocket.on('availableRoomsExposed', (message) => {
+    console.groupCollapsed('Available Rooms:');
+    console.log(success('Available Rooms:', printJson(message)));
+    console.groupEnd();
+  });
+
+  clientSocket.on('checkIn', (message) => {
+    console.groupCollapsed('EnterRoom/CheckIn:');
+    console.log(success('Results:', printJson(message)));
+    console.groupEnd();
+  });
+
+  clientSocket.on('checkOut', (message) => {
+    console.groupCollapsed('LeaveRoom/CheckOut:');
+    console.log(success('Results:', printJson(message)));
+    console.groupEnd();
   });
 
   // socket event handlers
@@ -41,17 +72,17 @@ function OpenRoomConnection(token) {
       );
       return;
     }
-    console.log('messageDates:', messageDates);
+    console.log('messageDates:', report(messageDates));
 
     let alerts = new Map();
-    // of only a single incoming date, make a Set with that
+    // if only a single incoming date, make a Set with that
     // otherwise use the object for the Set
     let exposureDatesSet =
       typeof exposureDates == 'string'
         ? new Set().add(exposureDates)
         : new Set(exposureDates);
 
-    console.log('Alert Dates', exposureDatesSet);
+    console.log('Alert Dates', printJson(exposureDatesSet));
     console.log('Here are the necessary Exposure Alerts');
     exposureDatesSet.forEach((date) => {
       messageDates[moment(date).format('YYYY-MM-DD')].forEach((v) => {
@@ -78,30 +109,26 @@ function OpenRoomConnection(token) {
         sentTime: new Date().toISOString(),
       };
       clientSocket.emit('alertVisitor', message, (ack) => {
-        log(ack, 'alert');
+        log.add(ack, 'alert');
       });
     }
 
-    // if (ack) ack(`${visitor}, ${room} alerted`);
-    // this.alertMessage = Object.keys(messageDates).length
-    //   ? `Visitor warning triggered Exposure Alert for ${
-    //       Object.keys(messageDates).length
-    //     } exposure date(s) in ${room}.`
-    //   : `Exposure Alert does not apply: No other visitor(s) to ${room} during exposure dates.`;
-    // this.alertColor = 'warning';
-    // this.alertIcon = 'mdi-home-alert';
-    // this.alert = true;
+    if (ack) ack(`${visitor}, ${room} alerted`);
   });
-  clientSocket.on('checkIn', (message) => console.log(message));
-  clientSocket.on('checkOut', (message) => console.log(message));
 
   // namespace broadcast event handlers
   // e.g., on server:     io.of(namespace).emit('updatedOccupancy')
   clientSocket.on('updatedOccupancy', (message) => {
-    console.log(`${message.room} occupancy is now ${message.occupancy}`);
+    console.log(
+      success(`${message.room} occupancy is now ${message.occupancy}`)
+    );
   });
 
   return clientSocket;
 }
 
-module.exports = { OpenRoomConnection };
+module.exports = {
+  OpenRoomConnection,
+  exposeAvailableRooms,
+  exposeOccupiedRooms,
+};
