@@ -575,13 +575,13 @@ export default {
       this.alert = true;
     },
 
-    // used for UI only
-    updatedOccupancy(payload) {
-      if (payload.room == this.roomId) {
-        this.occupancy = payload.occupancy;
-      }
-      this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
-    },
+    // used for UI only == Visitors.vue only
+    // updatedOccupancy(payload) {
+    //   if (payload.room == this.roomId) {
+    //     this.occupancy = payload.occupancy;
+    //   }
+    //   this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
+    // },
   },
 
   methods: {

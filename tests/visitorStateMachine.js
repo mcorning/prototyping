@@ -10,7 +10,7 @@ const { fire, addTestMessage, log, getNow, report } = require('./helpers');
 const { pickVisitor } = require('./visitorData.js');
 const { pickRoomName } = require('./roomData.js');
 
-const moment = require('moment');
+// const moment = require('moment');
 
 const clc = require('cli-color');
 const success = clc.green.bold;
@@ -20,15 +20,26 @@ const notice = clc.blue;
 const highlight = clc.magenta;
 const bold = clc.bold;
 const DEBUG = 0; // use this to control some log spew
+
 console.log(DEBUG ? 'Debugging enabled' : '');
+
 // this socket permits us to see broadcast messages to a namespace
 // don't forget the {}
 // otherwise js won't interpret the reference as the funtion it is in roomClientSocket.js
 const {
   OpenRoomConnection,
-  exposeAvailableRooms,
+  alertVisitor,
+  closeRoom,
+  exposeOccupiedRooms,
+  openRoom,
 } = require('./roomClientSocket');
-const { OpenVisitorConnection } = require('./visitorClientSocket');
+const {
+  OpenVisitorConnection,
+  exposureWarning,
+  enterRoom,
+  exposeAvailableRooms,
+  leaveRoom,
+} = require('./visitorClientSocket');
 
 // NOTE: if you manually disconnect these sockets, you won't see any results
 // from the server after the run() method finishes
@@ -37,8 +48,9 @@ let visitorSocket = OpenVisitorConnection('VisitorAdmin');
 
 exposeAvailableRooms(roomSocket);
 
-let visitorsToTest = 6;
+let visitorsToTest = 1;
 let testCount = 3;
+let availableRooms = new Map();
 
 // entry point for state machine is inside socket.io connect event handler
 visitorSocket.on('connect', () => {
@@ -53,21 +65,21 @@ roomSocket.on('connect', () => {
 });
 
 //
-// visitorSocket.on('checkIn', (message) =>
-roomSocket.on('checkIn', (message) =>
-  console.log(
-    success(
-      `${message.visitor} ${message.message} ${message.room} on ${moment(
-        message.sentTime
-      ).format('lll')}`
-    )
-  )
-);
+// // visitorSocket.on('checkIn', (message) =>
+// roomSocket.on('checkIn', (message) =>
+//   console.log(
+//     success(
+//       `${message.visitor} ${message.message} ${message.room} on ${moment(
+//         message.sentTime
+//       ).format('lll')}`
+//     )
+//   )
+// );
 
-// this test is driven from the socket.io server (when enabled)
-visitorSocket.on('exposureAlert', (alertMessage) =>
-  console.log(error('ALERT:', alertMessage))
-);
+// // this test is driven from the socket.io server (when enabled)
+// roomSocket.on('exposureAlert', (alertMessage) =>
+//   console.log(error('ALERT:', alertMessage))
+// );
 
 // end of server-driven test
 
@@ -77,7 +89,7 @@ const Visitor = function(name, rooms, transitions) {
   this.rooms = rooms;
   this.enabledTransitionsFor = new Map(transitions);
   this.room = pickRoomName();
-  console.log('\nTests left:', testCount);
+  console.log('\nTests left:', testCount, 'at', getNow());
   console.log(highlight('Visitor :>> ', this.name));
   console.log(notice('Chosen Room :>> ', this.room));
   console.log(notice('============================================'));
@@ -104,6 +116,15 @@ const Visitor = function(name, rooms, transitions) {
 
 const Connect = function(visitor) {
   this.visitor = visitor;
+
+  // ensure one or more Rooms are open
+  roomSocket.emit('openRoom', pickRoomName(), (ack) => {
+    console.group('Inside Connect: Server Acknowledged: Open Room:');
+    availableRooms.set(ack.name, ack.id);
+    console.log([...availableRooms]);
+    console.log(success(ack.msg));
+    console.groupEnd();
+  });
 
   this.fireTransition = function() {
     fire(visitor);
@@ -154,23 +175,32 @@ const EnterRoom = function(visitor) {
     room,
     roomSocket.id
   );
-  roomSocket.emit('openRoom', room);
 
-  visitorSocket.emit('enterRoom', msg, (ack) => {
-    console.log('Enter Room oracle:', ack);
-  });
+  openRoom(roomSocket, room);
+
+  enterRoom(visitorSocket, msg);
 
   this.fireTransition = function() {
     fire(visitor);
   };
-  roomSocket.on('connect', () => {
-    console.log('Connection open', roomSocket.id, '.');
-  });
 };
 
 // leave/change Room(s), but stay online
 const LeaveRoom = function(visitor) {
   this.visitor = visitor;
+  const { name, room } = visitor;
+
+  const msg = {
+    room: room,
+    visitor: name,
+    message: 'Leave',
+    sentTime: new Date().toISOString(),
+  };
+  visitorSocket.emit('leaveRoom', msg, (ack) => {
+    console.group('Server Acknowledged: Leave Room:');
+    console.log(success(ack));
+    console.groupEnd();
+  });
 
   this.fireTransition = function() {
     fire(visitor);
@@ -196,17 +226,17 @@ const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
 
 // these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
 const transitions = [
-  ['Connect', [[EnterRoomTransition, WarnRoomsTransition], 0.7, 0.3]],
+  ['Connect', [[EnterRoomTransition, WarnRoomsTransition], 1.0, 0.0]],
   [
     'EnterRoom',
     [
       [LeaveRoomTransition, DisconnectTransition, WarnRoomsTransition],
-      0.6,
-      0.3,
-      0.1,
+      1,
+      0.0,
+      0.0,
     ],
   ],
-  ['LeaveRoom', [[DisconnectTransition, EnterRoomTransition], 0.5, 0.5]],
+  ['LeaveRoom', [[DisconnectTransition, EnterRoomTransition], 1, 0]],
   ['WarnRooms', [[], 1]],
   ['Disconnect', [[], 1]],
 ];

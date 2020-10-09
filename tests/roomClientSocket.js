@@ -4,19 +4,36 @@ const io = require('socket.io-client');
 const moment = require('moment');
 const clc = require('cli-color');
 const success = clc.green.bold;
-const error = clc.red.bold;
+// const error = clc.red.bold;
 const warn = clc.yellow;
-const notice = clc.blue;
+// const notice = clc.blue;
 const highlight = clc.magenta;
-const bold = clc.bold;
+// const bold = clc.bold;
 
 // methods called by state machine
-const exposeAvailableRooms = (clientSocket) => {
-  clientSocket.emit('exposeAvailableRooms', (rooms) => {
+const alertVisitor = (clientSocket, visitor, warnings) => {
+  const message = {
+    visitor: visitor,
+    message: `${warnings}. To stop the spread, self-quarantine for 14 days.`,
+    sentTime: new Date().toISOString(),
+  };
+  clientSocket.emit('alertVisitor', message, (rooms) => {
     console.log('Available Rooms:');
     console.table(rooms);
   });
 };
+const closeRoom = (clientSocket, message) => {
+  clientSocket.emit('closeRoom', message, (rooms) => {
+    console.log('Available Rooms:');
+    console.table(rooms);
+  });
+};
+// const exposeAvailableRooms = (clientSocket) => {
+//   clientSocket.emit('exposeAvailableRooms', (rooms) => {
+//     console.log('Available Rooms:');
+//     console.table(rooms);
+//   });
+// };
 
 const exposeOccupiedRooms = (clientSocket) => {
   clientSocket.emit('exposeOccupiedRooms', (rooms) => {
@@ -24,8 +41,17 @@ const exposeOccupiedRooms = (clientSocket) => {
     console.table(rooms);
   });
 };
+
+const openRoom = (clientSocket, message) => {
+  clientSocket.emit('openRoom', message, (ack) => {
+    console.group('Inside EnterRoom: Server Acknowledged: Open Room:');
+    console.log(success(ack));
+    console.groupEnd();
+  });
+};
 // end methods called by state machine
 
+// these are the sockets options in the Room.vue
 // called by state machine
 function OpenRoomConnection(token) {
   const clientSocket = io('http://localhost:3003', {
@@ -36,14 +62,15 @@ function OpenRoomConnection(token) {
     console.log(highlight('Room Socket.io Client ID:', clientSocket.id));
   });
 
-  clientSocket.on('availableRoomsExposed', (message) => {
-    console.groupCollapsed('Available Rooms:');
-    console.log(success('Available Rooms:', printJson(message)));
-    console.groupEnd();
-  });
+  // clientSocket.on('availableRoomsExposed', (message) => {
+  //   console.groupCollapsed('Available Rooms:');
+  //   console.log(success('Available Rooms:', printJson(message)));
+  //   console.groupEnd();
+  // });
 
   clientSocket.on('checkIn', (message) => {
     console.groupCollapsed('EnterRoom/CheckIn:');
+    console.log(warn('Socket:', clientSocket.id));
     console.log(success('Results:', printJson(message)));
     console.groupEnd();
   });
@@ -118,17 +145,20 @@ function OpenRoomConnection(token) {
 
   // namespace broadcast event handlers
   // e.g., on server:     io.of(namespace).emit('updatedOccupancy')
-  clientSocket.on('updatedOccupancy', (message) => {
-    console.log(
-      success(`${message.room} occupancy is now ${message.occupancy}`)
-    );
-  });
+  // clientSocket.on('updatedOccupancy', (message) => {
+  //   console.log(
+  //     success(`${message.room} occupancy is now ${message.occupancy}`)
+  //   );
+  // });
 
   return clientSocket;
 }
 
 module.exports = {
   OpenRoomConnection,
-  exposeAvailableRooms,
+  alertVisitor,
+  closeRoom,
+  // exposeAvailableRooms,
   exposeOccupiedRooms,
+  openRoom,
 };
