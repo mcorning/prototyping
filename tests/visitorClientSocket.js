@@ -8,7 +8,7 @@ const error = clc.red.bold;
 // const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { printJson } = require('./helpers');
+const { getNow, printJson } = require('./helpers');
 const { visitors } = require('./visitorData');
 
 console.log(`${moment().format('llll')}`);
@@ -53,32 +53,40 @@ const exposureWarning = (clientSocket, warnings) => {
 };
 
 function OpenVisitorConnection(token) {
+  function log(title, message) {
+    console.groupCollapsed(title);
+    console.table(message);
+    console.groupEnd();
+  }
   try {
+    const connectionMap = new Map();
+
     const clientSocket = io('http://localhost:3003', {
       query: { token: token },
     });
 
     // these are the sockets options in the Visitor.vue
     clientSocket.on('connect', () => {
-      console.log(success(clientSocket.id, clientSocket.query.token));
+      connectionMap.set(clientSocket.query.token, clientSocket);
+      console.log(
+        success(
+          `On ${getNow()}, ${clientSocket.query.token} uses socket ${
+            clientSocket.id
+          }`
+        )
+      );
     });
 
     clientSocket.on('availableRoomsExposed', (message) => {
-      console.groupCollapsed('Available Rooms:');
-      console.log(success(printJson(message)));
-      console.groupEnd();
+      log('Available Rooms', message);
     });
 
     clientSocket.on('allRoomsExposed', (message) => {
-      console.groupCollapsed('All Rooms:');
-      console.log(success(printJson(message)));
-      console.groupEnd();
+      log('All Rooms', message);
     });
 
     clientSocket.on('allSocketsExposed', (message) => {
-      console.groupCollapsed('All Sockets:');
-      console.log(success(printJson(message)));
-      console.groupEnd();
+      log('All Sockets', message);
     });
 
     clientSocket.on('exposureAlert', (alertMessage) =>
@@ -90,7 +98,6 @@ function OpenVisitorConnection(token) {
         success(`${message.room} occupancy is now ${message.occupancy}`)
       );
     });
-
     return clientSocket;
   } catch (error) {
     console.log(error('Cannot find the socket.io server.'));
@@ -98,6 +105,7 @@ function OpenVisitorConnection(token) {
 }
 
 const DEBUG = 1;
+
 module.exports = {
   OpenVisitorConnection,
   exposureWarning,
@@ -108,17 +116,22 @@ module.exports = {
   leaveRoom,
 };
 
-function getConnection(token) {
-  const socket = OpenVisitorConnection(token);
-  socket.on('connect', () => {
-    exposeAllRooms(socket);
-    exposeAllSockets(socket);
+var getConnections = new Promise(function(resolve) {
+  let connectionMap = new Map();
+  let vs = visitors;
+  let more = visitors.length;
+  vs.forEach((visitor) => {
+    let socket = OpenVisitorConnection(visitor);
+    socket.on('connect', () => {
+      connectionMap.set(socket.query.token, socket);
+      if (!--more) {
+        resolve(connectionMap);
+      }
+    });
   });
-}
-function getConnections() {
-  let visitors = ['Nurse Diesel', 'Nurse Jackie', 'AirGas Inc'];
-  visitors.forEach((visitor) => {
-    getConnection(visitor);
+});
+
+DEBUG &&
+  getConnections.then((connectionMap) => {
+    console.table(connectionMap);
   });
-}
-DEBUG && getConnections();
