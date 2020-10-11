@@ -1,3 +1,5 @@
+// const { groupBy } = require('./helpers');
+
 const visitors = ['Nurse Diesel', 'Nurse Jackie', 'AirGas Inc'];
 
 const messages = [
@@ -57,12 +59,44 @@ const messages = [
   },
 ];
 
-function exposureDates(visitor) {
+function groupBy(payload) {
+  const { array, prop, val } = payload;
+
+  return array.reduce(function(acc, obj) {
+    let key = obj[prop];
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(obj[val]);
+    return acc;
+  }, {});
+}
+
+function getExposures(visitor) {
+  return messages.filter((v) => v.visitor == visitor);
+}
+
+function getExposureDates(visitor) {
   return messages.filter((v) => v.visitor == visitor).map((v) => v.sentTime);
 }
 
-function exposureDatesSet(visitor) {
-  return new Set(exposureDates(visitor));
+function getExposureDatesSet(visitor) {
+  return new Set(getExposureDates(visitor));
+}
+
+function getWarnings(visitor) {
+  // Example warning
+  //    warnings:{
+  //      Heathlands.Medical:[
+  //        '2020-09-19T00:33:04.248Z', '2020-09-19T00:35:38.078Z', '2020-09-14T02:53:33.738Z', '2020-09-18T02:53:35.050Z'
+  //      ]
+  //    }
+  let payload = {
+    array: getExposures(visitor),
+    prop: 'room',
+    val: 'sentTime',
+  };
+  return groupBy(payload);
 }
 
 function pickVisitor() {
@@ -72,19 +106,27 @@ function pickVisitor() {
 
 module.exports = {
   messages,
-  exposureDates,
-  exposureDatesSet,
-  visitors,
+  getExposureDates,
+  getExposureDatesSet,
+  getExposures,
+  getWarnings,
   pickVisitor,
+  visitors,
 };
 
-const DEBUG = 0;
+const TESTING = 0;
 
 function test() {
-  console.log(pickVisitor());
-  // let y = exposureDatesSet('Nurse Diesel');
-
-  // console.log('set', [...y]);
-  // y.forEach((date) => console.log('date:', date));
+  let v = pickVisitor();
+  console.log(v);
+  let y = getWarnings(v);
+  console.log('exposures:', y);
+  let x = getExposureDatesSet(v);
+  console.log('set', [...x]);
+  x.forEach((date) => console.log('date:', date));
 }
-DEBUG && test();
+TESTING && test();
+
+console.log(
+  TESTING ? 'Testing visitorDate.js' : 'visitorDate.js is tested code'
+);
