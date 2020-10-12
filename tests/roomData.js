@@ -1,26 +1,30 @@
 let lastUsedRoom = 'Heathlands.Medical';
-const allKnownRooms = [
-  'Heathlands.Medical',
-  'Heathlands.Cafe',
-  'ABMS.Medical',
-  'ABMS.Lobby',
+
+const rooms = [
+  {
+    name: 'Heathlands Medical',
+    id: 'd6QoVa_JZxnM_0BoAAAA',
+    nsp: 'enduringNet',
+  },
+  { name: 'Heathlands Cafe', id: 'e1suC3Rdpj_1PuR3AAAB', nsp: 'enduringNet' },
+  { name: 'ABMS Medical', id: 'OUeNKcyWGGgX6fMWAAAC', nsp: 'enduringNet' },
 ];
 
-function pickRoomName() {
-  const idx = Math.floor(Math.random() * allKnownRooms.length);
-  lastUsedRoom = allKnownRooms[idx];
+function pickRoom() {
+  const idx = Math.floor(Math.random() * rooms.length);
+  lastUsedRoom = rooms[idx];
   return lastUsedRoom;
 }
 
 module.exports = {
-  allKnownRooms,
-  pickRoomName,
+  rooms,
+  pickRoom,
 };
 
 const DEBUG = 0;
 
 function test() {
-  console.log(pickRoomName());
+  console.log(pickRoom());
   // let y = exposureDatesSet('Nurse Diesel');
 
   // console.log('set', [...y]);

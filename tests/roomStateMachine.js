@@ -9,7 +9,7 @@ console.clear();
 
 const { fire, log } = require('./helpers');
 const { getAlerts } = require('./helpersRoom');
-const { pickRoomName } = require('./roomData.js');
+const { pickRoom } = require('./roomData.js');
 const { visitors, pickVisitor } = require('./visitorData.js');
 
 const io = require('./roomClientSocket');
@@ -73,7 +73,7 @@ const Connect = function(room) {
 };
 
 const OpenRoom = function() {
-  name = pickRoomName();
+  name = pickRoom();
   this.room = new Room(name, visitors, transitions);
 
   const msg = {
@@ -163,7 +163,7 @@ const transitions = [
 // end model properties
 
 function runModel() {
-  let room = new Room(pickRoomName(), visitors, transitions);
+  let room = new Room(pickRoom().name, visitors, transitions);
   room.start();
 
   log.show();

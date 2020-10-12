@@ -8,7 +8,7 @@ console.clear();
 // require('./oracle')
 const { fire, addTestMessage, log, getNow, report } = require('./helpers');
 const { pickVisitor } = require('./visitorData.js');
-const { pickRoomName } = require('./roomData.js');
+const { pickRoom } = require('./roomData.js');
 
 // const moment = require('moment');
 
@@ -88,10 +88,10 @@ const Visitor = function(name, rooms, transitions) {
   this.name = name;
   this.rooms = rooms;
   this.enabledTransitionsFor = new Map(transitions);
-  this.room = pickRoomName();
+  this.room = pickRoom();
   console.log('\nTests left:', testCount, 'at', getNow());
   console.log(highlight('Visitor :>> ', this.name));
-  console.log(notice('Chosen Room :>> ', this.room));
+  console.log(notice('Chosen Room :>> ', this.room.name));
   console.log(notice('============================================'));
   console.log(bold('Tested State/Transitions:'));
 
@@ -118,7 +118,7 @@ const Connect = function(visitor) {
   this.visitor = visitor;
 
   // ensure one or more Rooms are open
-  roomSocket.emit('openRoom', pickRoomName(), (ack) => {
+  roomSocket.emit('openRoom', pickRoom(), (ack) => {
     console.group('Inside Connect: Server Acknowledged: Open Room:');
     availableRooms.set(ack.name, ack.id);
     console.log([...availableRooms]);

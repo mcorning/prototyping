@@ -1,6 +1,9 @@
 const { groupBy, log, messages, printJson, report } = require('./helpersRoom');
 
 const io = require('socket.io-client');
+const { pickRoom, rooms } = require('./roomData.js');
+const base64id = require('base64id');
+
 const moment = require('moment');
 const clc = require('cli-color');
 const success = clc.green.bold;
@@ -53,9 +56,13 @@ const openRoom = (clientSocket, message) => {
 
 // these are the sockets options in the Room.vue
 // called by state machine
-function OpenRoomConnection(token) {
+function OpenRoomConnection(room) {
+  const id = room.id || base64id.generateId();
+  const nsp = room.nsp || '/';
+  const query = { room: room.name, id: id, nsp: nsp };
+  console.table(query);
   const clientSocket = io('http://localhost:3003', {
-    query: { room: token, id: clientSocket.id, nsp: 'sisters' },
+    query: query,
   });
 
   clientSocket.on('connect', () => {
@@ -162,3 +169,28 @@ module.exports = {
   exposeOccupiedRooms,
   openRoom,
 };
+
+const TESTING = 1;
+
+async function bvt() {
+  // test helpers
+  var getConnections = new Promise(function(resolve) {
+    let connectionMap = new Map();
+    let rs = rooms;
+    let more = rooms.length;
+    rs.forEach((room) => {
+      let socket = OpenRoomConnection(room);
+      socket.on('connect', () => {
+        connectionMap.set(socket.query.room, socket);
+        if (!--more) {
+          resolve(connectionMap);
+        }
+      });
+    });
+  });
+
+  let connectionMap = await getConnections;
+  console.table(connectionMap);
+}
+
+TESTING && bvt();

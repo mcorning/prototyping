@@ -103,11 +103,6 @@ function OpenVisitorConnection(visitor) {
           }`
         )
       );
-      function log(title, message) {
-        console.groupCollapsed(title);
-        console.table(message);
-        console.groupEnd();
-      }
     });
     clientSocket.on('reconnect_attempt', () => {
       clientSocket.io.opts.query = {
@@ -140,8 +135,11 @@ function OpenVisitorConnection(visitor) {
     console.log(error('Cannot find the socket.io server.'));
   }
 }
-
-const TESTING = 1;
+function log(title, message) {
+  console.groupCollapsed(title);
+  console.table(message);
+  console.groupEnd();
+}
 
 module.exports = {
   OpenVisitorConnection,
@@ -152,6 +150,8 @@ module.exports = {
   exposeAvailableRooms,
   leaveRoom,
 };
+
+const TESTING = 1;
 
 async function bvt() {
   // test helpers
@@ -173,9 +173,9 @@ async function bvt() {
   let connectionMap = await getConnections;
   console.table(connectionMap);
 
-  const visitorName = pickVisitor();
-  let exposures = getExposures(visitorName);
-  let visitorSocket = connectionMap.get(visitorName);
+  const visitor = pickVisitor();
+  let exposures = getExposures(visitor.name);
+  let visitorSocket = connectionMap.get(visitor.name);
 
   let roomName = exposures[0].room;
   // 1) Open Room
@@ -193,8 +193,8 @@ async function bvt() {
     // };
 
     const message = {
-      visitor: visitorName,
-      warnings: getWarnings(visitorName),
+      visitor: visitor.name,
+      warnings: getWarnings(visitor.name),
       sentTime: new Date().toISOString(),
     };
     // 3) Warn Rooms
