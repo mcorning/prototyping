@@ -1,6 +1,10 @@
 // const { groupBy } = require('./helpers');
 
-const visitors = ['Nurse Diesel', 'Nurse Jackie', 'AirGas Inc'];
+const visitors = [
+  { name: 'Nurse Diesel', id: 'kWjzGUKmvWhgeRlmAAAA', nsp: 'enduringNet' },
+  { name: 'Nurse Jackie', id: 'FWzLl5dS9sr9FxDsAAAB', nsp: 'enduringNet' },
+  { name: 'AirGas Inc', id: 'JgvrILSxDwXRWJUpAAAC', nsp: 'enduringNet' },
+];
 
 const messages = [
   {

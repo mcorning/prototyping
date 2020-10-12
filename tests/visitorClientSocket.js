@@ -13,6 +13,8 @@
 
 const io = require('socket.io-client');
 const moment = require('moment');
+const base64id = require('base64id');
+
 const clc = require('cli-color');
 const success = clc.green.bold;
 const error = clc.red.bold;
@@ -78,17 +80,17 @@ const exposureWarning = (clientSocket, message) => {
   });
 };
 
-function OpenVisitorConnection(token) {
-  function log(title, message) {
-    console.groupCollapsed(title);
-    console.table(message);
-    console.groupEnd();
-  }
+// function OpenVisitorConnection(token, clientSocketId = '', nsp='/') {
+function OpenVisitorConnection(visitor) {
   try {
+    const id = visitor.id || base64id.generateId();
+    const nsp = visitor.nsp || '/';
+    const query = { visitor: visitor.name, id: id, nsp: nsp };
+    console.table(query);
     const connectionMap = new Map();
 
     const clientSocket = io('http://localhost:3003', {
-      query: { visitor: token },
+      query: query,
     });
 
     // these are the sockets options in the Visitor.vue
@@ -101,8 +103,17 @@ function OpenVisitorConnection(token) {
           }`
         )
       );
+      function log(title, message) {
+        console.groupCollapsed(title);
+        console.table(message);
+        console.groupEnd();
+      }
     });
-
+    clientSocket.on('reconnect_attempt', () => {
+      clientSocket.io.opts.query = {
+        token: 'fgh',
+      };
+    });
     clientSocket.on('availableRoomsExposed', (message) => {
       log('Available Rooms', message);
     });
