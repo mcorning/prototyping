@@ -6,8 +6,7 @@
 // for this file, here are our test priorities:
 // basic data flow:
 // 1) open Room(s) [note: at this writing, we are opening a Room in this code (as apposed to using roomClientSocket.js)]
-// 2) enter Room
-// 3) warn Room
+// 2) warn Room
 // Result: room will see a warning, and Visitor will see acknowledgement of warning receipt
 
 // other tests include testing for multiple Visitor alerts and Room pending warnings
@@ -23,6 +22,7 @@ const error = clc.red.bold;
 // const bold = clc.bold;
 
 const { getNow, printJson } = require('./helpers');
+
 const {
   getExposures,
   getWarnings,
@@ -88,15 +88,15 @@ function OpenVisitorConnection(token) {
     const connectionMap = new Map();
 
     const clientSocket = io('http://localhost:3003', {
-      query: { token: token },
+      query: { visitor: token },
     });
 
     // these are the sockets options in the Visitor.vue
     clientSocket.on('connect', () => {
-      connectionMap.set(clientSocket.query.token, clientSocket);
+      connectionMap.set(clientSocket.query.visitor, clientSocket);
       console.log(
         success(
-          `On ${getNow()}, ${clientSocket.query.token} uses socket ${
+          `On ${getNow()}, ${clientSocket.query.visitor} uses socket ${
             clientSocket.id
           }`
         )
@@ -130,7 +130,7 @@ function OpenVisitorConnection(token) {
   }
 }
 
-const DEBUG = 1;
+const TESTING = 1;
 
 module.exports = {
   OpenVisitorConnection,
@@ -151,7 +151,7 @@ async function bvt() {
     vs.forEach((visitor) => {
       let socket = OpenVisitorConnection(visitor);
       socket.on('connect', () => {
-        connectionMap.set(socket.query.token, socket);
+        connectionMap.set(socket.query.visitor, socket);
         if (!--more) {
           resolve(connectionMap);
         }
@@ -190,4 +190,5 @@ async function bvt() {
     exposureWarning(visitorSocket, message);
   });
 }
-bvt();
+
+TESTING && bvt();

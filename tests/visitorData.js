@@ -61,13 +61,9 @@ const messages = [
 
 function groupBy(payload) {
   const { array, prop, val } = payload;
-
   return array.reduce(function(acc, obj) {
     let key = obj[prop];
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(obj[val]);
+    acc[key] = (acc[key] || []).concat(obj[val]);
     return acc;
   }, {});
 }
@@ -85,14 +81,15 @@ function getExposureDatesSet(visitor) {
 }
 
 function getWarnings(visitor) {
-  // Example warning
-  //    warnings:{
-  //      Heathlands.Medical:[
-  //        '2020-09-19T00:33:04.248Z', '2020-09-19T00:35:38.078Z', '2020-09-14T02:53:33.738Z', '2020-09-18T02:53:35.050Z'
-  //      ]
-  //    }
+  // See Transductions section of FieldNotes.md
+  let arr = getExposures(visitor);
+  if (TESTING) {
+    console.log('exposures (Visitor messages):');
+    console.log(JSON.stringify(arr, null, '\t'));
+  }
+
   let payload = {
-    array: getExposures(visitor),
+    array: arr,
     prop: 'room',
     val: 'sentTime',
   };
@@ -114,19 +111,19 @@ module.exports = {
   visitors,
 };
 
-const TESTING = 0;
+const TESTING = 1;
 
 function test() {
   let v = pickVisitor();
   console.log(v);
   let y = getWarnings(v);
-  console.log('exposures:', y);
+  console.log('warnings:', JSON.stringify(y, null, '\t'));
   let x = getExposureDatesSet(v);
-  console.log('set', [...x]);
+  console.log('exposure dates set', JSON.stringify(x, null, '\t'));
   x.forEach((date) => console.log('date:', date));
 }
 TESTING && test();
 
-console.log(
+console.info(
   TESTING ? 'Testing visitorDate.js' : 'visitorDate.js is tested code'
 );

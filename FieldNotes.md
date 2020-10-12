@@ -56,3 +56,50 @@ Rooms can have the following state thread (in this order):
    - socket.id is RoomId
    - at least one Visitor
    - socket has length property > 1
+
+## Transductions
+
+The basic LCT object is the message. The basic LCT data structure is an array of messages:
+
+```json
+
+  {
+    visitor: 'Nurse Jackie',
+    room: 'Heathlands.Medical',
+    message: 'Entered',
+    sentTime: '2020-09-19T00:33:04.248Z',
+  },
+  {
+    visitor: 'Nurse Jackie',
+    room: 'Heathlands.Medical',
+    message: 'Entered',
+    sentTime: '2020-09-14T02:53:33.738Z',
+  },
+  {
+    visitor: 'Nurse Jackie',
+    room: 'Heathlands.Medical',
+    message: 'Entered',
+    sentTime: '2020-09-18T07:15:00.00Z',
+  },
+```
+The basic transduction groups `sentTime` values by `room` for each `visitor`. These named arrays are provide value(s) the `warnings` field of the `message` parameter used by the server's `exposureWarning` event handler. For example, Nurse Jackie's three visits to Heathlands.Medical look like this `warning`: 
+
+```json
+  Heathlands.Medical:[
+    '2020-09-19T00:33:04.248Z', '2020-09-14T02:53:33.738Z', '2020-09-18T07:15:00.00Z'
+  ]
+```
+The exposureWarning event handler also needs additional data.
+
+```json
+{
+    sentTime:'2020-09-19T00:56:54.570Z',  // dateTime of the warning
+    visitor:'Nurse Jackie',               // Visitor name
+    warnings:{                            // dates Visitor visited Room
+      Heathlands.Medical:[                // Room name
+         '2020-09-19T00:33:04.248Z', '2020-09-14T02:53:33.738Z', '2020-09-18T07:15:00.00Z'
+      ]                                   // server alerts other Room Visitors on these dates
+    }
+ };
+ ```
+

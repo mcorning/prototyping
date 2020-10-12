@@ -55,7 +55,7 @@ const openRoom = (clientSocket, message) => {
 // called by state machine
 function OpenRoomConnection(token) {
   const clientSocket = io('http://localhost:3003', {
-    query: { token: token },
+    query: { room: token },
   });
 
   clientSocket.on('connect', () => {
