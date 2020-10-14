@@ -19,61 +19,35 @@ const clc = require('cli-color');
 const success = clc.green.bold;
 const error = clc.red.bold;
 const warn = clc.yellow;
+const info = clc.cyan;
 // const notice = clc.blue;
 // const highlight = clc.magenta;
 // const bold = clc.bold;
 
 const { getNow, printJson } = require('./helpers');
 
-const {
-  getExposures,
-  getWarnings,
-  pickVisitor,
-  visitors,
-} = require('./visitorData');
-
-const {
-  OpenRoomConnection,
-  openRoom,
-  alertVisitor,
-} = require('./roomClientSocket');
-
 console.log(`${moment().format('llll')}`);
 
-// listeners
-// using named listeners makes it easier to remove listeners from socket event handlers
-const onAvailableRoomsExposed = (message) => {
-  console.groupCollapsed('onAvailableRoomsExposed results:');
-  console.table(message);
-  console.groupEnd();
-};
+// Note completed tests for each Visitor event
 
-const onAllRoomsExposed = (message) => {
-  console.groupCollapsed('onAllRoomsExposed results:');
-  console.table(message);
-  console.groupEnd();
-};
-
-const onAllSocketsExposed = (message) => {
-  console.groupCollapsed('onAllSocketsExposed results:');
-  console.table(message);
-  console.groupEnd();
-};
-const onexposureAlert = (message) => {
-  console.groupCollapsed('onAllSocketsExposed results:');
-  console.table(message);
-  console.groupEnd();
-};
-// end listeners
-
-// testing this event is not a high priority
-const leaveRoom = (clientSocket, data) => {
-  clientSocket.emit('leaveRoom', data, (rooms) => {
-    console.log('Occupied Rooms:');
-    console.table(rooms);
+// tested 10.13.20
+// consider using all Sockets as a way to elminate other events/functions
+const exposeAllSockets = (clientSocket) => {
+  clientSocket.emit('exposeAllSockets', (sockets) => {
+    console.log('All Sockets:');
+    console.table(sockets);
   });
 };
 
+const leaveRoom = (clientSocket, message) => {
+  clientSocket.emit('leaveRoom', message, (ack) => {
+    console.group('Server Acknowledged: Leave Room:');
+    console.log(success(ack));
+    console.groupEnd();
+  });
+};
+
+// tested 10.13.20
 const enterRoom = (clientSocket, message) => {
   clientSocket.emit('enterRoom', message, (ack) => {
     console.group('Server Acknowledged: Enter Room:');
@@ -82,10 +56,26 @@ const enterRoom = (clientSocket, message) => {
   });
 };
 
+// tested 10.13.20
 const exposeAvailableRooms = (clientSocket) => {
   clientSocket.emit('exposeAvailableRooms', (rooms) => {
     console.log('Available Rooms:');
     console.table(rooms);
+  });
+};
+
+// tested 10.13.20
+const exposeAllRooms = (clientSocket) => {
+  clientSocket.emit('exposeAllRooms', (rooms) => {
+    console.log('All Rooms:');
+    console.table(rooms);
+  });
+};
+
+// tested 10.12.20
+const exposureWarning = (clientSocket, message) => {
+  clientSocket.emit('exposureWarning', message, (ack) => {
+    console.warn(ack);
   });
 };
 
@@ -102,23 +92,37 @@ const exposePendingRooms = (clientSocket) => {
     console.table(rooms);
   });
 };
-const exposeAllRooms = (clientSocket) => {
-  clientSocket.emit('exposeAllRooms', (rooms) => {
-    console.log('All Rooms:');
-    console.table(rooms);
-  });
+
+// listeners
+// using named listeners makes it easier to remove listeners from socket event handlers
+
+// tested 10.12.20
+const onAvailableRoomsExposed = (message) => {
+  console.groupCollapsed('onAvailableRoomsExposed results:');
+  console.table(message);
+  console.groupEnd();
 };
-const exposeAllSockets = (clientSocket) => {
-  clientSocket.emit('exposeAllSockets', (sockets) => {
-    console.log('All Sockets:');
-    console.table(sockets);
-  });
+
+// tested 10.12.20
+const onExposureAlert = (message) => {
+  console.log('onAllSocketsExposed results:');
+  console.log(error('ALERT:', message));
 };
-const exposureWarning = (clientSocket, message) => {
-  clientSocket.emit('exposureWarning', message, (ack) => {
-    console.warn(ack);
-  });
+
+// tested 10.13.20
+const onAllRoomsExposed = (message) => {
+  console.log(info('Tested ', getNow()));
+  console.groupCollapsed('onAllRoomsExposed results:');
+  console.table(message);
+  console.groupEnd();
 };
+
+const onAllSocketsExposed = (message) => {
+  console.groupCollapsed('onAllSocketsExposed results:');
+  console.table(message);
+  console.groupEnd();
+};
+// end listeners
 
 // function OpenVisitorConnection(token, clientSocketId = '', nsp='/') {
 function OpenVisitorConnection(visitor) {
@@ -182,9 +186,7 @@ function OpenVisitorConnection(visitor) {
 
     clientSocket.on('allSocketsExposed', onAllSocketsExposed);
 
-    clientSocket.on('exposureAlert', (alertMessage) =>
-      console.log(error('ALERT:', alertMessage))
-    );
+    clientSocket.on('exposureAlert', onExposureAlert);
 
     clientSocket.on('updatedOccupancy', (message) => {
       console.log(
@@ -213,85 +215,3 @@ module.exports = {
   exposeAvailableRooms,
   leaveRoom,
 };
-
-const TESTING = 1;
-const INCLUDE = 0;
-
-async function bvt() {
-  // test helpers
-  var getConnections = new Promise(function(resolve) {
-    let connectionMap = new Map();
-    let vs = visitors;
-    let more = visitors.length;
-    vs.forEach((visitor) => {
-      let socket = OpenVisitorConnection(visitor);
-      socket.on('connect', () => {
-        connectionMap.set(socket.query.visitor, socket);
-        if (!--more) {
-          resolve(connectionMap);
-        }
-      });
-    });
-  });
-
-  let connectionMap = await getConnections;
-  console.table(connectionMap);
-
-  const visitor = pickVisitor();
-  let exposures = getExposures(visitor.name);
-  let visitorSocket = connectionMap.get(visitor.name);
-
-  let roomName = exposures[0].room;
-  // 1) Open Room
-  let roomSocket = OpenRoomConnection(roomName);
-  roomSocket.on('connect', () => {
-    const message = {
-      visitor: visitor.name,
-      warnings: getWarnings(visitor.name),
-      sentTime: new Date().toISOString(),
-    };
-    // 2) Warn Rooms
-    INCLUDE && exposureWarning(visitorSocket, message);
-  });
-}
-async function testEnterRoom() {
-  // test helpers
-  var getConnections = new Promise(function(resolve) {
-    let connectionMap = new Map();
-    let vs = visitors;
-    let more = visitors.length;
-    vs.forEach((visitor) => {
-      let socket = OpenVisitorConnection(visitor);
-      socket.on('connect', () => {
-        connectionMap.set(socket.query.visitor, socket);
-        if (!--more) {
-          resolve(connectionMap);
-        }
-      });
-    });
-  });
-
-  let connectionMap = await getConnections;
-  console.table(connectionMap);
-
-  const visitor = pickVisitor();
-  let exposures = getExposures(visitor.name);
-  let visitorSocket = connectionMap.get(visitor.name);
-
-  let room = exposures[0].room;
-  // 1) Open Room
-  let roomSocket = OpenRoomConnection(room);
-  roomSocket.on('connect', () => {
-    const message = {
-      visitor: visitor,
-      room: roomSocket.query,
-      warnings: getWarnings(visitor.name),
-      sentTime: new Date().toISOString(),
-    };
-    // 2) Enter Rooms
-    enterRoom(visitorSocket, message);
-  });
-}
-
-TESTING && INCLUDE && bvt();
-TESTING && testEnterRoom();
