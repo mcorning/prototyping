@@ -18,7 +18,7 @@ const base64id = require('base64id');
 const clc = require('cli-color');
 const success = clc.green.bold;
 const error = clc.red.bold;
-// const warn = clc.yellow;
+const warn = clc.yellow;
 // const notice = clc.blue;
 // const highlight = clc.magenta;
 // const bold = clc.bold;
@@ -40,13 +40,31 @@ const {
 
 console.log(`${moment().format('llll')}`);
 
-const enterRoom = (clientSocket, message) => {
-  clientSocket.emit('enterRoom', message, (ack) => {
-    console.group('Server Acknowledged: Enter Room:');
-    console.log(success(ack));
-    console.groupEnd();
-  });
+// listeners
+// using named listeners makes it easier to remove listeners from socket event handlers
+const onAvailableRoomsExposed = (message) => {
+  console.groupCollapsed('onAvailableRoomsExposed results:');
+  console.table(message);
+  console.groupEnd();
 };
+
+const onAllRoomsExposed = (message) => {
+  console.groupCollapsed('onAllRoomsExposed results:');
+  console.table(message);
+  console.groupEnd();
+};
+
+const onAllSocketsExposed = (message) => {
+  console.groupCollapsed('onAllSocketsExposed results:');
+  console.table(message);
+  console.groupEnd();
+};
+const onexposureAlert = (message) => {
+  console.groupCollapsed('onAllSocketsExposed results:');
+  console.table(message);
+  console.groupEnd();
+};
+// end listeners
 
 // testing this event is not a high priority
 const leaveRoom = (clientSocket, data) => {
@@ -56,9 +74,31 @@ const leaveRoom = (clientSocket, data) => {
   });
 };
 
+const enterRoom = (clientSocket, message) => {
+  clientSocket.emit('enterRoom', message, (ack) => {
+    console.group('Server Acknowledged: Enter Room:');
+    console.log(success(ack));
+    console.groupEnd();
+  });
+};
+
 const exposeAvailableRooms = (clientSocket) => {
   clientSocket.emit('exposeAvailableRooms', (rooms) => {
     console.log('Available Rooms:');
+    console.table(rooms);
+  });
+};
+
+const exposeOccupiedRooms = (clientSocket) => {
+  clientSocket.emit('exposeOccupiedRooms', (rooms) => {
+    console.log('Occupied Rooms:');
+    console.table(rooms);
+  });
+};
+
+const exposePendingRooms = (clientSocket) => {
+  clientSocket.emit('exposePendingRooms', (rooms) => {
+    console.log('Pending Rooms:');
     console.table(rooms);
   });
 };
@@ -104,22 +144,43 @@ function OpenVisitorConnection(visitor) {
         )
       );
     });
+
+    clientSocket.once('connect_error', (message) => {
+      switch (message.type) {
+        case 'TransportError':
+          console.log(
+            warn(
+              `${clientSocket.query.room ||
+                clientSocket.query.visitor} attempted to connect...`
+            )
+          );
+          console.log(
+            error(
+              '...but LCT Socket.io Server may have gone down at or before',
+              getNow()
+            )
+          );
+          break;
+      }
+    });
+
+    // TODO: move these event handler details to listeners pattern
+    // I believe action is necessary here only if the query options have to change (which they don't)
     clientSocket.on('reconnect_attempt', () => {
-      clientSocket.io.opts.query = {
-        token: 'fgh',
-      };
+      console.log(warn(`Attempting to reconnect clientSocket:`));
+      console.table(clientSocket.io.opts.query);
+      // let x = visitor.filter(
+      //   (v) =>
+      //     (v.name == clientSocket.io.opts.query.visitor) |
+      //     clientSocket.io.opts.query.room
+      // );
+      // clientSocket.io.opts.query = x;
     });
-    clientSocket.on('availableRoomsExposed', (message) => {
-      log('Available Rooms', message);
-    });
+    clientSocket.on('availableRoomsExposed', onAvailableRoomsExposed);
 
-    clientSocket.on('allRoomsExposed', (message) => {
-      log('All Rooms', message);
-    });
+    clientSocket.on('allRoomsExposed', onAllRoomsExposed);
 
-    clientSocket.on('allSocketsExposed', (message) => {
-      log('All Sockets', message);
-    });
+    clientSocket.on('allSocketsExposed', onAllSocketsExposed);
 
     clientSocket.on('exposureAlert', (alertMessage) =>
       console.log(error('ALERT:', alertMessage))
@@ -130,11 +191,13 @@ function OpenVisitorConnection(visitor) {
         success(`${message.room} occupancy is now ${message.occupancy}`)
       );
     });
+
     return clientSocket;
   } catch (error) {
     console.log(error('Cannot find the socket.io server.'));
   }
 }
+
 function log(title, message) {
   console.groupCollapsed(title);
   console.table(message);
@@ -152,6 +215,7 @@ module.exports = {
 };
 
 const TESTING = 1;
+const INCLUDE = 0;
 
 async function bvt() {
   // test helpers
@@ -181,25 +245,53 @@ async function bvt() {
   // 1) Open Room
   let roomSocket = OpenRoomConnection(roomName);
   roomSocket.on('connect', () => {
-    // Example message:
-    // {
-    //    sentTime:'2020-09-19T00:56:54.570Z',
-    //    visitor:'Nurse Jackie',
-    //    warnings:{
-    //      Heathlands.Medical:[
-    //        '2020-09-19T00:33:04.248Z', '2020-09-19T00:35:38.078Z', '2020-09-14T02:53:33.738Z', '2020-09-18T02:53:35.050Z'
-    //      ]
-    //    }
-    // };
-
     const message = {
       visitor: visitor.name,
       warnings: getWarnings(visitor.name),
       sentTime: new Date().toISOString(),
     };
-    // 3) Warn Rooms
-    exposureWarning(visitorSocket, message);
+    // 2) Warn Rooms
+    INCLUDE && exposureWarning(visitorSocket, message);
+  });
+}
+async function testEnterRoom() {
+  // test helpers
+  var getConnections = new Promise(function(resolve) {
+    let connectionMap = new Map();
+    let vs = visitors;
+    let more = visitors.length;
+    vs.forEach((visitor) => {
+      let socket = OpenVisitorConnection(visitor);
+      socket.on('connect', () => {
+        connectionMap.set(socket.query.visitor, socket);
+        if (!--more) {
+          resolve(connectionMap);
+        }
+      });
+    });
+  });
+
+  let connectionMap = await getConnections;
+  console.table(connectionMap);
+
+  const visitor = pickVisitor();
+  let exposures = getExposures(visitor.name);
+  let visitorSocket = connectionMap.get(visitor.name);
+
+  let room = exposures[0].room;
+  // 1) Open Room
+  let roomSocket = OpenRoomConnection(room);
+  roomSocket.on('connect', () => {
+    const message = {
+      visitor: visitor,
+      room: roomSocket.query,
+      warnings: getWarnings(visitor.name),
+      sentTime: new Date().toISOString(),
+    };
+    // 2) Enter Rooms
+    enterRoom(visitorSocket, message);
   });
 }
 
-TESTING && bvt();
+TESTING && INCLUDE && bvt();
+TESTING && testEnterRoom();

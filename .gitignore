@@ -24,3 +24,9 @@ pnpm-debug.log*
 src/assets/1552231720-EnduringNet-Logo.zip
 src/assets/1552231720-EnduringNet-Logo/
 src/assets/Enduring Net Logo Guide.pdf
+
+tests/NurseDiesel.js
+tests/NurseJackie.js
+tests/Heathlands.Medical.js
+tests/promises.Promises.js
+tests/promises.Promises.Promises.js

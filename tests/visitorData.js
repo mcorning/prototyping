@@ -9,55 +9,91 @@ const visitors = [
 const messages = [
   {
     visitor: 'Nurse Diesel',
-    room: 'Heathlands Medical',
+    room: {
+      name: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
     message: '',
     sentTime: '2020-09-19T00:33:04.248Z',
   },
   {
     visitor: 'Nurse Diesel',
-    room: 'Heathlands Medical',
+    room: {
+      name: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
     message: 'Entered',
     sentTime: '2020-09-14T02:53:33.738Z',
   },
   {
     visitor: 'Nurse Diesel',
-    room: 'Heathlands Medical',
+    room: {
+      name: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
     message: 'Entered',
     sentTime: '2020-09-18T02:53:35.050Z',
   },
   {
     visitor: 'Nurse Diesel',
-    room: 'Heathlands Medical',
+    room: {
+      name: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
     message: 'Entered',
     sentTime: '2020-09-18T02:53:35.050Z',
   },
   {
     visitor: 'AirGas Inc',
-    room: 'Heathlands Medical',
+    room: {
+      name: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
     message: 'Entered',
     sentTime: '2020-09-19T00:33:04.248Z',
   },
   {
     visitor: 'AirGas Inc',
-    room: 'Heathlands.Cafe',
+    room: {
+      name: 'Heathlands Cafe',
+      id: 'e1suC3Rdpj_1PuR3AAAB',
+      nsp: 'enduringNet',
+    },
     message: 'Entered',
     sentTime: '2020-09-19T01:00:04.248Z',
   },
   {
     visitor: 'Nurse Jackie',
-    room: 'Heathlands Medical',
+    room: {
+      name: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
     message: 'Entered',
     sentTime: '2020-09-19T00:33:04.248Z',
   },
   {
     visitor: 'Nurse Jackie',
-    room: 'Heathlands Medical',
+    room: {
+      name: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
     message: 'Entered',
     sentTime: '2020-09-14T00:33:04.248Z',
   },
   {
     visitor: 'Nurse Jackie',
-    room: 'Heathlands Medical',
+    room: {
+      name: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
     message: 'Entered',
     sentTime: '2020-09-17T00:33:04.248Z',
   },
