@@ -129,7 +129,7 @@ function OpenVisitorConnection(visitor) {
   try {
     const id = visitor.id || base64id.generateId();
     const nsp = visitor.nsp || '/';
-    const query = { visitor: visitor.name, id: id, nsp: nsp };
+    const query = { visitor: visitor.visitor, id: id, nsp: nsp };
     console.table(query);
     const connectionMap = new Map();
 

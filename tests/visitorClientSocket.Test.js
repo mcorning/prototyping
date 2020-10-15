@@ -52,12 +52,14 @@ async function bvt() {
   let connectionMap = await getConnections;
   const addRoomConnection = new Promise(function(resolve) {
     const visitor = pickVisitor();
-    let exposures = getExposures(visitor.name);
+    let exposures = getExposures(visitor.visitor);
 
     let room = exposures[0].room;
     // 1) Open Room
     let roomSocket = OpenRoomConnection(room);
     roomSocket.on('connect', () => {
+      // open Room with every connection to ensure pendingWarnings get sent
+      openRoom(roomSocket, room);
       connectionMap.set(roomSocket.query.room, roomSocket);
       resolve(connectionMap);
     });
@@ -76,16 +78,17 @@ async function testLeaveRoom(message) {
 
 async function testEnterRoom(connectionMap) {
   const visitor = pickVisitor();
-  let visitorSocket = connectionMap.get(visitor.name);
+  let visitorSocket = connectionMap.get(visitor.visitor);
   let roomName = [...connectionMap].reduce((a, c) => {
     if (c[1].query.room) return c[1].query.room;
   }, '');
   let roomSocket = connectionMap.get(roomName);
+
   // 1) Open Room
   const message = {
     visitor: visitor,
     room: roomSocket.query,
-    warnings: getWarnings(visitor.name),
+    warnings: getWarnings(visitor.visitor),
     sentTime: new Date().toISOString(),
   };
   // 2) Enter Rooms

@@ -2,12 +2,12 @@ let lastUsedRoom = 'Heathlands.Medical';
 
 const rooms = [
   {
-    name: 'Heathlands Medical',
+    room: 'Heathlands Medical',
     id: 'd6QoVa_JZxnM_0BoAAAA',
     nsp: 'enduringNet',
   },
-  { name: 'Heathlands Cafe', id: 'e1suC3Rdpj_1PuR3AAAB', nsp: 'enduringNet' },
-  { name: 'ABMS Medical', id: 'OUeNKcyWGGgX6fMWAAAC', nsp: 'enduringNet' },
+  { room: 'Heathlands Cafe', id: 'e1suC3Rdpj_1PuR3AAAB', nsp: 'enduringNet' },
+  { room: 'ABMS Medical', id: 'OUeNKcyWGGgX6fMWAAAC', nsp: 'enduringNet' },
 ];
 
 function pickRoom() {

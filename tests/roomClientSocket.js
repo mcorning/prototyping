@@ -1,8 +1,5 @@
-const { groupBy, log, messages, printJson, report } = require('./helpersRoom');
-
-const io = require('socket.io-client');
 const base64id = require('base64id');
-
+const io = require('socket.io-client');
 const moment = require('moment');
 const clc = require('cli-color');
 const success = clc.green.bold;
@@ -14,6 +11,7 @@ const highlight = clc.magenta;
 // const bold = clc.bold;
 
 const { getNow } = require('./helpers');
+const { groupBy, log, messages, printJson, report } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
 
 // methods called by state machine
@@ -49,6 +47,7 @@ const exposeOccupiedRooms = (clientSocket) => {
   });
 };
 
+// message is a room query
 const openRoom = (clientSocket, message) => {
   clientSocket.emit('openRoom', message, (ack) => {
     console.group('Inside EnterRoom: Server Acknowledged: Open Room:');
@@ -189,6 +188,7 @@ function OpenRoomConnection(room) {
     }
   });
 
+  // specialized event handlers
   clientSocket.on('checkIn', onCheckIn);
 
   clientSocket.on('checkOut', onCheckOut);
@@ -208,6 +208,7 @@ function OpenRoomConnection(room) {
 
   return clientSocket;
 }
+// end specialized event handlers
 
 module.exports = {
   OpenRoomConnection,

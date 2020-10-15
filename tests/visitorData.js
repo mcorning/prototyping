@@ -1,16 +1,21 @@
 // const { groupBy } = require('./helpers');
 
 const visitors = [
-  { name: 'Nurse Diesel', id: 'kWjzGUKmvWhgeRlmAAAA', nsp: 'enduringNet' },
-  { name: 'Nurse Jackie', id: 'FWzLl5dS9sr9FxDsAAAB', nsp: 'enduringNet' },
-  { name: 'AirGas Inc', id: 'JgvrILSxDwXRWJUpAAAC', nsp: 'enduringNet' },
+  { visitor: 'Nurse Diesel', id: 'kWjzGUKmvWhgeRlmAAAA', nsp: 'enduringNet' },
+  { visitor: 'Nurse Jackie', id: 'FWzLl5dS9sr9FxDsAAAB', nsp: 'enduringNet' },
+  { visitor: 'AirGas Inc', id: 'JgvrILSxDwXRWJUpAAAC', nsp: 'enduringNet' },
 ];
 
 const messages = [
   {
-    visitor: 'Nurse Diesel',
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Medical',
+      room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
@@ -18,9 +23,14 @@ const messages = [
     sentTime: '2020-09-19T00:33:04.248Z',
   },
   {
-    visitor: 'Nurse Diesel',
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Medical',
+      room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
@@ -28,9 +38,14 @@ const messages = [
     sentTime: '2020-09-14T02:53:33.738Z',
   },
   {
-    visitor: 'Nurse Diesel',
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Medical',
+      room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
@@ -38,9 +53,14 @@ const messages = [
     sentTime: '2020-09-18T02:53:35.050Z',
   },
   {
-    visitor: 'Nurse Diesel',
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Medical',
+      room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
@@ -48,9 +68,14 @@ const messages = [
     sentTime: '2020-09-18T02:53:35.050Z',
   },
   {
-    visitor: 'AirGas Inc',
+    visitor: {
+      visitor: 'AirGas Inc',
+      id: 'JgvrILSxDwXRWJUpAAAC',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Medical',
+      room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
@@ -58,9 +83,14 @@ const messages = [
     sentTime: '2020-09-19T00:33:04.248Z',
   },
   {
-    visitor: 'AirGas Inc',
+    visitor: {
+      visitor: 'AirGas Inc',
+      id: 'JgvrILSxDwXRWJUpAAAC',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Cafe',
+      room: 'Heathlands Cafe',
       id: 'e1suC3Rdpj_1PuR3AAAB',
       nsp: 'enduringNet',
     },
@@ -68,9 +98,14 @@ const messages = [
     sentTime: '2020-09-19T01:00:04.248Z',
   },
   {
-    visitor: 'Nurse Jackie',
+    visitor: {
+      visitor: 'Nurse Jackie',
+      id: 'FWzLl5dS9sr9FxDsAAAB',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Medical',
+      room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
@@ -78,9 +113,14 @@ const messages = [
     sentTime: '2020-09-19T00:33:04.248Z',
   },
   {
-    visitor: 'Nurse Jackie',
+    visitor: {
+      visitor: 'Nurse Jackie',
+      id: 'FWzLl5dS9sr9FxDsAAAB',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Medical',
+      room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
@@ -88,9 +128,14 @@ const messages = [
     sentTime: '2020-09-14T00:33:04.248Z',
   },
   {
-    visitor: 'Nurse Jackie',
+    visitor: {
+      visitor: 'Nurse Jackie',
+      id: 'FWzLl5dS9sr9FxDsAAAB',
+      nsp: 'enduringNet',
+    },
+
     room: {
-      name: 'Heathlands Medical',
+      room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
@@ -109,11 +154,13 @@ function groupBy(payload) {
 }
 
 function getExposures(visitor) {
-  return messages.filter((v) => v.visitor == visitor);
+  return messages.filter((v) => v.visitor.visitor == visitor);
 }
 
 function getExposureDates(visitor) {
-  return messages.filter((v) => v.visitor == visitor).map((v) => v.sentTime);
+  return messages
+    .filter((v) => v.visitor.visitor == visitor)
+    .map((v) => v.sentTime);
 }
 
 function getExposureDatesSet(visitor) {

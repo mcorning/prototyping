@@ -170,7 +170,7 @@ const EnterRoom = function(visitor) {
   // open the Room if necessary
   report(
     'Enter Room Transition Data:',
-    visitor.name,
+    visitor.visitor,
     visitorSocket.id,
     room,
     roomSocket.id
