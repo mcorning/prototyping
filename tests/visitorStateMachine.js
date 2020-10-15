@@ -19,26 +19,27 @@ const warn = clc.yellow;
 const notice = clc.blue;
 const highlight = clc.magenta;
 const bold = clc.bold;
-const DEBUG = 0; // use this to control some log spew
 
-console.log(DEBUG ? 'Debugging enabled' : '');
+const TESTING = 0; // use this to control some log spew
+console.log(highlight(getNow(), 'Starting visitorStateMachine.js'));
+console.log(TESTING ? 'TESTING' : 'PRODUCTION');
 
 // this socket permits us to see broadcast messages to a namespace
 // don't forget the {}
 // otherwise js won't interpret the reference as the funtion it is in roomClientSocket.js
 const {
   OpenRoomConnection,
-  alertVisitor,
-  closeRoom,
-  exposeOccupiedRooms,
+  // alertVisitor,
+  // closeRoom,
+  // exposeOccupiedRooms,
   openRoom,
 } = require('./roomClientSocket');
 const {
   OpenVisitorConnection,
-  exposureWarning,
+  // exposureWarning,
   enterRoom,
   exposeAvailableRooms,
-  leaveRoom,
+  // leaveRoom,
 } = require('./visitorClientSocket');
 
 // NOTE: if you manually disconnect these sockets, you won't see any results
@@ -91,7 +92,7 @@ const Visitor = function(name, rooms, transitions) {
   this.room = pickRoom();
   console.log('\nTests left:', testCount, 'at', getNow());
   console.log(highlight('Visitor :>> ', this.name));
-  console.log(notice('Chosen Room :>> ', this.room.name));
+  console.log(notice('Chosen Room :>> ', this.room.room));
   console.log(notice('============================================'));
   console.log(bold('Tested State/Transitions:'));
 

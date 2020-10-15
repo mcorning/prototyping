@@ -12,7 +12,7 @@
 // other tests include testing for multiple Visitor alerts and Room pending warnings
 
 const io = require('socket.io-client');
-const moment = require('moment');
+// const moment = require('moment');
 const base64id = require('base64id');
 
 const clc = require('cli-color');
@@ -21,13 +21,17 @@ const error = clc.red.bold;
 const warn = clc.yellow;
 const info = clc.cyan;
 // const notice = clc.blue;
-// const highlight = clc.magenta;
+const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { getNow, printJson } = require('./helpers');
+const {
+  getNow,
+  // printJson
+} = require('./helpers');
 
-console.log(`${moment().format('llll')}`);
-
+const TESTING = 0;
+console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
+console.log(TESTING ? 'Testing' : 'Production');
 // Note completed tests for each Visitor event
 
 // tested 10.13.20
@@ -200,12 +204,6 @@ function OpenVisitorConnection(visitor) {
   }
 }
 
-function log(title, message) {
-  console.groupCollapsed(title);
-  console.table(message);
-  console.groupEnd();
-}
-
 module.exports = {
   OpenVisitorConnection,
   exposureWarning,
@@ -213,5 +211,7 @@ module.exports = {
   exposeAllRooms,
   exposeAllSockets,
   exposeAvailableRooms,
+  exposeOccupiedRooms,
+  exposePendingRooms,
   leaveRoom,
 };

@@ -167,6 +167,16 @@ function getExposureDatesSet(visitor) {
   return new Set(getExposureDates(visitor));
 }
 
+// warnings:
+//   {
+//     sentTime:'2020-09-19T00:56:54.570Z',  // dateTime of the warning
+//     visitor:'Nurse Jackie',               // Visitor name
+//     warnings:{                            // dates Visitor visited Room
+//       Heathlands.Medical:[                // Room name
+//          '2020-09-19T00:33:04.248Z', '2020-09-14T02:53:33.738Z', '2020-09-18T07:15:00.00Z'
+//       ]                                   // server alerts other Room Visitors on these dates
+//     }
+//  };
 function getWarnings(visitor) {
   // See Transductions section of FieldNotes.md
   let arr = getExposures(visitor);
@@ -198,7 +208,7 @@ module.exports = {
   visitors,
 };
 
-const TESTING = 1;
+const TESTING = 0;
 
 function test() {
   let v = pickVisitor();

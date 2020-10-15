@@ -11,8 +11,13 @@ const highlight = clc.magenta;
 // const bold = clc.bold;
 
 const { getNow } = require('./helpers');
-const { groupBy, log, messages, printJson, report } = require('./helpersRoom');
+const { groupBy, messages, printJson, report } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
+
+// const INCLUDE = 0;
+const TESTING = 1;
+console.log(highlight(getNow(), 'Starting roomClientSocket.js'));
+console.log(TESTING ? 'Testing' : 'Production');
 
 // methods called by state machine
 const alertVisitor = (clientSocket, visitor, warnings) => {
@@ -129,19 +134,21 @@ const onNotifyRoom = (data, ack) => {
     });
   });
 
+  //  WORK ON THIS NEXT!
+
   // iterate the Map and emit alertVisitor event
   // Server will ensure a Visitor is online before forwarding event
   // otherwise, cache Visitor until they login again
-  for (let [key, value] of alerts.entries()) {
-    let message = {
-      visitor: key,
-      message: `${value}. To stop the spread, self-quarantine for 14 days.`,
-      sentTime: new Date().toISOString(),
-    };
-    clientSocket.emit('alertVisitor', message, (ack) => {
-      log.add(ack, 'alert');
-    });
-  }
+  // for (let [key, value] of alerts.entries()) {
+  // let message = {
+  //   visitor: key,
+  //   message: `${value}. To stop the spread, self-quarantine for 14 days.`,
+  //   sentTime: new Date().toISOString(),
+  // };
+  // clientSocket.emit('alertVisitor', message, (ack) => {
+  //   log.add(ack, 'alert');
+  // });
+  // }
 
   if (ack) ack(`${visitor}, ${room} alerted`);
 };
@@ -153,7 +160,7 @@ const onNotifyRoom = (data, ack) => {
 function OpenRoomConnection(room) {
   const id = room.id || base64id.generateId();
   const nsp = room.nsp || '/';
-  const query = { room: room.name, id: id, nsp: nsp };
+  const query = { room: room.room, id: id, nsp: nsp };
   const clientSocket = io('http://localhost:3003', {
     query: query,
   });
@@ -218,8 +225,6 @@ module.exports = {
   exposeOccupiedRooms,
   openRoom,
 };
-
-const TESTING = 1;
 
 async function bvt() {
   // test helpers

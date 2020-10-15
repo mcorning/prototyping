@@ -89,9 +89,11 @@ function OpenConnection(admin) {
   });
   // specialized events
   // clientSocket.on('',)
-  clientSocket.once('visitorsRoomsExposed', onVisitorsRoomsExposed);
+  clientSocket.on('visitorsRoomsExposed', onVisitorsRoomsExposed);
   clientSocket.on('occupiedRoomsExposed', onOccupiedRoomsExposed);
   clientSocket.on('availableRoomsExposed', onAvailableRoomsExposed);
+
+  return clientSocket;
 }
 console.log(info('Admin query:'));
 console.table(admin);

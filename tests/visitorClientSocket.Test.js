@@ -1,19 +1,20 @@
 const clc = require('cli-color');
 const success = clc.green.bold;
-const error = clc.red.bold;
-const warn = clc.yellow;
+// const error = clc.red.bold;
+// const warn = clc.yellow;
 const info = clc.cyan;
 // const notice = clc.blue;
+const highlight = clc.magenta;
 const bold = clc.bold;
 const { getNow } = require('./helpers');
 
 const {
   OpenVisitorConnection,
-  exposureWarning,
+  // exposureWarning,
   enterRoom,
-  exposeAllRooms,
-  exposeAllSockets,
-  exposeAvailableRooms,
+  // exposeAllRooms,
+  // exposeAllSockets,
+  // exposeAvailableRooms,
   leaveRoom,
 } = require('./visitorClientSocket');
 const {
@@ -26,11 +27,10 @@ const {
 const {
   OpenRoomConnection,
   openRoom,
-  alertVisitor,
+  // alertVisitor,
 } = require('./roomClientSocket');
 
-const TESTING = 1;
-const INCLUDE = 0;
+console.log(highlight(getNow(), 'Starting visitorClientSocket.Test.js'));
 
 async function bvt() {
   // test helpers
@@ -97,27 +97,26 @@ async function testEnterRoom(connectionMap) {
   return { visitor: visitorSocket, room: roomSocket };
 }
 
-TESTING &&
-  bvt()
-    .then((connectionMap) => testEnterRoom(connectionMap))
-    .then((result) => {
-      console.log(
-        success('=======================================================')
-      );
-      console.log(success(bold('Successful test of EnterRoom on', getNow())));
-      console.log(
-        success(
-          '\t',
-          result.visitor.query.visitor,
-          'entered',
-          result.room.query.room
-        )
-      );
-      console.log(info('See detail below: Server Acknowledged: Enter Room:'));
-      console.log(
-        success('=======================================================')
-      );
-      return result;
-    })
-    .then((result) => testLeaveRoom(result))
-    .then(() => console.log(success('success')));
+bvt()
+  .then((connectionMap) => testEnterRoom(connectionMap))
+  .then((result) => {
+    console.log(
+      success('=======================================================')
+    );
+    console.log(success(bold('Successful test of EnterRoom on', getNow())));
+    console.log(
+      success(
+        '\t',
+        result.visitor.query.visitor,
+        'entered',
+        result.room.query.room
+      )
+    );
+    console.log(info('See detail below: Server Acknowledged: Enter Room:'));
+    console.log(
+      success('=======================================================')
+    );
+    return result;
+  })
+  .then((result) => testLeaveRoom(result))
+  .then(() => console.log(success('success')));

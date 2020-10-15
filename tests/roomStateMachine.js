@@ -7,7 +7,7 @@
 console.clear();
 //const moment = require('moment');
 
-const { fire, log } = require('./helpers');
+const { fire, log, getNow } = require('./helpers');
 const { getAlerts } = require('./helpersRoom');
 const { pickRoom } = require('./roomData.js');
 const { visitors, pickVisitor } = require('./visitorData.js');
@@ -20,8 +20,11 @@ const error = clc.red.bold;
 const warn = clc.yellow;
 const notice = clc.blue;
 const bold = clc.bold;
+const highlight = clc.magenta;
 
-const DEBUG = 0; // use this to control some log spew
+const TESTING = 0;
+console.log(highlight(getNow(), 'Starting roomStateMachine.js'));
+console.log(TESTING ? 'Testing' : 'Production');
 
 let countDownFrom = 6;
 
@@ -51,7 +54,7 @@ const Room = function(name, visitors, transitions) {
 
   this.change = function(state) {
     // limits number of changes
-    DEBUG && console.log('countDownFrom:', countDownFrom);
+    TESTING && console.log('countDownFrom:', countDownFrom);
     if (!countDownFrom--) return;
     this.currentState = state;
     this.currentState.fireTransition();
@@ -72,12 +75,13 @@ const Connect = function(room) {
   };
 };
 
+// this needs work
 const OpenRoom = function() {
   name = pickRoom();
   this.room = new Room(name, visitors, transitions);
 
   const msg = {
-    room: this.room.name,
+    room: this.room.room,
     message: 'Opened',
     sentTime: new Date().toISOString(),
   };
@@ -95,7 +99,7 @@ const CloseRoom = function(room) {
   io.ClientSocket.disconnect();
   this.room = room;
   const msg = {
-    room: room.name,
+    room: room.room,
     message: 'Closed',
     sentTime: new Date().toISOString(),
   };
