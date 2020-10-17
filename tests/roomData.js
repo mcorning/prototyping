@@ -10,7 +10,8 @@ const rooms = [
   { room: 'ABMS Medical', id: 'OUeNKcyWGGgX6fMWAAAC', nsp: 'enduringNet' },
 ];
 
-function pickRoom() {
+// optional arg to limit choices
+function pickRoom(rooms) {
   const idx = Math.floor(Math.random() * rooms.length);
   lastUsedRoom = rooms[idx];
   return lastUsedRoom;

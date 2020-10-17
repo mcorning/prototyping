@@ -6,6 +6,7 @@ const visitors = [
   { visitor: 'AirGas Inc', id: 'JgvrILSxDwXRWJUpAAAC', nsp: 'enduringNet' },
 ];
 
+// object indentifies require a new data structure: Map (where the key can be an object)
 const messages = [
   {
     visitor: {
@@ -19,7 +20,7 @@ const messages = [
       id: 'd6QoVa_JZxnM_0BoAAAA',
       nsp: 'enduringNet',
     },
-    message: '',
+    message: 'Entered',
     sentTime: '2020-09-19T00:33:04.248Z',
   },
   {
@@ -144,6 +145,17 @@ const messages = [
   },
 ];
 
+// map = ke:value
+// visitor:
+//    {room:[
+//      date
+//      date]}
+//    {room[
+//      date]}
+// visitor:
+//    {room:[
+//      date]}
+
 function groupBy(payload) {
   const { array, prop, val } = payload;
   return array.reduce(function(acc, obj) {
@@ -178,22 +190,20 @@ function getExposureDatesSet(visitor) {
 //     }
 //  };
 function getWarnings(visitor) {
-  // See Transductions section of FieldNotes.md
-  let arr = getExposures(visitor);
-  if (TESTING) {
-    console.log('exposures (Visitor messages):');
-    console.log(JSON.stringify(arr, null, '\t'));
-  }
-
+  let m = messages
+    .filter((v) => v.visitor.id === visitor)
+    .map((v) => {
+      return { visitor: v.visitor.id, room: v.room.id, sentTime: v.sentTime };
+    });
   let payload = {
-    array: arr,
+    array: m,
     prop: 'room',
     val: 'sentTime',
   };
   return groupBy(payload);
 }
 
-function pickVisitor() {
+function pickVisitor(visitors) {
   const idx = Math.floor(Math.random() * visitors.length);
   return visitors[idx];
 }
@@ -208,19 +218,22 @@ module.exports = {
   visitors,
 };
 
-const TESTING = 0;
+const TESTING = 1;
+// const INCLUDE = 0;
 
-function test() {
-  let v = pickVisitor();
-  console.log(v);
-  let y = getWarnings(v);
-  console.log('warnings:', JSON.stringify(y, null, '\t'));
-  let x = getExposureDatesSet(v);
-  console.log('exposure dates set', JSON.stringify(x, null, '\t'));
-  x.forEach((date) => console.log('date:', date));
+function testGetWarnings() {
+  let vIds = messages.reduce((a, c) => {
+    a.add(c.visitor.id);
+    return a;
+  }, new Set());
+  let v = pickVisitor([...vIds]);
+  let x = {
+    sentTime: new Date().toISOString(),
+    visitor: v,
+    warnings: getWarnings(v),
+  };
+  console.log(JSON.stringify(x, null, '\t'));
+  console.log();
 }
-TESTING && test();
 
-console.info(
-  TESTING ? 'Testing visitorDate.js' : 'visitorDate.js is tested code'
-);
+TESTING && testGetWarnings();

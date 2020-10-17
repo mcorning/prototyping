@@ -15,7 +15,7 @@ const { groupBy, messages, printJson, report } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
 
 // const INCLUDE = 0;
-const TESTING = 1;
+let TESTING = 1;
 console.log(highlight(getNow(), 'Starting roomClientSocket.js'));
 console.log(TESTING ? 'Testing' : 'Production');
 
@@ -56,7 +56,7 @@ const exposeOccupiedRooms = (clientSocket) => {
 const openRoom = (clientSocket, message) => {
   clientSocket.emit('openRoom', message, (ack) => {
     console.group('Inside EnterRoom: Server Acknowledged: Open Room:');
-    console.log(success(ack));
+    console.log(success(printJson(ack)));
     console.groupEnd();
   });
 };
@@ -226,6 +226,7 @@ module.exports = {
   openRoom,
 };
 
+TESTING = 0;
 async function bvt() {
   // test helpers
   var getConnections = new Promise(function(resolve) {

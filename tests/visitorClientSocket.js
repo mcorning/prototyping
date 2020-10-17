@@ -126,6 +126,18 @@ const onAllSocketsExposed = (message) => {
   console.table(message);
   console.groupEnd();
 };
+
+const onPendingRoomsExposed = (list = ['No Rooms are online right now.']) => {
+  let pendingRooms = list.map((v) => {
+    let x = {};
+    x['name'] = v;
+    x['type'] = 'pending';
+    return x;
+  });
+
+  console.log(`Pending Rooms: ${pendingRooms}`);
+};
+
 // end listeners
 
 // function OpenVisitorConnection(token, clientSocketId = '', nsp='/') {
@@ -184,6 +196,9 @@ function OpenVisitorConnection(visitor) {
       // );
       // clientSocket.io.opts.query = x;
     });
+
+    clientSocket.on('pendingRoomsExposed', onPendingRoomsExposed);
+
     clientSocket.on('availableRoomsExposed', onAvailableRoomsExposed);
 
     clientSocket.on('allRoomsExposed', onAllRoomsExposed);
