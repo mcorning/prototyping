@@ -295,7 +295,7 @@ export default {
       return userAgent;
     },
 
-    exposureWarnings() {
+    exposureWarning() {
       if (!this.messages.length) return {};
       let payload = {
         array: this.messages,
@@ -559,17 +559,31 @@ export default {
       this.alert = false;
 
       // returns something like this:
-      // exposureWarnings = {
-      //   visitor: 'Michael',
-      //   warnings: {
-      //     'Fika.Outside': ['2020-09-21T05:49:49.352Z'],
+      // WARNING MESSAGE STRUCT:
+      //{
+      //   sentTime: '2020-09-19T00:56:54.570Z',
+      //   visitor: {
+      //     visior: 'Nurse Jackie',
+      //     id: 'FWzLl5dS9sr9FxDsAAAB',
+      //     nsp: 'enduringNet',
       //   },
-      //   sentTime: '2020-09-21T05:51:18.558Z',
+      //   warning: {              // ONE ROOM PER WARNING
+      //     room: {
+      //       room: 'Heathlands Medical',
+      //       id: 'd6QoVa_JZxnM_0BoAAAA',
+      //       nsp: 'enduringNet',
+      //     },
+      //     dates: [
+      //       '2020-09-19T00:33:04.248Z',  // WARNING CAN
+      //       '2020-09-14T02:53:33.738Z',  // HAVE MULTIPLE
+      //       '2020-09-18T07:15:00.00Z',   // VISIT DATES
+      //     ],
+      //   },
       // };
 
-      console.table(this.exposureWarnings);
+      console.table(this.exposureWarning);
       this.log(
-        `Warning: ${Object.entries(this.exposureWarnings)
+        `Warning: ${Object.entries(this.exposureWarning)
           .toString()
           .split(',')
           .join(', ')}`,
@@ -580,7 +594,7 @@ export default {
         event: 'exposureWarning',
         message: {
           visitor: this.yourId,
-          warnings: this.exposureWarnings,
+          warning: this.exposureWarning,
           sentTime: new Date().toISOString(),
         },
         ack: (ack) => {
@@ -803,6 +817,8 @@ export default {
     this.$socket.emit('exposeAvailableRooms');
     // log the useragent in case we can't recognize it
     this.log(navigator.userAgent);
+    let self = this;
+    alert(self.$route.query.room);
   },
 };
 </script>

@@ -136,9 +136,9 @@ const WarnRooms = function(visitor) {
   this.visitor = visitor;
   const { name, room } = visitor;
   console.log(warn('Warning room(s)', room));
-  const warnings = {};
+  const warning = {};
   // these dates have to be based on previously run test with their random visiting dates
-  warnings[room] = [
+  warning[room] = [
     '2020-09-19T00:33:04.248Z',
     '2020-09-19T00:35:38.078Z',
     '2020-09-14T02:53:33.738Z',
@@ -147,7 +147,7 @@ const WarnRooms = function(visitor) {
   const msg = {
     sentTime: new Date().toISOString(),
     visitor: name,
-    warnings: warnings,
+    warning: warning,
   };
   visitorSocket.emit('exposureWarning', msg, (ack) => {
     ack.slice(0, 7) == 'WARNING'

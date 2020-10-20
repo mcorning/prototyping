@@ -159,10 +159,9 @@ const messages = [
 function groupBy(payload) {
   const { array, prop, val } = payload;
   return array.reduce(function(acc, obj) {
-    let key = obj[prop];
-    acc[key] = (acc[key] || []).concat(obj[val]);
+    acc.set(obj[prop], (acc.get(obj[prop]) || []).concat(obj[val]));
     return acc;
-  }, {});
+  }, new Map());
 }
 
 function getExposures(visitor) {
@@ -179,21 +178,32 @@ function getExposureDatesSet(visitor) {
   return new Set(getExposureDates(visitor));
 }
 
-// warnings:
-//   {
-//     sentTime:'2020-09-19T00:56:54.570Z',  // dateTime of the warning
-//     visitor:'Nurse Jackie',               // Visitor name
-//     warnings:{                            // dates Visitor visited Room
-//       Heathlands.Medical:[                // Room name
-//          '2020-09-19T00:33:04.248Z', '2020-09-14T02:53:33.738Z', '2020-09-18T07:15:00.00Z'
-//       ]                                   // server alerts other Room Visitors on these dates
-//     }
-//  };
-function getWarnings(visitor) {
+// WARNING MESSAGE STRUCT:
+//{
+//   sentTime: '2020-09-19T00:56:54.570Z',
+//   visitor: {
+//     visior: 'Nurse Jackie',
+//     id: 'FWzLl5dS9sr9FxDsAAAB',
+//     nsp: 'enduringNet',
+//   },
+//   warning: {              // ONE ROOM PER WARNING
+//     room: {
+//       room: 'Heathlands Medical',
+//       id: 'd6QoVa_JZxnM_0BoAAAA',
+//       nsp: 'enduringNet',
+//     },
+//     dates: [
+//       '2020-09-19T00:33:04.248Z',  // WARNING CAN
+//       '2020-09-14T02:53:33.738Z',  // HAVE MULTIPLE
+//       '2020-09-18T07:15:00.00Z',   // VISIT DATES
+//     ],
+//   },
+// };
+function getWarning(visitor) {
   let m = messages
     .filter((v) => v.visitor.id === visitor)
     .map((v) => {
-      return { visitor: v.visitor.id, room: v.room.id, sentTime: v.sentTime };
+      return { visitor: v.visitor.id, room: v.room, sentTime: v.sentTime };
     });
   let payload = {
     array: m,
@@ -213,15 +223,15 @@ module.exports = {
   getExposureDates,
   getExposureDatesSet,
   getExposures,
-  getWarnings,
+  getWarning,
   pickVisitor,
   visitors,
 };
 
-const TESTING = 1;
+const TESTING = 0;
 // const INCLUDE = 0;
 
-function testGetWarnings() {
+function testGetWarning() {
   let vIds = messages.reduce((a, c) => {
     a.add(c.visitor.id);
     return a;
@@ -230,10 +240,10 @@ function testGetWarnings() {
   let x = {
     sentTime: new Date().toISOString(),
     visitor: v,
-    warnings: getWarnings(v),
+    warning: getWarning(v),
   };
   console.log(JSON.stringify(x, null, '\t'));
   console.log();
 }
 
-TESTING && testGetWarnings();
+TESTING && testGetWarning();

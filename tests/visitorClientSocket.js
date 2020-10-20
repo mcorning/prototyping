@@ -78,6 +78,7 @@ const exposeAllRooms = (clientSocket) => {
 
 // tested 10.12.20
 const exposureWarning = (clientSocket, message) => {
+  console.table(message);
   clientSocket.emit('exposureWarning', message, (ack) => {
     console.warn(ack);
   });

@@ -36,7 +36,7 @@ const {
 } = require('./visitorClientSocket');
 const {
   // getExposures,
-  getWarnings,
+  getWarning,
   groupBy,
   messages,
   pickVisitor,
@@ -49,13 +49,14 @@ const {
   // alertVisitor,
 } = require('./roomClientSocket');
 const { pickRoom, rooms } = require('./roomData');
+const { resolve } = require('core-js/fn/promise');
 
 console.log(highlight(getNow(), 'Starting visitorClientSocket.Test.js'));
+console.log('Creating new Map');
+let connectionMap = new Map();
 
 async function testOpenRoomConnection() {
   const getConnections = new Promise(function(resolve) {
-    let connectionMap = new Map();
-
     let room = pickRoom(rooms);
     // 1) Open Room
     let roomSocket = OpenRoomConnection(room);
@@ -69,7 +70,8 @@ async function testOpenRoomConnection() {
   return await getConnections;
 }
 
-async function testOpenVisitorConnection(connectionMap) {
+// async function testOpenVisitorConnection(connectionMap) {
+async function testOpenVisitorConnection() {
   // make connection map from some or all cached Visitor data
   const getConnections = new Promise(function(resolve) {
     let vs = visitors.filter((v, i) => i == 2);
@@ -98,31 +100,46 @@ async function testLeaveRoom(message) {
   });
 }
 
-async function testExposureWarning(connectionMap) {
+// async function testExposureWarning(connectionMap) {
+async function testExposureWarning() {
   // visitor warns  room
   // since we only have a Map and no separate record of names, convert the Map to an array
-  const socket = getVisitorSocket(connectionMap);
-  // Example message:
-  // {
-  //    sentTime:'2020-09-19T00:56:54.570Z',
-  //    visitor:{visitor:'Nurse Jackie', id:'FWzLl5dS9sr9FxDsAAAB', nsp:'enduringNet'},
-  //    warnings:{
-  //       Heathlands.Medical:[
-  //         '2020-09-19T00:33:04.248Z', '2020-09-14T02:53:33.738Z', '2020-09-18T07:15:00.00Z'
-  //       ]
-  //    }
+  // const socket = getVisitorSocket(connectionMap);
+  const socket = getVisitorSocket();
+  // WARNING MESSAGE STRUCT:
+  //{
+  //   sentTime: '2020-09-19T00:56:54.570Z',
+  //   visitor: {
+  //     visior: 'Nurse Jackie',
+  //     id: 'FWzLl5dS9sr9FxDsAAAB',
+  //     nsp: 'enduringNet',
+  //   },
+  //   warning: {              // ONE ROOM PER WARNING
+  //     room: {
+  //       room: 'Heathlands Medical',
+  //       id: 'd6QoVa_JZxnM_0BoAAAA',
+  //       nsp: 'enduringNet',
+  //     },
+  //     dates: [
+  //       '2020-09-19T00:33:04.248Z',  // WARNING CAN
+  //       '2020-09-14T02:53:33.738Z',  // HAVE MULTIPLE
+  //       '2020-09-18T07:15:00.00Z',   // VISIT DATES
+  //     ],
+  //   },
   // };
 
   let message = {
     sentTime: new Date().toISOString(),
     visitor: socket.query,
-    warnings: getWarnings(socket.query.id),
+    warning: [...getWarning(socket.query.id)],
   };
   exposureWarning(socket, message);
   exposePendingRooms(socket);
+  return socket;
 }
 
-function getVisitorSocket(connectionMap) {
+// function getVisitorSocket(connectionMap) {
+function getVisitorSocket() {
   let visitors = [...connectionMap]
     .map((v) => v[1])
     .filter((v) => v.query.visitor);
@@ -170,7 +187,12 @@ async function report(results) {
   return results;
 }
 
-let INCLUDE = 0;
+async function testPendingRooms() {
+  const socket = getVisitorSocket();
+  exposePendingRooms(socket);
+}
+
+let INCLUDE = 1;
 
 INCLUDE &&
   testOpenRoomConnection()
@@ -183,3 +205,11 @@ INCLUDE &&
 testOpenRoomConnection()
   .then((connectionMap) => testOpenVisitorConnection(connectionMap))
   .then((connectionMap) => testExposureWarning(connectionMap));
+
+// don't open Room connection so that warning is PENDING
+// emit exposureWarning
+// check PENDING Rooms
+INCLUDE &&
+  testOpenVisitorConnection()
+    // .then(() => testExposureWarning())
+    .then(() => testPendingRooms());

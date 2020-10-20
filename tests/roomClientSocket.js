@@ -10,7 +10,7 @@ const info = clc.cyan;
 const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { getNow } = require('./helpers');
+const { getNow, log } = require('./helpers');
 const { groupBy, messages, printJson, report } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
 
@@ -20,10 +20,10 @@ console.log(highlight(getNow(), 'Starting roomClientSocket.js'));
 console.log(TESTING ? 'Testing' : 'Production');
 
 // methods called by state machine
-const alertVisitor = (clientSocket, visitor, warnings) => {
+const alertVisitor = (clientSocket, visitor, warning) => {
   const message = {
     visitor: visitor,
-    message: `${warnings}. To stop the spread, self-quarantine for 14 days.`,
+    message: `${warning}. To stop the spread, self-quarantine for 14 days.`,
     sentTime: new Date().toISOString(),
   };
   clientSocket.emit('alertVisitor', message, (rooms) => {
@@ -31,6 +31,7 @@ const alertVisitor = (clientSocket, visitor, warnings) => {
     console.table(rooms);
   });
 };
+
 const closeRoom = (clientSocket, message) => {
   clientSocket.emit('closeRoom', message, (rooms) => {
     console.log('Available Rooms:');
@@ -88,7 +89,7 @@ const onCheckOut = (message) => {
 // data param object:
 //  data: {
 //    visitor: visitor,
-//    exposureDates: exposureDates, // based on warnings param input to exposureWarning
+//    exposureDates: exposureDates, // based on warning param input to exposureWarning
 //    room: room,
 //  },
 const onNotifyRoom = (data, ack) => {
@@ -122,33 +123,36 @@ const onNotifyRoom = (data, ack) => {
   exposureDatesSet.forEach((date) => {
     messageDates[moment(date).format('YYYY-MM-DD')].forEach((v) => {
       let phrase =
-        v != visitor
+        v.visitor != visitor
           ? 'BE ADVISED: you may have been exposed to the virus'
           : 'CONFIRMING: you may have exposed others to the virus';
-      let msg = `${v}, ${phrase} on date(s): ${moment(date).format('llll')}`;
-      let alert = alerts.get(v);
+      let msg = `${v.visitor}, ${phrase} on date(s): ${moment(date).format(
+        'llll'
+      )}`;
+      let alert = alerts.get(v.visitor);
       alerts.set(
-        v,
+        v.visitor,
         alert ? alert.concat(`, ${moment(date).format('llll')}`) : msg
       );
     });
   });
 
-  //  WORK ON THIS NEXT!
-
   // iterate the Map and emit alertVisitor event
   // Server will ensure a Visitor is online before forwarding event
   // otherwise, cache Visitor until they login again
-  // for (let [key, value] of alerts.entries()) {
-  // let message = {
-  //   visitor: key,
-  //   message: `${value}. To stop the spread, self-quarantine for 14 days.`,
-  //   sentTime: new Date().toISOString(),
-  // };
-  // clientSocket.emit('alertVisitor', message, (ack) => {
-  //   log.add(ack, 'alert');
-  // });
-  // }
+  for (let [key, value] of alerts.entries()) {
+    let message = {
+      visitor: key,
+      message: `${value}. To stop the spread, self-quarantine for 14 days.`,
+      sentTime: new Date().toISOString(),
+    };
+    const socket = OpenRoomConnection(data.room);
+    socket.on('connect', () => {
+      socket.emit('alertVisitor', message, (ack) => {
+        log.add(ack, 'alert');
+      });
+    });
+  }
 
   if (ack) ack(`${visitor}, ${room} alerted`);
 };
@@ -203,6 +207,7 @@ function OpenRoomConnection(room) {
   // once event handler minimizes the number of times this socket handles an event
   clientSocket.once('availableRoomsExposed', onAvailableRoomsExposed);
 
+  // sent from server with visitor name, room visited, and visit dates
   clientSocket.on('notifyRoom', onNotifyRoom);
 
   // namespace broadcast event handlers
