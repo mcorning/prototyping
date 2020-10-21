@@ -19,13 +19,13 @@ function getRandomIntBetween(min, max) {
 }
 
 // helpers
-function addTestMessage(yourId, roomId) {
+function addTestMessage(you, room) {
   // open up the message list beyond today
   // get a random number of days back for test data
   let days = getRandomIntBetween(2, 4);
   let msg = {
-    visitor: yourId,
-    room: roomId,
+    visitor: you,
+    room: room,
     message: 'Entered',
     sentTime: moment()
       .add(-days, 'day')

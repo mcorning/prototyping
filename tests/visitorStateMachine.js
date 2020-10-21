@@ -44,16 +44,22 @@ const {
 
 // NOTE: if you manually disconnect these sockets, you won't see any results
 // from the server after the run() method finishes
-let roomSocket = OpenRoomConnection('RoomAdmin');
-let visitorSocket = OpenVisitorConnection('VisitorAdmin');
+// since Room and Visitor are objects now pick one of each here (not later)
+const roomSocket = OpenRoomConnection(pickRoom(rooms));
+const ROOM = roomSocket.query;
 
-exposeAvailableRooms(roomSocket);
+const visitorSocket = OpenVisitorConnection(pickVisitor(visitors));
+const VISITOR = visitorSocket.query;
 
+// do i need this?
+//exposeAvailableRooms(roomSocket);
+
+let testCount = 1;
 let visitorsToTest = 1;
-let testCount = 3;
 let availableRooms = new Map();
 
-// entry point for state machine is inside socket.io connect event handler
+// MODEL ENTRY POINT
+// for state machine is inside socket.io connect event handler
 visitorSocket.on('connect', () => {
   console.log(visitorSocket.id);
   run();
@@ -61,7 +67,6 @@ visitorSocket.on('connect', () => {
 
 roomSocket.on('connect', () => {
   console.log(roomSocket.id);
-
   console.log(highlight('Admin', 'Connection open'));
 });
 
@@ -85,19 +90,17 @@ roomSocket.on('connect', () => {
 // end of server-driven test
 
 // base class
-const Visitor = function(name, rooms, transitions) {
-  this.name = name;
-  this.rooms = rooms;
+const Visitor = function(visitor, room, transitions) {
+  this.name = visitor.visitor;
   this.enabledTransitionsFor = new Map(transitions);
-  this.room = pickRoom(rooms);
   console.log('\nTests left:', testCount, 'at', getNow());
   console.log(highlight('Visitor :>> ', this.name));
-  console.log(notice('Chosen Room :>> ', this.room.room));
+  console.log(notice('Chosen Room :>> ', ROOM));
   console.log(notice('============================================'));
   console.log(bold('Tested State/Transitions:'));
 
-  // be sure you call Connect after setting all properties and methods a Visitor will need
-  this.currentState = new Connect(this);
+  // be sure you call Mu after setting all properties and methods a Visitor will need
+  this.currentState = new Mu(this);
 
   this.change = function(state) {
     // limits number of changes
@@ -115,17 +118,40 @@ const Visitor = function(name, rooms, transitions) {
 
 // State/Transition functions
 
-const Connect = function(visitor) {
+// Mu state is where Visitor is enabled to do something, but is not yet committed to anything.
+// this state enables more transitions than any other state.
+const Mu = function(visitor) {
   this.visitor = visitor;
 
   // ensure one or more Rooms are open
-  roomSocket.emit('openRoom', pickRoom(rooms), (ack) => {
-    console.group('Inside Connect: Server Acknowledged: Open Room:');
+  roomSocket.emit('openRoom', ROOM, (ack) => {
+    console.group('Inside Mu: Server Acknowledged: Open Room:');
     availableRooms.set(ack.name, ack.id);
     console.log([...availableRooms]);
     console.log(success(ack.msg));
     console.groupEnd();
   });
+
+  this.fireTransition = function() {
+    fire(visitor);
+  };
+};
+
+const OccupyingRoom = function(visitor) {
+  this.visitor = visitor;
+
+  report(
+    'Enter Room Transition Data:',
+    visitor.name,
+    visitorSocket.id,
+    ROOM.room,
+    roomSocket.id
+  );
+
+  openRoom(roomSocket, ROOM);
+
+  const msg = addTestMessage(VISITOR, ROOM);
+  enterRoom(visitorSocket, msg);
 
   this.fireTransition = function() {
     fire(visitor);
@@ -158,31 +184,6 @@ const WarnRooms = function(visitor) {
   this.fireTransition = function() {
     fire(visitor);
     visitorSocket.emit('disconnect');
-  };
-};
-
-const EnterRoom = function(visitor) {
-  this.visitor = visitor;
-
-  const { name, room } = visitor;
-
-  const msg = addTestMessage(name, room);
-
-  // open the Room if necessary
-  report(
-    'Enter Room Transition Data:',
-    visitor.visitor,
-    visitorSocket.id,
-    room,
-    roomSocket.id
-  );
-
-  openRoom(roomSocket, room);
-
-  enterRoom(visitorSocket, msg);
-
-  this.fireTransition = function() {
-    fire(visitor);
   };
 };
 
@@ -220,34 +221,33 @@ const Disconnect = function(visitor) {
 
 // model properties
 
-const EnterRoomTransition = (visitor) => new EnterRoom(visitor);
+const OccupyingRoomTransition = (visitor) => new OccupyingRoom(visitor);
 const LeaveRoomTransition = (visitor) => new LeaveRoom(visitor);
 const DisconnectTransition = (visitor) => new Disconnect(visitor);
 const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
 
 // these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
 const transitions = [
-  ['Connect', [[EnterRoomTransition, WarnRoomsTransition], 1.0, 0.0]],
+  ['Mu', [[OccupyingRoomTransition, WarnRoomsTransition], 1.0, 0.0]],
   [
-    'EnterRoom',
+    'OccupyingRoom',
     [
       [LeaveRoomTransition, DisconnectTransition, WarnRoomsTransition],
-      1,
-      0.0,
+      0,
+      1.0,
       0.0,
     ],
   ],
-  ['LeaveRoom', [[DisconnectTransition, EnterRoomTransition], 1, 0]],
-  ['WarnRooms', [[], 1]],
+  // ['LeaveRoom', [[DisconnectTransition, OccupyingRoomTransition], 1, 0]],
+  // ['WarnRooms', [[], 1]],
   ['Disconnect', [[], 1]],
 ];
 // end model properties
 
 function run() {
   console.time('Tests ran');
-  const rooms = ['Heathlands.Medical', 'ABMS.Medical', 'Heathlands.Cafe'];
   do {
-    const visitor = new Visitor(pickVisitor(visitors), rooms, transitions);
+    const visitor = new Visitor(VISITOR, ROOM, transitions);
     visitor.start();
     testCount -= 1;
   } while (testCount >= 0);
