@@ -128,7 +128,7 @@ const log = (function() {
 
   return {
     add: function(msg) {
-      log += msg + '/n';
+      log += msg + '\n';
     },
     show: function() {
       console.log(log);

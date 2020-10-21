@@ -95,7 +95,7 @@ const Visitor = function(visitor, room, transitions) {
   this.enabledTransitionsFor = new Map(transitions);
   console.log('\nTests left:', testCount, 'at', getNow());
   console.log(highlight('Visitor :>> ', this.name));
-  console.log(notice('Chosen Room :>> ', ROOM));
+  console.log(notice('Chosen Room :>> ', room.room));
   console.log(notice('============================================'));
   console.log(bold('Tested State/Transitions:'));
 
@@ -160,20 +160,23 @@ const OccupyingRoom = function(visitor) {
 
 const VisitorWarned = function(visitor) {
   this.visitor = visitor;
-  const { name, room } = visitor;
-  console.log(warn('Warning room(s)', room));
-  const warning = {};
-  // these dates have to be based on previously run test with their random visiting dates
-  warning[room] = [
-    '2020-09-19T00:33:04.248Z',
-    '2020-09-19T00:35:38.078Z',
-    '2020-09-14T02:53:33.738Z',
-    '2020-09-18T02:53:35.050Z',
+  console.log(warn('Warning room(s)', ROOM.room));
+  const warnings = [
+    {
+      room: ROOM.room,
+      id: ROOM.id,
+      dates: [
+        '2020-09-19T00:33:04.248Z',
+        '2020-09-19T00:35:38.078Z',
+        '2020-09-14T02:53:33.738Z',
+        '2020-09-18T02:53:35.050Z',
+      ],
+    },
   ];
   const msg = {
     sentTime: new Date().toISOString(),
-    visitor: name,
-    warning: warning,
+    visitor: VISITOR,
+    warnings: warnings,
   };
   visitorSocket.emit('exposureWarning', msg, (ack) => {
     ack.slice(0, 7) == 'WARNING'
@@ -229,7 +232,7 @@ const ToQuarantined = (visitor) => new VisitorWarned(visitor);
 // these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
 // first element is State. internal array are available Transitions for the State)
 const transitions = [
-  ['Mu', [[ToOccupyingRoom, ToQuarantined], 1.0, 0.0]],
+  ['Mu', [[ToOccupyingRoom, ToQuarantined], 0.5, 0.5]],
   ['OccupyingRoom', [[ToDisconnected, ToMu, ToQuarantined], 1.0, 0, 0.0]],
   ['VisitorWarned', [[], 1]],
   ['Disconnected', [[], 1]],
