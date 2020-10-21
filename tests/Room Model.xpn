@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/xsl/spped2svg.xsl"?>
+<Snoopy version="2" revision="1.22">
+  <netclass name="Extended Petri Net"/>
+  <nodeclasses count="4">
+    <nodeclass count="1" name="Place">
+      <node id="320" net="1">
+        <attribute name="Name" id="321" net="1">
+          <![CDATA[]]>
+          <graphics count="1">
+            <graphic xoff="25.00" yoff="20.00" x="225.00" y="100.00" id="322" net="1" show="1" grparent="331" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="ID" id="323" net="1">
+          <![CDATA[0]]>
+          <graphics count="1">
+            <graphic xoff="25.00" yoff="20.00" x="225.00" y="100.00" id="324" net="1" show="0" grparent="331" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="Marking" id="325" net="1">
+          <![CDATA[0]]>
+          <graphics count="1">
+            <graphic x="200.00" y="80.00" id="326" net="1" show="1" grparent="331" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="Logic" id="327" net="1">
+          <![CDATA[0]]>
+          <graphics count="0"/>
+        </attribute>
+        <attribute name="Comment" id="328" net="1">
+          <![CDATA[]]>
+          <graphics count="1">
+            <graphic yoff="40.00" x="200.00" y="120.00" id="329" net="1" show="1" grparent="331" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="Fixed" id="330" net="1">
+          <![CDATA[0]]>
+          <graphics count="0"/>
+        </attribute>
+        <graphics count="1">
+          <graphic x="200.00" y="80.00" id="331" net="1" show="1" w="20.00" h="20.00" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+        </graphics>
+      </node>
+    </nodeclass>
+    <nodeclass count="0" name="Transition"/>
+    <nodeclass count="0" name="Coarse Place"/>
+    <nodeclass count="0" name="Coarse Transition"/>
+  </nodeclasses>
+  <edgeclasses count="5">
+    <edgeclass count="0" name="Edge"/>
+    <edgeclass count="0" name="Read Edge"/>
+    <edgeclass count="0" name="Inhibitor Edge"/>
+    <edgeclass count="0" name="Reset Edge"/>
+    <edgeclass count="0" name="Equal Edge"/>
+  </edgeclasses>
+  <metadataclasses count="6">
+    <metadataclass count="1" name="General">
+      <metadata id="306" net="1">
+        <attribute name="Name" id="307" net="1">
+          <![CDATA[]]>
+          <graphics count="1">
+            <graphic x="20.00" y="20.00" id="308" net="1" show="1" grparent="319" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="Created" id="309" net="1">
+          <![CDATA[2020-10-21 10:41:40]]>
+          <graphics count="1">
+            <graphic xoff="25.00" yoff="20.00" x="45.00" y="40.00" id="310" net="1" show="0" grparent="319" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="Authors" id="311" net="1">
+          <![CDATA[]]>
+          <graphics count="1">
+            <graphic xoff="25.00" yoff="40.00" x="45.00" y="60.00" id="312" net="1" show="1" grparent="319" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="Keywords" id="313" net="1">
+          <![CDATA[]]>
+          <graphics count="1">
+            <graphic xoff="40.00" yoff="25.00" x="60.00" y="45.00" id="314" net="1" show="1" grparent="319" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="Description" id="315" net="1">
+          <![CDATA[]]>
+          <graphics count="1">
+            <graphic xoff="25.00" yoff="40.00" x="45.00" y="60.00" id="316" net="1" show="1" grparent="319" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <attribute name="References" id="317" net="1">
+          <![CDATA[]]>
+          <graphics count="1">
+            <graphic xoff="25.00" yoff="40.00" x="45.00" y="60.00" id="318" net="1" show="1" grparent="319" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+          </graphics>
+        </attribute>
+        <graphics count="1">
+          <graphic x="20.00" y="20.00" id="319" net="1" show="1" w="1.00" h="1.00" state="1" pen="255,255,255" brush="255,255,255" thickness="1"/>
+        </graphics>
+      </metadata>
+    </metadataclass>
+    <metadataclass count="0" name="Comment"/>
+    <metadataclass count="0" name="Image"/>
+    <metadataclass count="0" name="Constant Class"/>
+    <metadataclass count="0" name="Function Class"/>
+    <metadataclass count="0" name="Oberserver Class"/>
+  </metadataclasses>
+</Snoopy>

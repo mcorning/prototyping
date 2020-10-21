@@ -38,6 +38,8 @@ const getNow = () => {
   return moment().format('lll');
 };
 
+// context is passed by the State Machine.
+// the visitor object is the context in the visitorStateMachine, for example.
 const fire = (context) => {
   const { currentState, enabledTransitionsFor } = context;
 

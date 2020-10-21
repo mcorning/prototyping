@@ -1,4 +1,11 @@
-// const { groupBy } = require('./helpers');
+/* Test Data Sets:
+BVTs: 
+1: 1) Visitor connects, 2) Visitor warns
+2: 1) Visitor connects, 2) Enters Room
+3: 1) Visitor connects, 2) Enters Room 3) Changes Room
+4: 1) Visitor connects, 2) Enters Room 3) Leaves Room 
+5: 1) Visitor connects, 2) Enters Room 3) Leaves Room 4) Disconnects
+*/
 
 const visitors = [
   { visitor: 'Nurse Diesel', id: 'kWjzGUKmvWhgeRlmAAAA', nsp: 'enduringNet' },
