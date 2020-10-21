@@ -158,7 +158,7 @@ const OccupyingRoom = function(visitor) {
   };
 };
 
-const WarnRooms = function(visitor) {
+const VisitorWarned = function(visitor) {
   this.visitor = visitor;
   const { name, room } = visitor;
   console.log(warn('Warning room(s)', room));
@@ -210,7 +210,7 @@ const LeaveRoom = function(visitor) {
 };
 
 // disconnect from server (e.g., shut down browser)
-const Disconnect = function(visitor) {
+const Disconnected = function(visitor) {
   this.visitor = visitor;
 
   this.fireTransition = function() {
@@ -221,26 +221,18 @@ const Disconnect = function(visitor) {
 
 // model properties
 
-const OccupyingRoomTransition = (visitor) => new OccupyingRoom(visitor);
-const LeaveRoomTransition = (visitor) => new LeaveRoom(visitor);
-const DisconnectTransition = (visitor) => new Disconnect(visitor);
-const WarnRoomsTransition = (visitor) => new WarnRooms(visitor);
+const ToOccupyingRoom = (visitor) => new OccupyingRoom(visitor);
+const ToMu = (visitor) => new LeaveRoom(visitor);
+const ToDisconnected = (visitor) => new Disconnected(visitor);
+const ToQuarantined = (visitor) => new VisitorWarned(visitor);
 
 // these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
+// first element is State. internal array are available Transitions for the State)
 const transitions = [
-  ['Mu', [[OccupyingRoomTransition, WarnRoomsTransition], 1.0, 0.0]],
-  [
-    'OccupyingRoom',
-    [
-      [LeaveRoomTransition, DisconnectTransition, WarnRoomsTransition],
-      0,
-      1.0,
-      0.0,
-    ],
-  ],
-  // ['LeaveRoom', [[DisconnectTransition, OccupyingRoomTransition], 1, 0]],
-  // ['WarnRooms', [[], 1]],
-  ['Disconnect', [[], 1]],
+  ['Mu', [[ToOccupyingRoom, ToQuarantined], 1.0, 0.0]],
+  ['OccupyingRoom', [[ToDisconnected, ToMu, ToQuarantined], 1.0, 0, 0.0]],
+  ['VisitorWarned', [[], 1]],
+  ['Disconnected', [[], 1]],
 ];
 // end model properties
 
