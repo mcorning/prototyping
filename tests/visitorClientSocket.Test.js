@@ -14,6 +14,8 @@ Nothing happens in the namespace until at least one Room is online.
 Each test passes a connectionMap to the next test.
 */
 
+const SHOW = 0;
+
 const clc = require('cli-color');
 const success = clc.green.bold;
 // const error = clc.red.bold;
@@ -22,7 +24,7 @@ const info = clc.cyan;
 const notice = clc.blue;
 const highlight = clc.magenta;
 const bold = clc.bold;
-const { getNow } = require('./helpers');
+const { getNow, logResults } = require('./helpers');
 
 const {
   OpenVisitorConnection,
@@ -49,10 +51,10 @@ const {
   // alertVisitor,
 } = require('./roomClientSocket');
 const { pickRoom, rooms } = require('./roomData');
-const { resolve } = require('core-js/fn/promise');
 
-console.log(highlight(getNow(), 'Starting visitorClientSocket.Test.js'));
-console.log('Creating new Map');
+SHOW &&
+  console.log(highlight(getNow(), 'Starting visitorClientSocket.Test.js'));
+SHOW && console.log('Creating new Map');
 let connectionMap = new Map();
 
 async function testOpenRoomConnection() {
@@ -61,6 +63,10 @@ async function testOpenRoomConnection() {
     // 1) Open Room
     let roomSocket = OpenRoomConnection(room);
     roomSocket.on('connect', () => {
+      logResults.clear();
+      logResults.entitle('Testing testOpenRoomConnection...');
+      logResults.add({ 'Room Query': roomSocket.query });
+      logResults.show();
       // open Room with every connection to ensure pendingWarnings get sent
       openRoom(roomSocket, room);
       connectionMap.set(roomSocket.query.room, roomSocket);
@@ -72,6 +78,7 @@ async function testOpenRoomConnection() {
 
 // async function testOpenVisitorConnection(connectionMap) {
 async function testOpenVisitorConnection() {
+  logResults.entitle('Testing OpenVisitorConnection ');
   // make connection map from some or all cached Visitor data
   const getConnections = new Promise(function(resolve) {
     let vs = visitors.filter((v, i) => i == 2);
@@ -79,6 +86,7 @@ async function testOpenVisitorConnection() {
     vs.forEach((visitor) => {
       let socket = OpenVisitorConnection(visitor);
       socket.on('connect', () => {
+        logResults.add({ socket: socket.id, name: socket.visitor });
         connectionMap.set(socket.query.visitor, socket);
         if (!--more) {
           resolve(connectionMap);
@@ -102,6 +110,8 @@ async function testLeaveRoom(message) {
 
 // async function testExposureWarning(connectionMap) {
 async function testExposureWarning() {
+  // logResults.start = 'Testing getVisitorSocket()';
+
   // visitor warns  room
   // since we only have a Map and no separate record of names, convert the Map to an array
   // const socket = getVisitorSocket(connectionMap);
@@ -127,14 +137,35 @@ async function testExposureWarning() {
   //     ],
   //   },
   // };
+  logResults.add({
+    step: 'Results from getVisitorSocket()',
+    query: socket.json.query,
+  });
 
   let message = {
     sentTime: new Date().toISOString(),
     visitor: socket.query,
     warning: [...getWarning(socket.query.id)],
   };
-  exposureWarning(socket, message);
+  logResults.add({
+    step: 'Value of message in testExposureWarning:',
+    messages: Object.entries(message),
+  });
+
+  exposureWarning(socket, message, (ack) => {
+    logResults.entitle('Event acknowledgment callback:');
+    logResults.add({
+      event: 'exposureWarning()',
+      ack: ack,
+    });
+    logResults.show();
+  });
+
   exposePendingRooms(socket);
+  // logResults.add(`Results from exposePendingRooms():
+  //   what should this be?
+  // `);
+
   return socket;
 }
 
@@ -167,22 +198,27 @@ async function testEnterRoom(connectionMap) {
 }
 
 async function report(results) {
-  console.log(
-    success('=======================================================')
-  );
-  console.log(success(bold('Successful test of EnterRoom on', getNow())));
-  console.log(
-    success(
-      '\t',
-      results.visitor.query.visitor,
-      'entered',
-      results.room.query.room
-    )
-  );
-  console.log(info('See detail below: Server Acknowledged: Enter Room:'));
-  console.log(
-    success('=======================================================')
-  );
+  SHOW &&
+    console.log(
+      success('=======================================================')
+    );
+  SHOW &&
+    console.log(success(bold('Successful test of EnterRoom on', getNow())));
+  SHOW &&
+    console.log(
+      success(
+        '\t',
+        results.visitor.query.visitor,
+        'entered',
+        results.room.query.room
+      )
+    );
+  SHOW &&
+    console.log(info('See detail below: Server Acknowledged: Enter Room:'));
+  SHOW &&
+    console.log(
+      success('=======================================================')
+    );
   // pass on the input to the next stage of processing the scenario...
   return results;
 }
@@ -190,10 +226,14 @@ async function report(results) {
 async function testPendingRooms() {
   const socket = getVisitorSocket();
   exposePendingRooms(socket);
+  logResults.add({
+    step: 'testPendingRooms used socket',
+    socket: socket.id,
+    name: socket.query.visitor,
+  });
 }
 
-let INCLUDE = 1;
-
+let INCLUDE = 0;
 INCLUDE &&
   testOpenRoomConnection()
     .then((connectionMap) => testOpenVisitorConnection(connectionMap))
@@ -206,10 +246,18 @@ testOpenRoomConnection()
   .then((connectionMap) => testOpenVisitorConnection(connectionMap))
   .then((connectionMap) => testExposureWarning(connectionMap));
 
-// don't open Room connection so that warning is PENDING
-// emit exposureWarning
-// check PENDING Rooms
+// for this test, to ensure that warning is PENDING,
+// don't open Room connection before opening a Visitor connection.
+// then, emit exposureWarning
+// finally, check PENDING Rooms
 INCLUDE &&
   testOpenVisitorConnection()
-    // .then(() => testExposureWarning())
-    .then(() => testPendingRooms());
+    .then(() => testExposureWarning())
+    .then(() => testOpenRoomConnection())
+    // .then(() => testPendingRooms())
+    .then(() => {
+      logResults.show();
+      console.log(' ');
+    });
+// this test now checks that pending rooms see warnings
+// testOpenRoomConnection();

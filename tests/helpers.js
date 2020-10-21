@@ -1,3 +1,12 @@
+const clc = require('cli-color');
+const success = clc.green.bold;
+// const error = clc.red.bold;
+// const warn = clc.yellow;
+const info = clc.cyan;
+const notice = clc.blue;
+const highlight = clc.magenta;
+const bold = clc.bold;
+
 // state transition helper
 const moment = require('moment');
 
@@ -83,12 +92,41 @@ function groupBy(payload) {
 }
 
 // log helper
+const logResults = (function() {
+  let logResults = [];
+  let title = 'Log Results';
+  return {
+    hasData: function() {
+      return logResults.length;
+    },
+
+    entitle: function(caption) {
+      if (!this.hasData()) title = caption;
+    },
+
+    add: function(msg) {
+      logResults.push(msg);
+    },
+
+    clear: function() {
+      logResults = [];
+    },
+
+    show: function() {
+      console.groupCollapsed(title);
+      console.log(printJson(logResults));
+      logResults = [];
+      console.groupEnd();
+    },
+  };
+})(); // the () turns the function declaration into a working function for the caller
+
 const log = (function() {
   let log = '';
 
   return {
     add: function(msg) {
-      log += msg;
+      log += msg + '/n';
     },
     show: function() {
       console.log(log);
@@ -98,7 +136,7 @@ const log = (function() {
 })();
 
 function printJson(json) {
-  return JSON.stringify(json, null, '\t');
+  return JSON.stringify(json, null, 3);
 }
 
 function report(title, a1, a2, b1, b2) {
@@ -122,6 +160,7 @@ module.exports = {
   groupBy,
   fire,
   log,
+  logResults,
   printJson,
   report,
 };

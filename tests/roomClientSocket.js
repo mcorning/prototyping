@@ -1,3 +1,5 @@
+const SHOW = 0;
+
 const base64id = require('base64id');
 const io = require('socket.io-client');
 const moment = require('moment');
@@ -10,7 +12,7 @@ const info = clc.cyan;
 const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { getNow, log } = require('./helpers');
+const { getNow, log, logResults } = require('./helpers');
 const { groupBy, messages, printJson, report } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
 
@@ -56,7 +58,7 @@ const exposeOccupiedRooms = (clientSocket) => {
 // message is a room query
 const openRoom = (clientSocket, message) => {
   clientSocket.emit('openRoom', message, (ack) => {
-    console.group('Inside EnterRoom: Server Acknowledged: Open Room:');
+    console.groupCollapsed('Inside EnterRoom: Server Acknowledged: Open Room:');
     console.log(success(printJson(ack)));
     console.groupEnd();
   });
@@ -170,32 +172,35 @@ function OpenRoomConnection(room) {
   });
 
   clientSocket.once('connect', () => {
-    console.log(' ');
-    console.log(highlight('Room Socket.io connection made:'));
-    console.table(clientSocket.query);
-    console.log(' ');
+    logResults.entitle('Room Socket.io connection made:');
+    logResults.add({ table: clientSocket.query });
+    logResults.show();
   });
 
   clientSocket.once('connect_error', (message) => {
     switch (message.type) {
       case 'TransportError':
-        console.log(
-          warn(
-            `${clientSocket.query.room ||
-              clientSocket.query.visitor} attempted to connect...`
-          )
-        );
-        console.log(
-          error(
-            '...but LCT Socket.io Server may have gone down at or before',
-            getNow()
-          )
-        );
+        if (SHOW) {
+          console.log(
+            warn(
+              `${clientSocket.query.room ||
+                clientSocket.query.visitor} attempted to connect...`
+            )
+          );
+          console.log(
+            error(
+              '...but LCT Socket.io Server may have gone down at or before',
+              getNow()
+            )
+          );
+        }
         break;
 
       default:
-        console.log(error('Unhandled connection error:'));
-        console.log(error(message.message));
+        if (SHOW) {
+          console.log(error('Unhandled connection error:'));
+          console.log(error(message.message));
+        }
     }
   });
 

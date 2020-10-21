@@ -10,7 +10,7 @@
 // Result: room will see a warning, and Visitor will see acknowledgement of warning receipt
 
 // other tests include testing for multiple Visitor alerts and Room pending warnings
-
+const SHOW = 0;
 const io = require('socket.io-client');
 // const moment = require('moment');
 const base64id = require('base64id');
@@ -24,10 +24,7 @@ const info = clc.cyan;
 const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const {
-  getNow,
-  // printJson
-} = require('./helpers');
+const { getNow, printJson } = require('./helpers');
 
 const TESTING = 0;
 console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
@@ -77,10 +74,13 @@ const exposeAllRooms = (clientSocket) => {
 };
 
 // tested 10.12.20
-const exposureWarning = (clientSocket, message) => {
-  console.table(message);
+const exposureWarning = (clientSocket, message, cb) => {
+  SHOW && console.table(message);
   clientSocket.emit('exposureWarning', message, (ack) => {
-    console.warn(ack);
+    console.warn('Event acknowledgment:', ack);
+    if (cb) {
+      cb(ack);
+    }
   });
 };
 
@@ -129,14 +129,9 @@ const onAllSocketsExposed = (message) => {
 };
 
 const onPendingRoomsExposed = (list = ['No Rooms are online right now.']) => {
-  let pendingRooms = list.map((v) => {
-    let x = {};
-    x['name'] = v;
-    x['type'] = 'pending';
-    return x;
-  });
-
-  console.log(`Pending Rooms: ${pendingRooms}`);
+  console.groupCollapsed('onPendingRoomsExposed results:');
+  console.table(list);
+  console.groupEnd();
 };
 
 // end listeners
@@ -147,7 +142,7 @@ function OpenVisitorConnection(visitor) {
     const id = visitor.id || base64id.generateId();
     const nsp = visitor.nsp || '/';
     const query = { visitor: visitor.visitor, id: id, nsp: nsp };
-    console.table(query);
+    SHOW && console.table(query);
     const connectionMap = new Map();
 
     const clientSocket = io('http://localhost:3003', {
@@ -169,18 +164,20 @@ function OpenVisitorConnection(visitor) {
     clientSocket.once('connect_error', (message) => {
       switch (message.type) {
         case 'TransportError':
-          console.log(
-            warn(
-              `${clientSocket.query.room ||
-                clientSocket.query.visitor} attempted to connect...`
-            )
-          );
-          console.log(
-            error(
-              '...but LCT Socket.io Server may have gone down at or before',
-              getNow()
-            )
-          );
+          if (SHOW) {
+            console.log(
+              warn(
+                `${clientSocket.query.room ||
+                  clientSocket.query.visitor} attempted to connect...`
+              )
+            );
+            console.log(
+              error(
+                '...but LCT Socket.io Server may have gone down at or before',
+                getNow()
+              )
+            );
+          }
           break;
       }
     });
@@ -188,8 +185,10 @@ function OpenVisitorConnection(visitor) {
     // TODO: move these event handler details to listeners pattern
     // I believe action is necessary here only if the query options have to change (which they don't)
     clientSocket.on('reconnect_attempt', () => {
-      console.log(warn(`Attempting to reconnect clientSocket:`));
-      console.table(clientSocket.io.opts.query);
+      if (SHOW) {
+        console.log(warn(`Attempting to reconnect clientSocket:`));
+        console.table(clientSocket.io.opts.query);
+      }
       // let x = visitor.filter(
       //   (v) =>
       //     (v.name == clientSocket.io.opts.query.visitor) |
