@@ -13,7 +13,6 @@
 const SHOW = 0;
 const io = require('socket.io-client');
 // const moment = require('moment');
-const base64id = require('base64id');
 
 const clc = require('cli-color');
 const success = clc.green.bold;
@@ -24,7 +23,7 @@ const info = clc.cyan;
 const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { getNow, printJson } = require('./helpers');
+const { getNow, newId } = require('./helpers');
 
 const TESTING = 0;
 console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
@@ -75,7 +74,7 @@ const exposeAllRooms = (clientSocket) => {
 
 // tested 10.12.20
 const exposureWarning = (clientSocket, message, cb) => {
-  SHOW && console.table(message);
+  console.table(message);
   clientSocket.emit('exposureWarning', message, (ack) => {
     console.warn('Event acknowledgment:', ack);
     if (cb) {
@@ -139,7 +138,7 @@ const onPendingRoomsExposed = (list = ['No Rooms are online right now.']) => {
 // function OpenVisitorConnection(token, clientSocketId = '', nsp='/') {
 function OpenVisitorConnection(visitor) {
   try {
-    const id = visitor.id || base64id.generateId();
+    const id = visitor.id || newId;
     const nsp = visitor.nsp || '/';
     const query = { visitor: visitor.visitor, id: id, nsp: nsp };
     SHOW && console.table(query);
@@ -214,7 +213,7 @@ function OpenVisitorConnection(visitor) {
     });
 
     return clientSocket;
-  } catch (error) {
+  } catch (err) {
     console.log(error('Cannot find the socket.io server.'));
   }
 }

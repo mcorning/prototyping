@@ -5,23 +5,31 @@ BVTs:
 3: 1) Visitor connects, 2) Enters Room 3) Changes Room
 4: 1) Visitor connects, 2) Enters Room 3) Leaves Room 
 5: 1) Visitor connects, 2) Enters Room 3) Leaves Room 4) Disconnects
+
+Test cascading alerts:
+    AirGas Inc warns Heathlands Medial and Heathlands Cafe on 09.23.2020
+    Nurse Diesel gets first alert
+    Nurse Jackie gets first alert
+    Nurse Diesel warns Manchester Pub
+    Manchester Pub warns Doc Holliday
 */
 
 const visitors = [
   { visitor: 'Nurse Diesel', id: 'kWjzGUKmvWhgeRlmAAAA', nsp: 'enduringNet' },
   { visitor: 'Nurse Jackie', id: 'FWzLl5dS9sr9FxDsAAAB', nsp: 'enduringNet' },
   { visitor: 'AirGas Inc', id: 'JgvrILSxDwXRWJUpAAAC', nsp: 'enduringNet' },
+  { visitor: 'Doc Holliday', id: '4EuoyMOOsE4tflmtAAAA', nsp: 'enduringNet' },
 ];
 
 // object indentifies require a new data structure: Map (where the key can be an object)
 const messages = [
+  //AirGas Inc
   {
     visitor: {
-      visitor: 'Nurse Diesel',
-      id: 'kWjzGUKmvWhgeRlmAAAA',
+      visitor: 'AirGas Inc',
+      id: 'JgvrILSxDwXRWJUpAAAC',
       nsp: 'enduringNet',
     },
-
     room: {
       room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
@@ -30,73 +38,13 @@ const messages = [
     message: 'Entered',
     sentTime: '2020-09-19T00:33:04.248Z',
   },
-  {
-    visitor: {
-      visitor: 'Nurse Diesel',
-      id: 'kWjzGUKmvWhgeRlmAAAA',
-      nsp: 'enduringNet',
-    },
 
-    room: {
-      room: 'Heathlands Medical',
-      id: 'd6QoVa_JZxnM_0BoAAAA',
-      nsp: 'enduringNet',
-    },
-    message: 'Entered',
-    sentTime: '2020-09-14T02:53:33.738Z',
-  },
-  {
-    visitor: {
-      visitor: 'Nurse Diesel',
-      id: 'kWjzGUKmvWhgeRlmAAAA',
-      nsp: 'enduringNet',
-    },
-
-    room: {
-      room: 'Heathlands Medical',
-      id: 'd6QoVa_JZxnM_0BoAAAA',
-      nsp: 'enduringNet',
-    },
-    message: 'Entered',
-    sentTime: '2020-09-18T02:53:35.050Z',
-  },
-  {
-    visitor: {
-      visitor: 'Nurse Diesel',
-      id: 'kWjzGUKmvWhgeRlmAAAA',
-      nsp: 'enduringNet',
-    },
-
-    room: {
-      room: 'Heathlands Medical',
-      id: 'd6QoVa_JZxnM_0BoAAAA',
-      nsp: 'enduringNet',
-    },
-    message: 'Entered',
-    sentTime: '2020-09-18T02:53:35.050Z',
-  },
   {
     visitor: {
       visitor: 'AirGas Inc',
       id: 'JgvrILSxDwXRWJUpAAAC',
       nsp: 'enduringNet',
     },
-
-    room: {
-      room: 'Heathlands Medical',
-      id: 'd6QoVa_JZxnM_0BoAAAA',
-      nsp: 'enduringNet',
-    },
-    message: 'Entered',
-    sentTime: '2020-09-19T00:33:04.248Z',
-  },
-  {
-    visitor: {
-      visitor: 'AirGas Inc',
-      id: 'JgvrILSxDwXRWJUpAAAC',
-      nsp: 'enduringNet',
-    },
-
     room: {
       room: 'Heathlands Cafe',
       id: 'e1suC3Rdpj_1PuR3AAAB',
@@ -105,13 +53,121 @@ const messages = [
     message: 'Entered',
     sentTime: '2020-09-19T01:00:04.248Z',
   },
+
+  {
+    visitor: {
+      visitor: 'AirGas Inc',
+      id: 'JgvrILSxDwXRWJUpAAAC',
+      nsp: 'enduringNet',
+    },
+    room: {
+      room: 'Heathlands Cafe',
+      id: 'e1suC3Rdpj_1PuR3AAAB',
+      nsp: 'enduringNet',
+    },
+    message: 'Entered',
+    sentTime: '2020-09-20T01:09:00.000Z',
+  },
+
+  //Doc Holliday
+  {
+    visitor: {
+      visitor: 'Doc Holliday',
+      id: '4EuoyMOOsE4tflmtAAAA',
+      nsp: 'enduringNet',
+    },
+    room: {
+      room: 'Manchester Pub',
+      id: 'kSrcg7LYgbtyBio5AAAB',
+      nsp: 'enduringNet',
+    },
+    message: 'Entered',
+    sentTime: '2020-09-20T20:33:04.248Z',
+  },
+
+  // Nurse Diesel
+  {
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+    room: {
+      room: 'Manchester Pub',
+      id: 'kSrcg7LYgbtyBio5AAAB',
+      nsp: 'enduringNet',
+    },
+    message: 'Entered',
+    sentTime: '2020-09-20T20:44:00.000Z',
+  },
+
+  {
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+    room: {
+      room: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
+    message: 'Entered',
+    sentTime: '2020-09-19T00:33:04.248Z',
+  },
+
+  {
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+    room: {
+      room: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
+    message: 'Entered',
+    sentTime: '2020-09-14T02:53:33.738Z',
+  },
+
+  {
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+    room: {
+      room: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
+    message: 'Entered',
+    sentTime: '2020-09-18T02:53:35.050Z',
+  },
+
+  {
+    visitor: {
+      visitor: 'Nurse Diesel',
+      id: 'kWjzGUKmvWhgeRlmAAAA',
+      nsp: 'enduringNet',
+    },
+    room: {
+      room: 'Heathlands Medical',
+      id: 'd6QoVa_JZxnM_0BoAAAA',
+      nsp: 'enduringNet',
+    },
+    message: 'Entered',
+    sentTime: '2020-09-18T02:53:35.050Z',
+  },
+
+  // Nurese Jackie
   {
     visitor: {
       visitor: 'Nurse Jackie',
       id: 'FWzLl5dS9sr9FxDsAAAB',
       nsp: 'enduringNet',
     },
-
     room: {
       room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
@@ -126,7 +182,6 @@ const messages = [
       id: 'FWzLl5dS9sr9FxDsAAAB',
       nsp: 'enduringNet',
     },
-
     room: {
       room: 'Heathlands Medical',
       id: 'd6QoVa_JZxnM_0BoAAAA',
@@ -135,6 +190,7 @@ const messages = [
     message: 'Entered',
     sentTime: '2020-09-14T00:33:04.248Z',
   },
+
   {
     visitor: {
       visitor: 'Nurse Jackie',
@@ -234,6 +290,7 @@ module.exports = {
   getExposureDatesSet,
   getExposures,
   getWarning,
+  groupBy,
   pickVisitor,
   visitors,
 };

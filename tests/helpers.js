@@ -1,16 +1,22 @@
-const clc = require('cli-color');
-const success = clc.green.bold;
+// const clc = require('cli-color');
+// const success = clc.green.bold;
 // const error = clc.red.bold;
 // const warn = clc.yellow;
-const info = clc.cyan;
-const notice = clc.blue;
-const highlight = clc.magenta;
-const bold = clc.bold;
+// const info = clc.cyan;
+// const notice = clc.blue;
+// const highlight = clc.magenta;
+// const bold = clc.bold;
 
-// state transition helper
 const moment = require('moment');
+const base64id = require('base64id');
 
 const DEBUG = 0;
+
+const newId = (() => {
+  const id = base64id.generateId();
+  console.log('New ID', id);
+  return id;
+})();
 
 // helper helpers
 function getRandomIntBetween(min, max) {
@@ -51,13 +57,12 @@ const fire = (context) => {
   let i = reducedWeightedRandom(et.slice(1), r);
 
   const transition = et[0][i];
-  console.log('--------------------------------------------------');
-  log.add(
+  // console.log('--------------------------------------------------');
+  logResults.add(
     `State: ${currentState.constructor.name} Transition: ${
       transition ? transition.name : 'Finished'
     }`
   );
-  log.show();
   if (transition) {
     context.change(transition(context));
   }
@@ -71,7 +76,7 @@ function reducedWeightedRandom(spec, r) {
     a += c;
     if (r <= a) {
       a = i;
-      s = s.splice(1);
+      s = s.splice(1); // changing the array will end the iteration
     }
     return a;
   }, 0);
@@ -163,6 +168,7 @@ module.exports = {
   fire,
   log,
   logResults,
+  newId,
   printJson,
   report,
 };

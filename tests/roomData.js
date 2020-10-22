@@ -2,6 +2,11 @@ let lastUsedRoom = 'Heathlands.Medical';
 
 const rooms = [
   {
+    room: 'Manchester Pub',
+    id: 'kSrcg7LYgbtyBio5AAAB',
+    nsp: 'enduringNet',
+  },
+  {
     room: 'Heathlands Medical',
     id: 'd6QoVa_JZxnM_0BoAAAA',
     nsp: 'enduringNet',

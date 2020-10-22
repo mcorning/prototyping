@@ -6,8 +6,15 @@
 // state change is basis of assertions
 console.clear();
 // require('./oracle')
-const { fire, addTestMessage, log, getNow, report } = require('./helpers');
-const { pickVisitor, visitors, messages } = require('./visitorData.js');
+const {
+  fire,
+  addTestMessage,
+  log,
+  getNow,
+  report,
+  logResults,
+} = require('./helpers');
+const { pickVisitor, groupBy, messages } = require('./visitorData.js');
 const { pickRoom, rooms } = require('./roomData.js');
 
 // const moment = require('moment');
@@ -21,7 +28,7 @@ const highlight = clc.magenta;
 const bold = clc.bold;
 
 const TESTING = 0; // use this to control some log spew
-let testCount = 0; // zero-based, so 0 is for single test
+let testCount = 1;
 let visitorsToTest = 1;
 let availableRooms = new Map();
 console.log(highlight(getNow(), 'Starting visitorStateMachine.js'));
@@ -32,14 +39,14 @@ console.log(TESTING ? 'TESTING' : 'PRODUCTION');
 // otherwise js won't interpret the reference as the funtion it is in roomClientSocket.js
 const {
   OpenRoomConnection,
-  // alertVisitor,
+  alertVisitor,
   // closeRoom,
   // exposeOccupiedRooms,
   openRoom,
 } = require('./roomClientSocket');
 const {
   OpenVisitorConnection,
-  // exposureWarning,
+  exposureWarning,
   enterRoom,
   exposeAvailableRooms,
   // leaveRoom,
@@ -50,35 +57,35 @@ const {
 // since Room and Visitor are objects now pick one of each here (not later)
 const roomSocket = OpenRoomConnection(pickRoom(rooms));
 const ROOM = roomSocket.query;
+logResults.entitle('Visitor State Machine Test Results');
 
-function thisVisitor(visitors) {
-  return visitors.reduce((a, c) => {
+console.groupCollapsed('Found Visitor');
+function visitorHoF(visitors) {
+  const visitor = visitors.reduce((a, c, i, v) => {
     if (c.visitor == 'AirGas Inc') {
-      a = c;
+      logResults.add('Found', v[i]);
+      a = c; // update accumulator because we're about to modify vivisors array
+      v = v.splice(1); // changing the array will end the iteration
       return a;
     }
   }, {});
+  return visitor;
 }
 
-const visitor = pickVisitor(thisVisitor);
+const visitor = pickVisitor(visitorHoF);
 
-console.log('visitor:');
-console.table(visitor);
 const visitorSocket = OpenVisitorConnection(visitor);
 const VISITOR = visitorSocket.query;
 console.table(VISITOR);
+console.groupEnd();
 
 // MODEL ENTRY POINT
 // for state machine is inside socket.io connect event handler
 visitorSocket.on('connect', () => {
-  console.log(visitorSocket.id);
   run();
 });
 
-roomSocket.on('connect', () => {
-  console.log(roomSocket.id);
-  console.log(highlight('Admin', 'Connection open'));
-});
+roomSocket.on('connect', () => {});
 
 //
 // // visitorSocket.on('checkIn', (message) =>
@@ -130,6 +137,16 @@ const Visitor = function(visitor, room, transitions) {
 
 // Mu state is where Visitor is enabled to do something, but is not yet committed to anything.
 // this state enables more transitions than any other state.
+// Alternate Preconditions: AppOpen or OccupyingRoom
+// Input Transitions: connect or leaveRoom
+// Output Transitions: warnVisitor, visitorWarns, enterRoom, disconnect
+// Postconditions: VisitorQuarantined, VisitorQuarantined
+// Paths:
+//    AppOpen ->connect->Mu->enterRoom->OccupyingRoom->leaveRoom
+//    AppOpen ->connect->Mu->disconnect
+//    AppOpen ->connect->Mu->visitorWarns->VisitorQuarantined
+//    AppOpen ->connect->Mu->warnVisitor->VisitorWarned->visitorWarns
+//
 const Mu = function(visitor) {
   this.visitor = visitor;
 
@@ -139,6 +156,7 @@ const Mu = function(visitor) {
     availableRooms.set(ack.name, ack.id);
     console.log(success(ack.msg));
     console.groupEnd();
+    logResults.add(`openRoom ack: ${ack}`);
   });
 
   this.fireTransition = function() {
@@ -167,27 +185,30 @@ const OccupyingRoom = function(visitor) {
   };
 };
 
-const VisitorWarned = function(visitor) {
+// this state occurs when the Visitor enters a Room and the Room has an alert waiting for them
+// Preconditions: PendingWarning and Mu
+// Transition: WarnVisitor
+// postcondition: this is a terminal condition
+const VisitorQuarantined = function(visitor) {
   this.visitor = visitor;
-  console.log(warn('Warning room(s)', ROOM.room));
-  const dates = messages.filter((v) => v.visitor.visitor == visitor);
-  const warnings = [
-    {
-      room: ROOM.room,
-      id: ROOM.id,
-      dates: dates,
-    },
-  ];
+  console.groupCollapsed('Warning visited Room(s)');
+
   const msg = {
     sentTime: new Date().toISOString(),
     visitor: VISITOR,
-    warnings: warnings,
+    warnings: [
+      ...groupBy({
+        array: messages.filter((v) => v.visitor.visitor == visitor.name),
+        prop: 'room',
+        val: 'sentTime',
+      }),
+    ],
   };
-  console.log('msg:');
+  console.log('\tmsg:');
   console.table(msg);
 
-  // how is this different than using exposureWarning()?
-  visitorSocket.emit('exposureWarning', msg, (ack) => {
+  // event sent to Server
+  exposureWarning(visitorSocket, msg, (ack) => {
     ack.slice(0, 7) == 'WARNING'
       ? console.log(error(ack))
       : console.log(warn(ack));
@@ -197,6 +218,7 @@ const VisitorWarned = function(visitor) {
     fire(visitor);
     visitorSocket.emit('disconnect');
   };
+  console.groupEnd();
 };
 
 //NOTE:
@@ -239,14 +261,14 @@ const Disconnected = function(visitor) {
 const ToOccupyingRoom = (visitor) => new OccupyingRoom(visitor);
 const ToMu = (visitor) => new Mu(visitor);
 const ToDisconnected = (visitor) => new Disconnected(visitor);
-const ToQuarantined = (visitor) => new VisitorWarned(visitor); // no way out of quarantine
+const ToQuarantined = (visitor) => new VisitorQuarantined(visitor); // no way out of quarantine
 
 // these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
 // first element is State. internal array are available Transitions for the State)
 const transitions = [
-  ['Mu', [[ToOccupyingRoom, ToQuarantined], 0.5, 0.5]],
+  ['Mu', [[ToOccupyingRoom, ToQuarantined], 0.0, 1]],
   ['OccupyingRoom', [[ToDisconnected, ToMu, ToQuarantined], 1.0, 0, 0.0]],
-  ['VisitorWarned', [[], 1]],
+  ['VisitorQuarantined', [[], 1]],
   ['Disconnected', [[], 1]],
 ];
 // end model properties
@@ -256,15 +278,14 @@ function run() {
   do {
     const visitor = new Visitor(VISITOR, ROOM, transitions);
     visitor.start();
-    testCount -= 1;
-  } while (testCount >= 0);
+  } while (--testCount > 0);
   console.group('Tests Complete');
   console.timeEnd('Tests ran');
 
   console.log(success('Test complete'));
 
   console.log('Test Results Log:');
-  log.show();
+  logResults.show();
   console.groupEnd();
 
   return;

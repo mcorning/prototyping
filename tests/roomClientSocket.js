@@ -1,6 +1,5 @@
 const SHOW = 0;
 
-const base64id = require('base64id');
 const io = require('socket.io-client');
 const moment = require('moment');
 const clc = require('cli-color');
@@ -12,7 +11,7 @@ const info = clc.cyan;
 const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { getNow, log, logResults } = require('./helpers');
+const { getNow, log, logResults, newId } = require('./helpers');
 const { groupBy, messages, printJson, report } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
 
@@ -111,7 +110,7 @@ const onNotifyRoom = (data, ack) => {
     return;
   }
   console.groupCollapsed('In onNotifyRoom:');
-  console.log('messageDates include');
+  console.log(info('messageDates include:'));
   console.log(printJson(messageDates));
 
   let alerts = new Map();
@@ -121,18 +120,19 @@ const onNotifyRoom = (data, ack) => {
     typeof exposureDates == 'string'
       ? new Set().add(exposureDates)
       : new Set(exposureDates);
+
   console.group('Alerts');
   console.log('Alert Dates', printJson(exposureDatesSet));
   console.log('Here are the necessary Exposure Alerts');
   exposureDatesSet.forEach((date) => {
-    messageDates[moment(date).format('YYYY-MM-DD')].forEach((v) => {
+    messageDates[moment(date.sentTime).format('YYYY-MM-DD')].forEach((v) => {
       let phrase =
         v.visitor != visitor
           ? 'BE ADVISED: you may have been exposed to the virus'
           : 'CONFIRMING: you may have exposed others to the virus';
-      let msg = `${v.visitor}, ${phrase} on date(s): ${moment(date).format(
-        'llll'
-      )}`;
+      let msg = `${v.visitor}, ${phrase} on date(s): ${moment(
+        date.sentTime
+      ).format('llll')}`;
       let alert = alerts.get(v.visitor);
       alerts.set(
         v.visitor,
@@ -154,7 +154,7 @@ const onNotifyRoom = (data, ack) => {
     const socket = OpenRoomConnection(data.room);
     socket.on('connect', () => {
       socket.emit('alertVisitor', message, (ack) => {
-        log.add(ack, 'alert');
+        logResults.add(ack, 'alert');
       });
     });
   }
@@ -168,7 +168,7 @@ const onNotifyRoom = (data, ack) => {
 // called by state machine
 // room is an object {name, id, nsp}
 function OpenRoomConnection(room) {
-  const id = room.id || base64id.generateId();
+  const id = room.id || newId;
   const nsp = room.nsp || '/';
   const query = { room: room.room, id: id, nsp: nsp };
   const clientSocket = io('http://localhost:3003', {
@@ -178,7 +178,6 @@ function OpenRoomConnection(room) {
   clientSocket.once('connect', () => {
     logResults.entitle('Room Socket.io connection made:');
     logResults.add({ table: clientSocket.query });
-    logResults.show();
   });
 
   clientSocket.once('connect_error', (message) => {

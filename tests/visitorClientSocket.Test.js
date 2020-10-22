@@ -48,7 +48,7 @@ const {
 const {
   OpenRoomConnection,
   openRoom,
-  // alertVisitor,
+  alertVisitor,
 } = require('./roomClientSocket');
 const { pickRoom, rooms } = require('./roomData');
 

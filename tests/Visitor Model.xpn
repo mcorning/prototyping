@@ -670,15 +670,15 @@
       </edge>
       <edge source="2370" target="2655" id="2681" net="1">
         <attribute name="Comment" id="2682" net="1">
-          <![CDATA[]]>
+          <![CDATA[exposureWarning]]>
           <graphics count="1">
-            <graphic xoff="128.29" yoff="70.72" x="936.29" y="470.72" id="2683" net="1" show="1" grparent="2686" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+            <graphic xoff="56.29" yoff="-8.28" x="864.29" y="391.72" id="2683" net="1" show="1" grparent="2686" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
           </graphics>
         </attribute>
         <attribute name="Multiplicity" id="2684" net="1">
           <![CDATA[1]]>
           <graphics count="1">
-            <graphic xoff="95.32" yoff="57.98" x="903.32" y="457.98" id="2685" net="1" show="1" grparent="2686" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
+            <graphic xoff="23.32" yoff="-21.02" x="831.32" y="378.98" id="2685" net="1" show="1" grparent="2686" state="1" pen="0,0,0" brush="255,255,255" thickness="1"/>
           </graphics>
         </attribute>
         <graphics count="1">
