@@ -220,7 +220,10 @@ function getWarning(visitor) {
   return groupBy(payload);
 }
 
-function pickVisitor(visitors) {
+function pickVisitor(visitor = visitors) {
+  if (typeof visitor === 'function') {
+    return visitor(visitors);
+  }
   const idx = Math.floor(Math.random() * visitors.length);
   return visitors[idx];
 }

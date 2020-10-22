@@ -110,7 +110,9 @@ const onNotifyRoom = (data, ack) => {
     );
     return;
   }
-  console.log('messageDates:', report(messageDates));
+  console.groupCollapsed('In onNotifyRoom:');
+  console.log('messageDates include');
+  console.log(printJson(messageDates));
 
   let alerts = new Map();
   // if only a single incoming date, make a Set with that
@@ -119,7 +121,7 @@ const onNotifyRoom = (data, ack) => {
     typeof exposureDates == 'string'
       ? new Set().add(exposureDates)
       : new Set(exposureDates);
-
+  console.group('Alerts');
   console.log('Alert Dates', printJson(exposureDatesSet));
   console.log('Here are the necessary Exposure Alerts');
   exposureDatesSet.forEach((date) => {
@@ -138,6 +140,7 @@ const onNotifyRoom = (data, ack) => {
       );
     });
   });
+  console.groupEnd();
 
   // iterate the Map and emit alertVisitor event
   // Server will ensure a Visitor is online before forwarding event
@@ -157,6 +160,7 @@ const onNotifyRoom = (data, ack) => {
   }
 
   if (ack) ack(`${visitor}, ${room} alerted`);
+  console.groupEnd();
 };
 // end listeners
 

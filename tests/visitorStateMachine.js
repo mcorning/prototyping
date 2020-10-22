@@ -7,7 +7,7 @@
 console.clear();
 // require('./oracle')
 const { fire, addTestMessage, log, getNow, report } = require('./helpers');
-const { pickVisitor, visitors } = require('./visitorData.js');
+const { pickVisitor, visitors, messages } = require('./visitorData.js');
 const { pickRoom, rooms } = require('./roomData.js');
 
 // const moment = require('moment');
@@ -21,6 +21,9 @@ const highlight = clc.magenta;
 const bold = clc.bold;
 
 const TESTING = 0; // use this to control some log spew
+let testCount = 0; // zero-based, so 0 is for single test
+let visitorsToTest = 1;
+let availableRooms = new Map();
 console.log(highlight(getNow(), 'Starting visitorStateMachine.js'));
 console.log(TESTING ? 'TESTING' : 'PRODUCTION');
 
@@ -48,15 +51,22 @@ const {
 const roomSocket = OpenRoomConnection(pickRoom(rooms));
 const ROOM = roomSocket.query;
 
-const visitorSocket = OpenVisitorConnection(pickVisitor(visitors));
+function thisVisitor(visitors) {
+  return visitors.reduce((a, c) => {
+    if (c.visitor == 'AirGas Inc') {
+      a = c;
+      return a;
+    }
+  }, {});
+}
+
+const visitor = pickVisitor(thisVisitor);
+
+console.log('visitor:');
+console.table(visitor);
+const visitorSocket = OpenVisitorConnection(visitor);
 const VISITOR = visitorSocket.query;
-
-// do i need this?
-//exposeAvailableRooms(roomSocket);
-
-let testCount = 1;
-let visitorsToTest = 1;
-let availableRooms = new Map();
+console.table(VISITOR);
 
 // MODEL ENTRY POINT
 // for state machine is inside socket.io connect event handler
@@ -127,7 +137,6 @@ const Mu = function(visitor) {
   roomSocket.emit('openRoom', ROOM, (ack) => {
     console.group('Inside Mu: Server Acknowledged: Open Room:');
     availableRooms.set(ack.name, ack.id);
-    console.log([...availableRooms]);
     console.log(success(ack.msg));
     console.groupEnd();
   });
@@ -161,16 +170,12 @@ const OccupyingRoom = function(visitor) {
 const VisitorWarned = function(visitor) {
   this.visitor = visitor;
   console.log(warn('Warning room(s)', ROOM.room));
+  const dates = messages.filter((v) => v.visitor.visitor == visitor);
   const warnings = [
     {
       room: ROOM.room,
       id: ROOM.id,
-      dates: [
-        '2020-09-19T00:33:04.248Z',
-        '2020-09-19T00:35:38.078Z',
-        '2020-09-14T02:53:33.738Z',
-        '2020-09-18T02:53:35.050Z',
-      ],
+      dates: dates,
     },
   ];
   const msg = {
@@ -178,6 +183,10 @@ const VisitorWarned = function(visitor) {
     visitor: VISITOR,
     warnings: warnings,
   };
+  console.log('msg:');
+  console.table(msg);
+
+  // how is this different than using exposureWarning()?
   visitorSocket.emit('exposureWarning', msg, (ack) => {
     ack.slice(0, 7) == 'WARNING'
       ? console.log(error(ack))
@@ -189,6 +198,9 @@ const VisitorWarned = function(visitor) {
     visitorSocket.emit('disconnect');
   };
 };
+
+//NOTE:
+// if we now go to Mu state instead of leftRoom state, how do we handle leaveRoom on the server?
 
 // leave/change Room(s), but stay online
 const LeaveRoom = function(visitor) {
@@ -225,9 +237,9 @@ const Disconnected = function(visitor) {
 // model properties
 
 const ToOccupyingRoom = (visitor) => new OccupyingRoom(visitor);
-const ToMu = (visitor) => new LeaveRoom(visitor);
+const ToMu = (visitor) => new Mu(visitor);
 const ToDisconnected = (visitor) => new Disconnected(visitor);
-const ToQuarantined = (visitor) => new VisitorWarned(visitor);
+const ToQuarantined = (visitor) => new VisitorWarned(visitor); // no way out of quarantine
 
 // these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
 // first element is State. internal array are available Transitions for the State)
