@@ -1,24 +1,17 @@
 # lct
 
-## Project setup
-```
-npm install
-```
+## Docker-test-build
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
 
-### Compiles and minifies for production
-```
-npm run build
-```
+## Install Docker
 
-### Lints and fixes files
-```
-npm run lint
-```
+ - Install [Docker](https://docs.docker.com/get-docker/)
+ 
+ 
+## Run docker
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+```
+docker build -t vuejs-cookbook/dockerize-vuejs-app .
+ 
+ ```
+ 
