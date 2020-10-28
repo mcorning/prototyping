@@ -22,7 +22,7 @@ const success = clc.green.bold;
 // const error = clc.red.bold;
 // const warn = clc.yellow;
 const info = clc.cyan;
-const notice = clc.bgGreen.whiteBright;
+const notice = clc.bgGreen.yellow.bold;
 const highlight = clc.magenta;
 const bold = clc.bold;
 const {
@@ -92,19 +92,24 @@ function checkVisitor(v) {
   return v;
 }
 
-async function testOpenVisitorConnection(roomSocket) {
+async function testOpenVisitorConnection(socket) {
   // make connection map from some or all cached Visitor data
   const getSocket = new Promise(function(resolve) {
-    let visitor = visitors.filter((v) => v.visitor == 'AirGas Inc');
+    // first time in, socket is a Room socket
+    // so pick any Visitor to start
+    // second time that Visitor is excluded from the list of the next Visitor
+    let nextVisitor = connectionMap.get('visitors').has('Nurse Diesel')
+      ? 'AirGas Inc'
+      : 'Nurse Diesel';
+    let visitor = visitors.filter((v) => v.visitor == nextVisitor)[0];
     let socket = OpenVisitorConnection(checkVisitor(visitor));
     socket.on('connect', () => {
-      logResults.add({ socket: socket.id, name: socket.query.visitor });
-      connectionMap.get('visitors').set(socket.query.visitor, socket);
+      const name = socket.query.visitor;
+      logResults.add({ socket: socket.id, name: name });
+      connectionMap.get('visitors').set(name, socket);
       resolve(socket);
     });
   });
-  console.table('roomSocket');
-  console.log(roomSocket);
   return await getSocket;
 }
 
@@ -225,9 +230,11 @@ function getVisitorSocketByLength() {
 async function testEnterRoom(connectionMap) {
   let visitorSocket = getVisitorSocketByLength();
 
-  let rooms = [...connectionMap].map((v) => v[1]).filter((v) => v.query.room);
+  let rooms = [...connectionMap.get('rooms')]
+    .map((v) => v[1])
+    .filter((v) => v.query.room);
   let roomName = pickRoom(rooms).query.room;
-  let roomSocket = connectionMap.get(roomName);
+  let roomSocket = connectionMap.get('rooms').get(roomName);
 
   const message = {
     visitor: visitorSocket.query,
@@ -269,8 +276,10 @@ async function report(results) {
 }
 
 async function updateUI(socket) {
-  console.log('updating UI');
-  return socket;
+  console.log(
+    'After Opening a Room and Visitor, here is the state of the Server:'
+  );
+  return socket.emit('');
 }
 
 // --------------------------------------------------------------------------//
@@ -309,6 +318,7 @@ INCLUDE &&
 
 testOpenRoomConnection()
   .then((roomSocket) => testOpenVisitorConnection(roomSocket))
+  .then((socket) => testOpenVisitorConnection(socket))
   .then((socket) => updateUI(socket))
   .then((socket) => testExposureWarning(socket))
   .then(() => console.log(notice(`             Test Complete            `)));
