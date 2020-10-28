@@ -9,8 +9,9 @@ console.clear();
 const {
   fire,
   addTestMessage,
-  log,
   getNow,
+  groupMessagesByDateAndRoom,
+  groupMessagesByRoomAndDate,
   report,
   logResults,
 } = require('./helpers');
@@ -28,7 +29,7 @@ const highlight = clc.magenta;
 const bold = clc.bold;
 
 const TESTING = 0; // use this to control some log spew
-let testCount = 1;
+let testCount = 2;
 let visitorsToTest = 1;
 let availableRooms = new Map();
 console.log(highlight(getNow(), 'Starting visitorStateMachine.js'));
@@ -82,10 +83,22 @@ console.groupEnd();
 // MODEL ENTRY POINT
 // for state machine is inside socket.io connect event handler
 visitorSocket.on('connect', () => {
-  run();
+  TESTING &&
+    visitorSocket.emit('exposureWarning', '', (msg) => {
+      console.log('visitorSocket', msg);
+    });
+  TESTING &&
+    exposureWarning(visitorSocket, '', (msg) => console.log('sm', msg));
+
+  !TESTING && run();
 });
 
-roomSocket.on('connect', () => {});
+roomSocket.on('connect', () => {
+  TESTING &&
+    roomSocket.emit('alertVisitor', '', (msg) => {
+      console.log('roomSocket', msg);
+    });
+});
 
 //
 // // visitorSocket.on('checkIn', (message) =>
@@ -109,6 +122,7 @@ roomSocket.on('connect', () => {});
 // base class
 const Visitor = function(visitor, room, transitions) {
   this.name = visitor.visitor;
+  this.id = visitor.id;
   this.enabledTransitionsFor = new Map(transitions);
   console.log('\nTests left:', testCount, 'at', getNow());
   console.log(highlight('Visitor :>> ', this.name));
@@ -191,27 +205,33 @@ const OccupyingRoom = function(visitor) {
 // postcondition: this is a terminal condition
 const VisitorQuarantined = function(visitor) {
   this.visitor = visitor;
-  console.groupCollapsed('Warning visited Room(s)');
 
+  let payload = {
+    array: messages.filter((v) => v.visitor.id == visitor.id),
+    prop: 'room',
+    val: 'sentTime',
+  };
   const msg = {
     sentTime: new Date().toISOString(),
     visitor: VISITOR,
-    warnings: [
-      ...groupBy({
-        array: messages.filter((v) => v.visitor.visitor == visitor.name),
-        prop: 'room',
-        val: 'sentTime',
-      }),
-    ],
+    warnings: groupMessagesByRoomAndDate(payload),
   };
-  console.log('\tmsg:');
-  console.table(msg);
+
+  console.groupCollapsed('Warning visited Room(s)');
+
+  console.log('Warnings:');
+  console.table(msg, ['sentTime', 'visitor']);
+  console.table(msg, ['warnings']);
 
   // event sent to Server
+  // handled by onExposureWarning()
   exposureWarning(visitorSocket, msg, (ack) => {
-    ack.slice(0, 7) == 'WARNING'
-      ? console.log(error(ack))
-      : console.log(warn(ack));
+    console.log(
+      ack.reduce((a, c) => {
+        a = `${a} ${c}`;
+        return a;
+      })
+    );
   });
 
   this.fireTransition = function() {
@@ -266,8 +286,8 @@ const ToQuarantined = (visitor) => new VisitorQuarantined(visitor); // no way ou
 // these are emit method options in the Visitor.vue (as opposed the sockets on event handler options)
 // first element is State. internal array are available Transitions for the State)
 const transitions = [
-  ['Mu', [[ToOccupyingRoom, ToQuarantined], 0.0, 1]],
-  ['OccupyingRoom', [[ToDisconnected, ToMu, ToQuarantined], 1.0, 0, 0.0]],
+  ['Mu', [[ToOccupyingRoom, ToQuarantined], 1, 0.0]],
+  ['OccupyingRoom', [[ToDisconnected, ToMu, ToQuarantined], 0.0, 0.0, 1.0]],
   ['VisitorQuarantined', [[], 1]],
   ['Disconnected', [[], 1]],
 ];

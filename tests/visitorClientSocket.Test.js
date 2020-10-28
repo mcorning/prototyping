@@ -15,6 +15,7 @@ Each test passes a connectionMap to the next test.
 */
 
 const SHOW = 0;
+const BENCHMARKING = 0;
 
 const clc = require('cli-color');
 const success = clc.green.bold;
@@ -24,7 +25,12 @@ const info = clc.cyan;
 const notice = clc.blue;
 const highlight = clc.magenta;
 const bold = clc.bold;
-const { getNow, logResults } = require('./helpers');
+const {
+  getNow,
+  groupMessagesByRoomAndDate,
+  logResults,
+  newId,
+} = require('./helpers');
 
 const {
   OpenVisitorConnection,
@@ -56,27 +62,34 @@ SHOW &&
   console.log(highlight(getNow(), 'Starting visitorClientSocket.Test.js'));
 SHOW && console.log('Creating new Map');
 let connectionMap = new Map();
+connectionMap.set('rooms', new Map());
+connectionMap.set('visitors', new Map());
 
 async function testOpenRoomConnection() {
   const getConnections = new Promise(function(resolve) {
     let room = pickRoom(rooms);
+    room.id = room.id || newId;
+    room.nsp = room.nsp || '/';
+
     // 1) Open Room
-    let roomSocket = OpenRoomConnection(room);
+
+    let roomSocket = OpenRoomConnection(room, (ack) => logResults.add(ack));
     roomSocket.on('connect', () => {
-      logResults.clear();
-      logResults.entitle('Testing testOpenRoomConnection...');
-      logResults.add({ 'Room Query': roomSocket.query });
-      logResults.show();
       // open Room with every connection to ensure pendingWarnings get sent
       openRoom(roomSocket, room);
-      connectionMap.set(roomSocket.query.room, roomSocket);
+      connectionMap.get('rooms').set(roomSocket.query.room, roomSocket);
       resolve(connectionMap);
     });
   });
   return await getConnections;
 }
 
-// async function testOpenVisitorConnection(connectionMap) {
+function checkVisitor(v) {
+  v.id = v.id || newId;
+  v.nsp = v.nsp || '/';
+  return v;
+}
+
 async function testOpenVisitorConnection() {
   logResults.entitle('Testing OpenVisitorConnection ');
   // make connection map from some or all cached Visitor data
@@ -84,10 +97,10 @@ async function testOpenVisitorConnection() {
     let vs = visitors.filter((v, i) => i == 2);
     let more = vs.length;
     vs.forEach((visitor) => {
-      let socket = OpenVisitorConnection(visitor);
+      let socket = OpenVisitorConnection(checkVisitor(visitor));
       socket.on('connect', () => {
         logResults.add({ socket: socket.id, name: socket.visitor });
-        connectionMap.set(socket.query.visitor, socket);
+        connectionMap.get('visitors').set(socket.query.visitor, socket);
         if (!--more) {
           resolve(connectionMap);
         }
@@ -108,14 +121,13 @@ async function testLeaveRoom(message) {
   });
 }
 
-// async function testExposureWarning(connectionMap) {
 async function testExposureWarning() {
   // logResults.start = 'Testing getVisitorSocket()';
 
   // visitor warns  room
-  // since we only have a Map and no separate record of names, convert the Map to an array
-  // const socket = getVisitorSocket(connectionMap);
-  const socket = getVisitorSocket();
+  BENCHMARKING && console.time('by visitor.length');
+  const socket = getVisitorSocketByLength();
+  BENCHMARKING && console.timeEnd('by visitor.length');
   // WARNING MESSAGE STRUCT:
   //{
   //   sentTime: '2020-09-19T00:56:54.570Z',
@@ -139,13 +151,45 @@ async function testExposureWarning() {
   // };
   logResults.add({
     step: 'Results from getVisitorSocket()',
-    query: socket.json.query,
+    query: socket.query,
   });
+  let payload = {
+    array: messages.filter((v) => v.visitor.id == socket.id),
+    prop: 'room',
+    val: 'sentTime',
+  };
+  let warnings = groupMessagesByRoomAndDate(payload);
+
+  // Example warnings collection
+  // [
+  //   ['sentTime', '2020-10-27T19:05:53.082Z'],
+  //   [
+  //     'visitor',
+  //     {
+  //       visitor: 'AirGas Inc',
+  //       id: 'JgvrILSxDwXRWJUpAAAC',
+  //       nsp: 'enduringNet',
+  //     },
+  //   ],
+  //   [
+  //     'warnings',
+  //     {
+  //       d6QoVa_JZxnM_0BoAAAA: {
+  //         room: 'Heathlands Medical',
+  //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
+  //       },
+  //       e1suC3Rdpj_1PuR3AAAB: {
+  //         room: 'Heathlands Cafe',
+  //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
+  //       },
+  //     },
+  //   ],
+  // ];
 
   let message = {
     sentTime: new Date().toISOString(),
     visitor: socket.query,
-    warning: [...getWarning(socket.query.id)],
+    warnings: warnings,
   };
   logResults.add({
     step: 'Value of message in testExposureWarning:',
@@ -161,24 +205,24 @@ async function testExposureWarning() {
     logResults.show();
   });
 
-  exposePendingRooms(socket);
-  // logResults.add(`Results from exposePendingRooms():
-  //   what should this be?
-  // `);
-
   return socket;
 }
 
-// function getVisitorSocket(connectionMap) {
-function getVisitorSocket() {
-  let visitors = [...connectionMap]
-    .map((v) => v[1])
-    .filter((v) => v.query.visitor);
-  let visitorName = pickVisitor(visitors).query.visitor;
-  return connectionMap.get(visitorName);
+function getVisitorSocketBySize() {
+  let visitors = connectionMap.get('visitors');
+  const idx = Math.floor(Math.random() * visitors.size);
+  let visitor = [...visitors][idx][1];
+  return visitor;
 }
+function getVisitorSocketByLength() {
+  let visitors = [...connectionMap.get('visitors').keys()];
+  const idx = Math.floor(Math.random() * visitors.length);
+  let visitor = connectionMap.get('visitors').get(visitors[idx]);
+  return visitor;
+}
+
 async function testEnterRoom(connectionMap) {
-  let visitorSocket = getVisitorSocket(connectionMap);
+  let visitorSocket = getVisitorSocketByLength();
 
   let rooms = [...connectionMap].map((v) => v[1]).filter((v) => v.query.room);
   let roomName = pickRoom(rooms).query.room;
@@ -223,15 +267,8 @@ async function report(results) {
   return results;
 }
 
-async function testPendingRooms() {
-  const socket = getVisitorSocket();
-  exposePendingRooms(socket);
-  logResults.add({
-    step: 'testPendingRooms used socket',
-    socket: socket.id,
-    name: socket.query.visitor,
-  });
-}
+// --------------------------------------------------------------------------//
+// Tests
 
 let INCLUDE = 0;
 INCLUDE &&

@@ -1,5 +1,4 @@
 const SHOW = 0;
-
 const io = require('socket.io-client');
 const moment = require('moment');
 const clc = require('cli-color');
@@ -11,8 +10,13 @@ const info = clc.cyan;
 const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { getNow, log, logResults, newId } = require('./helpers');
-const { groupBy, messages, printJson, report } = require('./helpersRoom');
+const {
+  getNow,
+  groupMessagesByDateAndVisitor,
+  logResults,
+  socketIoServerUrl,
+} = require('./helpers');
+const { messages, printJson } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
 
 // const INCLUDE = 0;
@@ -94,139 +98,172 @@ const onCheckOut = (message) => {
 //    room: room,
 //  },
 const onNotifyRoom = (data, ack) => {
-  // data can be on object or an array
-
-  const { exposureDates, room, visitor } = data.length ? data[0] : data;
-
-  let messageDates = groupBy({
+  const { exposureDates, room, visitor } = data;
+  console.groupCollapsed('In onNotifyRoom:');
+  console.table(data);
+  let messageDates = groupMessagesByDateAndVisitor({
     array: messages,
     prop: 'sentTime',
     val: 'visitor',
   });
-  if (!Object.keys(messageDates).length) {
-    alert(
-      'UNEXEPECTED STATE: \nThere should be messages from the alerting Visitor.'
-    );
-    return;
-  }
-  console.groupCollapsed('In onNotifyRoom:');
-  console.log(info('messageDates include:'));
-  console.log(printJson(messageDates));
-
-  let alerts = new Map();
-  // if only a single incoming date, make a Set with that
-  // otherwise use the object for the Set
-  let exposureDatesSet =
-    typeof exposureDates == 'string'
-      ? new Set().add(exposureDates)
-      : new Set(exposureDates);
-
-  console.group('Alerts');
-  console.log('Alert Dates', printJson(exposureDatesSet));
-  console.log('Here are the necessary Exposure Alerts');
-  exposureDatesSet.forEach((date) => {
-    messageDates[moment(date.sentTime).format('YYYY-MM-DD')].forEach((v) => {
-      let phrase =
-        v.visitor != visitor
-          ? 'BE ADVISED: you may have been exposed to the virus'
-          : 'CONFIRMING: you may have exposed others to the virus';
-      let msg = `${v.visitor}, ${phrase} on date(s): ${moment(
-        date.sentTime
-      ).format('llll')}`;
-      let alert = alerts.get(v.visitor);
-      alerts.set(
-        v.visitor,
-        alert ? alert.concat(`, ${moment(date).format('llll')}`) : msg
-      );
+  console.table(messageDates);
+  exposureDates.forEach((date) => {
+    // list all visitors on this date
+    messageDates[date].forEach((other) => {
+      if (other.visitor == visitor.visitor) {
+        console.log(
+          `${visitor.visitor}, we sent an exposure alert to another occupant in ${room} on ${date}`
+        );
+      } else {
+        console.log(`${other.visitor} was in ${room} on ${date}`);
+        let warning = {
+          visitor: other.visitor,
+          message: `${other.visitor}. To stop the spread, self-quarantine for 14 days.`,
+          sentTime: new Date().toISOString(),
+        };
+        const socket = OpenRoomConnection(other.visitor);
+        socket.on('connect', () => {
+          alertVisitor(socket, visitor, warning);
+        });
+      }
     });
   });
   console.groupEnd();
 
-  // iterate the Map and emit alertVisitor event
-  // Server will ensure a Visitor is online before forwarding event
-  // otherwise, cache Visitor until they login again
-  for (let [key, value] of alerts.entries()) {
-    let message = {
-      visitor: key,
-      message: `${value}. To stop the spread, self-quarantine for 14 days.`,
-      sentTime: new Date().toISOString(),
-    };
-    const socket = OpenRoomConnection(data.room);
-    socket.on('connect', () => {
-      socket.emit('alertVisitor', message, (ack) => {
-        logResults.add(ack, 'alert');
-      });
-    });
-  }
+  if (ack) ack(`${visitor.visitor}, ${room} alerted`);
+};
 
-  if (ack) ack(`${visitor}, ${room} alerted`);
-  console.groupEnd();
+const onNotifyRoomX = (data, ack) => {
+  // data can be on object or an array
+  // const { exposureDates, room, visitor } = data.length ? data[0] : data;
+  // let messageDates = groupMessagesByDateAndVisitor({
+  //   array: messages,
+  //   prop: 'sentTime',
+  //   val: 'visitor',
+  // });
+  // if (!Object.keys(messageDates).length) {
+  //   alert(
+  //     'UNEXEPECTED STATE: \nThere should be messages from the alerting Visitor.'
+  //   );
+  //   return;
+  // }
+  // console.groupCollapsed('In onNotifyRoom:');
+  // console.table(data);
+  // console.log(info('messageDates include:'));
+  // console.log(printJson(messageDates));
+  // let alerts = new Map();
+  // // if only a single incoming date, make a Set with that
+  // // otherwise use the object for the Set
+  // let exposureDatesSet =
+  //   typeof exposureDates == 'string'
+  //     ? new Set().add(exposureDates)
+  //     : new Set(exposureDates);
+  // console.group('Alerts');
+  // console.log('Alert Dates', printJson(exposureDatesSet));
+  // console.log('Here are the necessary Exposure Alerts');
+  // exposureDatesSet.forEach((date) => {
+  //   messageDates[moment(date.sentTime).format('YYYY-MM-DD')].forEach((v) => {
+  //     let phrase =
+  //       v.visitor != visitor
+  //         ? 'BE ADVISED: you may have been exposed to the virus'
+  //         : 'CONFIRMING: you may have exposed others to the virus';
+  //     let msg = `${v.visitor}, ${phrase} on date(s): ${moment(
+  //       date.sentTime
+  //     ).format('llll')}`;
+  //     let alert = alerts.get(v.visitor);
+  //     alerts.set(
+  //       v.visitor,
+  //       alert ? alert.concat(`, ${moment(date).format('llll')}`) : msg
+  //     );
+  //   });
+  // });
+  // console.groupEnd();
+  // // iterate the Map and emit alertVisitor event
+  // // Server will ensure a Visitor is online before forwarding event
+  // // otherwise, cache Visitor until they login again
+  // for (let [key, value] of alerts.entries()) {
+  //   let message = {
+  //     visitor: key,
+  //     message: `${value}. To stop the spread, self-quarantine for 14 days.`,
+  //     sentTime: new Date().toISOString(),
+  //   };
+  //   const socket = OpenRoomConnection(data.room);
+  //   socket.on('connect', () => {
+  //     socket.emit('alertVisitor', message, (ack) => {
+  //       logResults.add(ack, 'alert');
+  //     });
+  //   });
+  // }
+  // if (ack) ack(`${visitor}, ${room} alerted`);
+  // console.groupEnd();
 };
 // end listeners
 
-// these are the sockets options in the Room.vue
-// called by state machine
+// these match the sockets options in the Room.vue
+// but they are called by state machine on behalf of the Room.vue
 // room is an object {name, id, nsp}
-function OpenRoomConnection(room) {
-  const id = room.id || newId;
-  const nsp = room.nsp || '/';
-  const query = { room: room.room, id: id, nsp: nsp };
-  const clientSocket = io('http://localhost:3003', {
-    query: query,
-  });
+function OpenRoomConnection(query) {
+  try {
+    const clientSocket = io(socketIoServerUrl, {
+      query: query,
+    });
 
-  clientSocket.once('connect', () => {
-    logResults.entitle('Room Socket.io connection made:');
-    logResults.add({ table: clientSocket.query });
-  });
+    clientSocket.once('connect', () => {
+      logResults.entitle('Room Socket.io connection made:');
+      logResults.add({ table: clientSocket.query });
+      logResults.show();
+    });
 
-  clientSocket.once('connect_error', (message) => {
-    switch (message.type) {
-      case 'TransportError':
-        if (SHOW) {
-          console.log(
-            warn(
-              `${clientSocket.query.room ||
-                clientSocket.query.visitor} attempted to connect...`
-            )
-          );
-          console.log(
-            error(
-              '...but LCT Socket.io Server may have gone down at or before',
-              getNow()
-            )
-          );
-        }
-        break;
+    clientSocket.once('connect_error', (message) => {
+      switch (message.type) {
+        case 'TransportError':
+          if (SHOW) {
+            console.log(
+              warn(
+                `${clientSocket.query.room ||
+                  clientSocket.query.visitor} attempted to connect...`
+              )
+            );
+            console.log(
+              error(
+                '...but LCT Socket.io Server may have gone down at or before',
+                getNow()
+              )
+            );
+          }
+          break;
 
-      default:
-        if (SHOW) {
-          console.log(error('Unhandled connection error:'));
-          console.log(error(message.message));
-        }
-    }
-  });
+        default:
+          if (SHOW) {
+            console.log(error('Unhandled connection error:'));
+            console.log(error(message.message));
+          }
+      }
+    });
 
-  // specialized event handlers
-  clientSocket.on('checkIn', onCheckIn);
+    // specialized event handlers
+    clientSocket.on('checkIn', onCheckIn);
 
-  clientSocket.on('checkOut', onCheckOut);
+    clientSocket.on('checkOut', onCheckOut);
 
-  // once event handler minimizes the number of times this socket handles an event
-  clientSocket.once('availableRoomsExposed', onAvailableRoomsExposed);
+    // once event handler minimizes the number of times this socket handles an event
+    clientSocket.once('availableRoomsExposed', onAvailableRoomsExposed);
 
-  // sent from server with visitor name, room visited, and visit dates
-  clientSocket.on('notifyRoom', onNotifyRoom);
+    // sent from server with visitor name, room visited, and visit dates
+    clientSocket.on('notifyRoom', onNotifyRoom);
 
-  // namespace broadcast event handlers
-  // e.g., on server:     io.of(namespace).emit('updatedOccupancy')
-  // clientSocket.on('updatedOccupancy', (message) => {
-  //   console.log(
-  //     success(`${message.room} occupancy is now ${message.occupancy}`)
-  //   );
-  // });
+    // namespace broadcast event handlers
+    // e.g., on server:     io.of(namespace).emit('updatedOccupancy')
+    // clientSocket.on('updatedOccupancy', (message) => {
+    //   console.log(
+    //     success(`${message.room} occupancy is now ${message.occupancy}`)
+    //   );
+    // });
 
-  return clientSocket;
+    return clientSocket;
+  } catch (error) {
+    console.error('OpenRoomConnection hit this:', error);
+  }
 }
 // end specialized event handlers
 

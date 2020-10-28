@@ -23,7 +23,7 @@ const info = clc.cyan;
 const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { getNow, newId } = require('./helpers');
+const { getNow, socketIoServerUrl } = require('./helpers');
 
 const TESTING = 0;
 console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
@@ -74,9 +74,9 @@ const exposeAllRooms = (clientSocket) => {
 
 // tested 10.12.20
 const exposureWarning = (clientSocket, message, cb) => {
-  console.table(message);
+  TESTING && console.table(message);
   clientSocket.emit('exposureWarning', message, (ack) => {
-    console.warn('Event acknowledgment:', ack);
+    console.log('Event (exposureWarning) acknowledgment:', ack);
     if (cb) {
       cb(ack);
     }
@@ -136,15 +136,11 @@ const onPendingRoomsExposed = (list = ['No Rooms are online right now.']) => {
 // end listeners
 
 // function OpenVisitorConnection(token, clientSocketId = '', nsp='/') {
-function OpenVisitorConnection(visitor) {
+function OpenVisitorConnection(query) {
   try {
-    const id = visitor.id || newId;
-    const nsp = visitor.nsp || '/';
-    const query = { visitor: visitor.visitor, id: id, nsp: nsp };
-    SHOW && console.table(query);
     const connectionMap = new Map();
 
-    const clientSocket = io('http://localhost:3003', {
+    const clientSocket = io(socketIoServerUrl, {
       query: query,
     });
 

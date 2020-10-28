@@ -278,8 +278,10 @@ function getWarning(visitor) {
 
 function pickVisitor(visitor = visitors) {
   if (typeof visitor === 'function') {
+    // execute the passed in visitor function
     return visitor(visitors);
   }
+  // else pick the visitor from its position in the visitors array
   const idx = Math.floor(Math.random() * visitors.length);
   return visitors[idx];
 }

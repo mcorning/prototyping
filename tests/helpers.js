@@ -7,6 +7,8 @@
 // const highlight = clc.magenta;
 // const bold = clc.bold;
 
+const socketIoServerUrl = 'http://localhost:3003';
+
 const moment = require('moment');
 const base64id = require('base64id');
 
@@ -83,7 +85,7 @@ function reducedWeightedRandom(spec, r) {
   return x;
 }
 
-function groupBy(payload) {
+function groupMessagesByDateAndVisitor(payload) {
   const { array, prop, val } = payload;
 
   return array
@@ -94,6 +96,44 @@ function groupBy(payload) {
         a[key] = [];
       }
       a[key].push(c[val]);
+      return a;
+    }, {});
+}
+
+function groupMessagesByDateAndRoom(payload) {
+  const { array, prop, val } = payload;
+  return array
+    .filter((v) => v[val]) // ignore Room Opened/Closed messages
+    .reduce(function(a, c) {
+      let key = moment(c[prop]).format('YYYY-MM-DD');
+      if (!a[key]) {
+        a[key] = [];
+      }
+      a[key].push(c[val]);
+      return a;
+    }, {});
+}
+
+function groupMessagesByRoomAndDate(payload) {
+  const { array, prop, val } = payload;
+  let visitDates = [];
+  return array
+    .filter((v) => v[val]) // ignore Room Opened/Closed messages
+    .reduce(function(a, c) {
+      // .push(date);
+      let key = c[prop].id;
+      if (!a[key]) {
+        a[key] = {
+          room: '',
+          dates: [],
+        };
+      }
+      // ;
+      visitDates.push(moment(c[val]).format('YYYY-MM-DD'));
+      a[key] = {
+        room: c.room.room,
+        dates: visitDates,
+      };
       return a;
     }, {});
 }
@@ -164,11 +204,14 @@ function report(title, a1, a2, b1, b2) {
 module.exports = {
   addTestMessage,
   getNow,
-  groupBy,
+  groupMessagesByDateAndRoom,
+  groupMessagesByDateAndVisitor,
+  groupMessagesByRoomAndDate,
   fire,
   log,
   logResults,
   newId,
   printJson,
   report,
+  socketIoServerUrl,
 };
