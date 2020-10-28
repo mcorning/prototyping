@@ -92,7 +92,7 @@ function checkVisitor(v) {
   return v;
 }
 
-async function testOpenVisitorConnection(socket) {
+async function testOpenVisitorConnection() {
   // make connection map from some or all cached Visitor data
   const getSocket = new Promise(function(resolve) {
     // first time in, socket is a Room socket
@@ -108,6 +108,9 @@ async function testOpenVisitorConnection(socket) {
       logResults.add({ socket: socket.id, name: name });
       connectionMap.get('visitors').set(name, socket);
       resolve(socket);
+    });
+    socket.on('visitorsRoomsExposed', (rooms) => {
+      console.table(rooms);
     });
   });
   return await getSocket;
@@ -276,10 +279,37 @@ async function report(results) {
 }
 
 async function updateUI(socket) {
+  console.groupCollapsed('State of the Server');
   console.log(
     'After Opening a Room and Visitor, here is the state of the Server:'
   );
-  return socket.emit('');
+  socket.emit('exposeAllRooms', null, (rooms) => {
+    console.log('All Rooms');
+    console.table(rooms);
+  });
+  socket.emit('exposeAllSockets', null, (rooms) => {
+    console.log('All Sockets');
+    console.table(rooms);
+  });
+  socket.emit('exposeOccupiedRooms', null, (rooms) => {
+    console.log('OccupiedRooms');
+    console.table(rooms);
+  });
+  socket.emit('exposePendingWarnings', null, (rooms) => {
+    console.log('Pending Warnings');
+    console.table(rooms);
+  });
+  socket.emit('exposeAvailableRooms', null, (rooms) => {
+    console.log('Available Rooms');
+    console.table(rooms);
+  });
+  socket.emit('exposeVisitorsRooms', null, (rooms) => {
+    console.log('Visitors Rooms');
+    console.table(rooms);
+  });
+  console.groupEnd();
+
+  return;
 }
 
 // --------------------------------------------------------------------------//
