@@ -23,7 +23,7 @@ const info = clc.cyan;
 const highlight = clc.magenta;
 // const bold = clc.bold;
 
-const { getNow, socketIoServerUrl } = require('./helpers');
+const { getNow, printJson, socketIoServerUrl } = require('./helpers');
 
 const TESTING = 0;
 console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
@@ -76,7 +76,14 @@ const exposeAllRooms = (clientSocket) => {
 const exposureWarning = (clientSocket, message, cb) => {
   TESTING && console.table(message);
   clientSocket.emit('exposureWarning', message, (ack) => {
-    console.log('Event (exposureWarning) acknowledgment:', ack);
+    console.groupCollapsed(
+      `[${getNow()}] Client:  emitting exposureWarning, Server Acknowledged:`
+    );
+    console.log(ack.result ? success(printJson(ack)) : error(printJson(ack)));
+    console.groupEnd();
+
+    // if some other code wants to see this result, pass it in the callback
+    // we should explore using Promises, instead...
     if (cb) {
       cb(ack);
     }
@@ -135,7 +142,9 @@ const onPendingRoomsExposed = (list = ['No Rooms are online right now.']) => {
 
 // end listeners
 
-// function OpenVisitorConnection(token, clientSocketId = '', nsp='/') {
+////////////////////////////////////////////////////////////////////////////////////////////
+// Client Socket Event handlers
+
 function OpenVisitorConnection(query) {
   try {
     const connectionMap = new Map();
@@ -147,13 +156,15 @@ function OpenVisitorConnection(query) {
     // these are the sockets options in the Visitor.vue
     clientSocket.on('connect', () => {
       connectionMap.set(clientSocket.query.visitor, clientSocket);
+      console.groupCollapsed(`[${getNow()}] OpenVisitorConnection results:`);
       console.log(
         success(
-          `On ${getNow()}, ${clientSocket.query.visitor} uses socket ${
+          `On ${getNow()}, ${clientSocket.query.visitor} is on socket ${
             clientSocket.id
           }`
         )
       );
+      console.groupEnd();
     });
 
     clientSocket.once('connect_error', (message) => {

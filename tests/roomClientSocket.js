@@ -24,7 +24,7 @@ let TESTING = 1;
 console.log(highlight(getNow(), 'Starting roomClientSocket.js'));
 console.log(TESTING ? 'Testing' : 'Production');
 
-// methods called by state machine
+// methods called by state machine or test code
 const alertVisitor = (clientSocket, visitor, warning) => {
   const message = {
     visitor: visitor,
@@ -61,8 +61,11 @@ const exposeOccupiedRooms = (clientSocket) => {
 // message is a room query
 const openRoom = (clientSocket, message) => {
   clientSocket.emit('openRoom', message, (ack) => {
-    console.groupCollapsed('Inside EnterRoom: Server Acknowledged: Open Room:');
-    console.log(success(printJson(ack)));
+    console.groupCollapsed(
+      `[${getNow()}] Client: emitting openRoom, Server Acknowledged:`
+    );
+
+    console.log(ack.result ? success(printJson(ack)) : error(printJson(ack)));
     console.groupEnd();
   });
 };
@@ -71,7 +74,7 @@ const openRoom = (clientSocket, message) => {
 // listeners
 // using named listeners makes it easier to remove listeners from socket event handlers
 const onAvailableRoomsExposed = (message) => {
-  console.groupCollapsed('onAvailableRoomsExposed results:');
+  console.groupCollapsed(`${getNow()} onAvailableRoomsExposed results:`);
   console.table(message);
   console.groupEnd();
 };
@@ -88,17 +91,9 @@ const onCheckOut = (message) => {
   console.groupEnd();
 };
 
-// onNotifyRoom:
-// called by exposureWarning event handler on server
-// server calls each affected Room to spread alert to other Visitors
-// data param object:
-//  data: {
-//    visitor: visitor,
-//    exposureDates: exposureDates, // based on warning param input to exposureWarning
-//    room: room,
-//  },
+// can't find a way to use this listener...yet
 const onNotifyRoom = (data, ack) => {
-  const { exposureDates, room, visitor } = data;
+  const { exposureDates, room, visitor, roomMap } = data;
   console.groupCollapsed('In onNotifyRoom:');
   console.table(data);
   let messageDates = groupMessagesByDateAndVisitor({
@@ -121,9 +116,10 @@ const onNotifyRoom = (data, ack) => {
           message: `${other.visitor}. To stop the spread, self-quarantine for 14 days.`,
           sentTime: new Date().toISOString(),
         };
-        const socket = OpenRoomConnection(other.visitor);
-        socket.on('connect', () => {
-          alertVisitor(socket, visitor, warning);
+        const socket = roomMap.get(room);
+        console.log(socket.connected);
+        socket.emit('alertVisitor', warning, (result) => {
+          console.log(result);
         });
       }
     });
@@ -199,19 +195,26 @@ const onNotifyRoomX = (data, ack) => {
 };
 // end listeners
 
+////////////////////////////////////////////////////////////////////////////////////////////
+// Client Socket Event handlers
+
 // these match the sockets options in the Room.vue
 // but they are called by state machine on behalf of the Room.vue
 // room is an object {name, id, nsp}
 function OpenRoomConnection(query) {
   try {
+    let roomMap = new Map();
     const clientSocket = io(socketIoServerUrl, {
       query: query,
     });
 
+    // NOTE: this on connect handler does things that the caller's
+    // on connect handler for roomSocket (which has the same socket id) does not
     clientSocket.once('connect', () => {
-      logResults.entitle('Room Socket.io connection made:');
-      logResults.add({ table: clientSocket.query });
-      logResults.show();
+      roomMap.set(clientSocket.query.id, clientSocket);
+      console.groupCollapsed(`[${getNow()}] OpenRoomConnection results:`);
+      console.log(success(printJson({ table: clientSocket.query })));
+      console.groupEnd();
     });
 
     clientSocket.once('connect_error', (message) => {
@@ -249,8 +252,60 @@ function OpenRoomConnection(query) {
     // once event handler minimizes the number of times this socket handles an event
     clientSocket.once('availableRoomsExposed', onAvailableRoomsExposed);
 
-    // sent from server with visitor name, room visited, and visit dates
-    clientSocket.on('notifyRoom', onNotifyRoom);
+    // onNotifyRoom:
+    // called by exposureWarning event handler on server
+    // server calls each affected Room to spread alert to other Visitors
+    // data param object:
+    //  data: {
+    //    visitor: visitor,
+    //    exposureDates: exposureDates, // based on warning param input to exposureWarning
+    //    room: room,
+    //  },
+    clientSocket.on('notifyRoom', (data, ack) => {
+      const { exposureDates, room, visitor } = data;
+      console.groupCollapsed(
+        `[${getNow()}] Room Client: onNotifyRoom, Server Acknowledged:`
+      );
+      console.log('Input data:');
+      console.table(data);
+      let messageDates = groupMessagesByDateAndVisitor({
+        array: messages,
+        prop: 'sentTime',
+        val: 'visitor',
+      });
+      console.log(`Room's grouped messages:`);
+      console.table(messageDates);
+      exposureDates.forEach((date) => {
+        // list all visitors on this date
+        messageDates[date].forEach((other) => {
+          if (other.visitor == visitor.visitor) {
+            console.log(
+              `${visitor.visitor}, we sent an exposure alert to another occupant in ${room} on ${date}`
+            );
+          } else {
+            console.log(
+              `Alerting ${other.visitor} that they were in ${room} on ${date}`
+            );
+            let warning = {
+              visitor: other.visitor,
+              id: other.id,
+              message: `${other.visitor}. To stop the spread, self-quarantine for 14 days.`,
+              sentTime: new Date().toISOString(),
+            };
+            // roomMap is declared at the top of this function
+            // making it unavailable outside this function (e.g., to listeners)
+            const socket = roomMap.get(room);
+            console.log(`Socket ${socket.id} connected? ${socket.connected}`);
+            socket.emit('alertVisitor', warning, (result) => {
+              console.log(result);
+            });
+          }
+        });
+      });
+      console.groupEnd();
+
+      if (ack) ack(`${visitor.visitor}, ${room} alerted`);
+    });
 
     // namespace broadcast event handlers
     // e.g., on server:     io.of(namespace).emit('updatedOccupancy')

@@ -73,6 +73,8 @@ async function testOpenRoomConnection() {
 
     // 1) Open Room
 
+    // NOTE: this on connect handler does things that the callee's
+    // on connect handler for clientSocket (which has the same socket id) does not
     let roomSocket = OpenRoomConnection(room, (ack) => logResults.add(ack));
     roomSocket.on('connect', () => {
       // open Room with every connection to ensure pendingWarnings get sent
@@ -91,7 +93,6 @@ function checkVisitor(v) {
 }
 
 async function testOpenVisitorConnection() {
-  logResults.entitle('Testing OpenVisitorConnection ');
   // make connection map from some or all cached Visitor data
   const getConnections = new Promise(function(resolve) {
     let vs = visitors.filter((v, i) => i == 2);
@@ -99,7 +100,7 @@ async function testOpenVisitorConnection() {
     vs.forEach((visitor) => {
       let socket = OpenVisitorConnection(checkVisitor(visitor));
       socket.on('connect', () => {
-        logResults.add({ socket: socket.id, name: socket.visitor });
+        logResults.add({ socket: socket.id, name: socket.query.visitor });
         connectionMap.get('visitors').set(socket.query.visitor, socket);
         if (!--more) {
           resolve(connectionMap);
@@ -123,6 +124,8 @@ async function testLeaveRoom(message) {
 
 async function testExposureWarning() {
   // logResults.start = 'Testing getVisitorSocket()';
+  logResults.clear();
+  logResults.entitle(`[${getNow()}] testExposureWarning results:`);
 
   // visitor warns  room
   BENCHMARKING && console.time('by visitor.length');
@@ -205,15 +208,17 @@ async function testExposureWarning() {
     logResults.show();
   });
 
+  // this returns before all events finish. is that ok?
   return socket;
 }
 
-function getVisitorSocketBySize() {
-  let visitors = connectionMap.get('visitors');
-  const idx = Math.floor(Math.random() * visitors.size);
-  let visitor = [...visitors][idx][1];
-  return visitor;
-}
+// NOTE: this option is twice as slow
+// function getVisitorSocketBySize() {
+//   let visitors = connectionMap.get('visitors');
+//   const idx = Math.floor(Math.random() * visitors.size);
+//   let visitor = [...visitors][idx][1];
+//   return visitor;
+// }
 function getVisitorSocketByLength() {
   let visitors = [...connectionMap.get('visitors').keys()];
   const idx = Math.floor(Math.random() * visitors.length);
