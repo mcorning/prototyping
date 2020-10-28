@@ -25,7 +25,7 @@ const highlight = clc.magenta;
 
 const { getNow, printJson, socketIoServerUrl } = require('./helpers');
 
-const TESTING = 0;
+const TESTING = 1;
 console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
 console.log(TESTING ? 'Testing' : 'Production');
 // Note completed tests for each Visitor event

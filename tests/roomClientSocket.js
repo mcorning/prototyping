@@ -28,7 +28,7 @@ console.log(TESTING ? 'Testing' : 'Production');
 const alertVisitor = (clientSocket, visitor, warning) => {
   const message = {
     visitor: visitor,
-    message: `${warning}. To stop the spread, self-quarantine for 14 days.`,
+    message: `${warning}, to stop the spread, self-quarantine for 14 days.`,
     sentTime: new Date().toISOString(),
   };
   clientSocket.emit('alertVisitor', message, (rooms) => {
@@ -289,7 +289,7 @@ function OpenRoomConnection(query) {
             let warning = {
               visitor: other.visitor,
               id: other.id,
-              message: `${other.visitor}. To stop the spread, self-quarantine for 14 days.`,
+              message: `${other.visitor}, to stop the spread, self-quarantine for 14 days.`,
               sentTime: new Date().toISOString(),
             };
             // roomMap is declared at the top of this function

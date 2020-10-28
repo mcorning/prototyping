@@ -14,7 +14,7 @@ Nothing happens in the namespace until at least one Room is online.
 Each test passes a connectionMap to the next test.
 */
 
-const SHOW = 0;
+const SHOW = 1;
 const BENCHMARKING = 0;
 
 const clc = require('cli-color');
@@ -22,7 +22,7 @@ const success = clc.green.bold;
 // const error = clc.red.bold;
 // const warn = clc.yellow;
 const info = clc.cyan;
-const notice = clc.blue;
+const notice = clc.bgGreen.whiteBright;
 const highlight = clc.magenta;
 const bold = clc.bold;
 const {
@@ -80,7 +80,7 @@ async function testOpenRoomConnection() {
       // open Room with every connection to ensure pendingWarnings get sent
       openRoom(roomSocket, room);
       connectionMap.get('rooms').set(roomSocket.query.room, roomSocket);
-      resolve(connectionMap);
+      resolve(roomSocket);
     });
   });
   return await getConnections;
@@ -92,24 +92,20 @@ function checkVisitor(v) {
   return v;
 }
 
-async function testOpenVisitorConnection() {
+async function testOpenVisitorConnection(roomSocket) {
   // make connection map from some or all cached Visitor data
-  const getConnections = new Promise(function(resolve) {
-    let vs = visitors.filter((v, i) => i == 2);
-    let more = vs.length;
-    vs.forEach((visitor) => {
-      let socket = OpenVisitorConnection(checkVisitor(visitor));
-      socket.on('connect', () => {
-        logResults.add({ socket: socket.id, name: socket.query.visitor });
-        connectionMap.get('visitors').set(socket.query.visitor, socket);
-        if (!--more) {
-          resolve(connectionMap);
-        }
-      });
+  const getSocket = new Promise(function(resolve) {
+    let visitor = visitors.filter((v) => v.visitor == 'AirGas Inc');
+    let socket = OpenVisitorConnection(checkVisitor(visitor));
+    socket.on('connect', () => {
+      logResults.add({ socket: socket.id, name: socket.query.visitor });
+      connectionMap.get('visitors').set(socket.query.visitor, socket);
+      resolve(socket);
     });
   });
-
-  return await getConnections;
+  console.table('roomSocket');
+  console.log(roomSocket);
+  return await getSocket;
 }
 
 async function testLeaveRoom(message) {
@@ -272,6 +268,11 @@ async function report(results) {
   return results;
 }
 
+async function updateUI(socket) {
+  console.log('updating UI');
+  return socket;
+}
+
 // --------------------------------------------------------------------------//
 // Tests
 
@@ -283,10 +284,6 @@ INCLUDE &&
     .then((results) => report(results))
     .then((results) => testLeaveRoom(results))
     .then(() => console.log(notice('success')));
-
-testOpenRoomConnection()
-  .then((connectionMap) => testOpenVisitorConnection(connectionMap))
-  .then((connectionMap) => testExposureWarning(connectionMap));
 
 // for this test, to ensure that warning is PENDING,
 // don't open Room connection before opening a Visitor connection.
@@ -303,3 +300,15 @@ INCLUDE &&
     });
 // this test now checks that pending rooms see warnings
 // testOpenRoomConnection();
+
+//  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
+//                BE SURE SERVER IS RUNNING BEFORE YOU TRY TO TEST!
+
+//  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
+testOpenRoomConnection()
+  .then((roomSocket) => testOpenVisitorConnection(roomSocket))
+  .then((socket) => updateUI(socket))
+  .then((socket) => testExposureWarning(socket))
+  .then(() => console.log(notice(`             Test Complete            `)));
