@@ -109,9 +109,6 @@ async function testOpenVisitorConnection() {
       connectionMap.get('visitors').set(name, socket);
       resolve(socket);
     });
-    socket.on('visitorsRoomsExposed', (rooms) => {
-      console.table(rooms);
-    });
   });
   return await getSocket;
 }
@@ -126,37 +123,39 @@ async function testLeaveRoom(message) {
   });
 }
 
-async function testExposureWarning() {
+async function testExposureWarning(socket) {
   // logResults.start = 'Testing getVisitorSocket()';
-  logResults.clear();
-  logResults.entitle(`[${getNow()}] testExposureWarning results:`);
+  console.groupCollapsed(`[${getNow()}] testExposureWarning results:`);
 
-  // visitor warns  room
-  BENCHMARKING && console.time('by visitor.length');
-  const socket = getVisitorSocketByLength();
-  BENCHMARKING && console.timeEnd('by visitor.length');
-  // WARNING MESSAGE STRUCT:
-  //{
-  //   sentTime: '2020-09-19T00:56:54.570Z',
-  //   visitor: {
-  //     visior: 'Nurse Jackie',
-  //     id: 'FWzLl5dS9sr9FxDsAAAB',
-  //     nsp: 'enduringNet',
-  //   },
-  //   warning: {              // ONE ROOM PER WARNING
-  //     room: {
-  //       room: 'Heathlands Medical',
-  //       id: 'd6QoVa_JZxnM_0BoAAAA',
-  //       nsp: 'enduringNet',
-  //     },
-  //     dates: [
-  //       '2020-09-19T00:33:04.248Z',  // WARNING CAN
-  //       '2020-09-14T02:53:33.738Z',  // HAVE MULTIPLE
-  //       '2020-09-18T07:15:00.00Z',   // VISIT DATES
-  //     ],
-  //   },
-  // };
-  logResults.add({
+  const sample = {
+    // visitor warns  room
+    // BENCHMARKING && console.time('by visitor.length');
+    // const socket = getVisitorSocketByLength();
+    // BENCHMARKING && console.timeEnd('by visitor.length');
+    // WARNING MESSAGE STRUCT:
+    //{
+    //   sentTime: '2020-09-19T00:56:54.570Z',
+    //   visitor: {
+    //     visior: 'Nurse Jackie',
+    //     id: 'FWzLl5dS9sr9FxDsAAAB',
+    //     nsp: 'enduringNet',
+    //   },
+    //   warning: {              // ONE ROOM PER WARNING
+    //     room: {
+    //       room: 'Heathlands Medical',
+    //       id: 'd6QoVa_JZxnM_0BoAAAA',
+    //       nsp: 'enduringNet',
+    //     },
+    //     dates: [
+    //       '2020-09-19T00:33:04.248Z',  // WARNING CAN
+    //       '2020-09-14T02:53:33.738Z',  // HAVE MULTIPLE
+    //       '2020-09-18T07:15:00.00Z',   // VISIT DATES
+    //     ],
+    //   },
+    // };
+  };
+
+  console.log({
     step: 'Results from getVisitorSocket()',
     query: socket.query,
   });
@@ -167,51 +166,52 @@ async function testExposureWarning() {
   };
   let warnings = groupMessagesByRoomAndDate(payload);
 
-  // Example warnings collection
-  // [
-  //   ['sentTime', '2020-10-27T19:05:53.082Z'],
-  //   [
-  //     'visitor',
-  //     {
-  //       visitor: 'AirGas Inc',
-  //       id: 'JgvrILSxDwXRWJUpAAAC',
-  //       nsp: 'enduringNet',
-  //     },
-  //   ],
-  //   [
-  //     'warnings',
-  //     {
-  //       d6QoVa_JZxnM_0BoAAAA: {
-  //         room: 'Heathlands Medical',
-  //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
-  //       },
-  //       e1suC3Rdpj_1PuR3AAAB: {
-  //         room: 'Heathlands Cafe',
-  //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
-  //       },
-  //     },
-  //   ],
-  // ];
+  const sample2 = {
+    // Example warnings collection
+    // [
+    //   ['sentTime', '2020-10-27T19:05:53.082Z'],
+    //   [
+    //     'visitor',
+    //     {
+    //       visitor: 'AirGas Inc',
+    //       id: 'JgvrILSxDwXRWJUpAAAC',
+    //       nsp: 'enduringNet',
+    //     },
+    //   ],
+    //   [
+    //     'warnings',
+    //     {
+    //       d6QoVa_JZxnM_0BoAAAA: {
+    //         room: 'Heathlands Medical',
+    //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
+    //       },
+    //       e1suC3Rdpj_1PuR3AAAB: {
+    //         room: 'Heathlands Cafe',
+    //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
+    //       },
+    //     },
+    //   ],
+    // ];
+  };
 
   let message = {
     sentTime: new Date().toISOString(),
     visitor: socket.query,
     warnings: warnings,
   };
-  logResults.add({
+  console.log({
     step: 'Value of message in testExposureWarning:',
     messages: Object.entries(message),
   });
 
   exposureWarning(socket, message, (ack) => {
-    logResults.entitle('Event acknowledgment callback:');
-    logResults.add({
+    // logResults.entitle('Event acknowledgment callback:');
+    console.log({
       event: 'exposureWarning()',
       ack: ack,
     });
-    logResults.show();
   });
-
+  console.groupEnd();
   // this returns before all events finish. is that ok?
   return socket;
 }
@@ -230,8 +230,8 @@ function getVisitorSocketByLength() {
   return visitor;
 }
 
-async function testEnterRoom(connectionMap) {
-  let visitorSocket = getVisitorSocketByLength();
+async function testEnterRoom(visitorSocket) {
+  // let visitorSocket = getVisitorSocketByLength();
 
   let rooms = [...connectionMap.get('rooms')]
     .map((v) => v[1])
@@ -277,39 +277,35 @@ async function report(results) {
   // pass on the input to the next stage of processing the scenario...
   return results;
 }
-
-async function updateUI(socket) {
-  console.groupCollapsed('State of the Server');
-  console.log(
-    'After Opening a Room and Visitor, here is the state of the Server:'
-  );
+async function getStateOfTheServer(sockets) {
+  const socket = sockets.visitor;
+  console.log(socket.query.visitor, socket.id);
   socket.emit('exposeAllRooms', null, (rooms) => {
-    console.log('All Rooms');
-    console.table(rooms);
+    logResults.add(rooms);
+    logResults.show('All Rooms');
   });
   socket.emit('exposeAllSockets', null, (rooms) => {
-    console.log('All Sockets');
-    console.table(rooms);
+    logResults.add(rooms);
+    logResults.show('All Sockets');
   });
   socket.emit('exposeOccupiedRooms', null, (rooms) => {
-    console.log('OccupiedRooms');
-    console.table(rooms);
+    logResults.add(rooms);
+    logResults.show('Occupied Rooms');
   });
   socket.emit('exposePendingWarnings', null, (rooms) => {
-    console.log('Pending Warnings');
-    console.table(rooms);
+    logResults.add(rooms);
+    logResults.show('Pending Warnings');
   });
   socket.emit('exposeAvailableRooms', null, (rooms) => {
-    console.log('Available Rooms');
-    console.table(rooms);
+    logResults.add(rooms);
+    logResults.show('Available Rooms');
   });
   socket.emit('exposeVisitorsRooms', null, (rooms) => {
-    console.log('Visitors Rooms');
-    console.table(rooms);
+    logResults.add(rooms);
+    logResults.show('Visitors Rooms');
   });
-  console.groupEnd();
 
-  return;
+  return socket;
 }
 
 // --------------------------------------------------------------------------//
@@ -347,8 +343,12 @@ INCLUDE &&
 //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 testOpenRoomConnection()
-  .then((roomSocket) => testOpenVisitorConnection(roomSocket))
-  .then((socket) => testOpenVisitorConnection(socket))
-  .then((socket) => updateUI(socket))
-  .then((socket) => testExposureWarning(socket))
+  .then((roomSocket) => testOpenVisitorConnection(roomSocket)) // get first Visitor
+  .then((socket) => testOpenVisitorConnection(socket)) // get next Visitor
+  .then((socket) => testExposureWarning(socket)) // Visitor warns Rooms
+  .then((socket) => testEnterRoom(socket)) // Visitor enters a room to test pending
+  .then((sockets) => getStateOfTheServer(sockets)) // display effect on State of the Server
   .then(() => console.log(notice(`             Test Complete            `)));
+  .then(() => console.log(notice(`        Event Results to Follow       `)));
+
+

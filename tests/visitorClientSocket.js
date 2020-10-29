@@ -51,7 +51,7 @@ const leaveRoom = (clientSocket, message) => {
 const enterRoom = (clientSocket, message) => {
   clientSocket.emit('enterRoom', message, (ack) => {
     console.group('Server Acknowledged: Enter Room:');
-    console.log(success(ack));
+    console.log(ack);
     console.groupEnd();
   });
 };

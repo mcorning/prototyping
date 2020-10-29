@@ -141,14 +141,9 @@ function groupMessagesByRoomAndDate(payload) {
 // log helper
 const logResults = (function() {
   let logResults = [];
-  let title = 'Log Results';
   return {
     hasData: function() {
       return logResults.length;
-    },
-
-    entitle: function(caption) {
-      if (!this.hasData()) title = caption;
     },
 
     add: function(msg) {
@@ -159,7 +154,7 @@ const logResults = (function() {
       logResults = [];
     },
 
-    show: function() {
+    show: function(title = 'Log Results') {
       console.groupCollapsed(title);
       console.log(printJson(logResults));
       logResults = [];
