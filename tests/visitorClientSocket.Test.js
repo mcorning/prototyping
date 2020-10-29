@@ -30,17 +30,22 @@ const {
   groupMessagesByRoomAndDate,
   logResults,
   newId,
+  printJson,
 } = require('./helpers');
 
 const {
   OpenVisitorConnection,
   exposureWarning,
   enterRoom,
-  // exposeAllRooms,
-  // exposeAllSockets,
-  // exposeAvailableRooms,
+  exposeAllRooms,
+  exposeAllRoomsPromise,
+  exposeAllSockets,
+  exposeAvailableRooms,
+  exposeOccupiedRooms,
   exposePendingRooms,
+  exposeVisitorsRooms,
   leaveRoom,
+  testPromise,
 } = require('./visitorClientSocket');
 const {
   // getExposures,
@@ -277,34 +282,23 @@ async function report(results) {
   // pass on the input to the next stage of processing the scenario...
   return results;
 }
+
 async function getStateOfTheServer(sockets) {
   const socket = sockets.visitor;
-  console.log(socket.query.visitor, socket.id);
-  socket.emit('exposeAllRooms', null, (rooms) => {
-    logResults.add(rooms);
-    logResults.show('All Rooms');
-  });
-  socket.emit('exposeAllSockets', null, (rooms) => {
-    logResults.add(rooms);
-    logResults.show('All Sockets');
-  });
-  socket.emit('exposeOccupiedRooms', null, (rooms) => {
-    logResults.add(rooms);
-    logResults.show('Occupied Rooms');
-  });
-  socket.emit('exposePendingWarnings', null, (rooms) => {
-    logResults.add(rooms);
-    logResults.show('Pending Warnings');
-  });
-  socket.emit('exposeAvailableRooms', null, (rooms) => {
-    logResults.add(rooms);
-    logResults.show('Available Rooms');
-  });
-  socket.emit('exposeVisitorsRooms', null, (rooms) => {
-    logResults.add(rooms);
-    logResults.show('Visitors Rooms');
-  });
+  console.groupCollapsed('State of the Server');
 
+  exposeAllRoomsPromise(socket).then((rooms) => {
+    console.groupCollapsed('All Rooms Promise:');
+    console.log(printJson(rooms));
+    console.groupEnd();
+  });
+  exposeAllRooms(socket);
+  exposeAllSockets(socket);
+  exposeAvailableRooms(socket);
+  exposeOccupiedRooms(socket);
+  exposePendingRooms(socket);
+  exposeVisitorsRooms(socket);
+  console.groupEnd();
   return socket;
 }
 
@@ -341,14 +335,11 @@ INCLUDE &&
 //                BE SURE SERVER IS RUNNING BEFORE YOU TRY TO TEST!
 
 //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-
 testOpenRoomConnection()
   .then((roomSocket) => testOpenVisitorConnection(roomSocket)) // get first Visitor
   .then((socket) => testOpenVisitorConnection(socket)) // get next Visitor
   .then((socket) => testExposureWarning(socket)) // Visitor warns Rooms
   .then((socket) => testEnterRoom(socket)) // Visitor enters a room to test pending
   .then((sockets) => getStateOfTheServer(sockets)) // display effect on State of the Server
-  .then(() => console.log(notice(`             Test Complete            `)));
+  .then(() => console.log(notice(`             Test Complete            `)))
   .then(() => console.log(notice(`        Event Results to Follow       `)));
-
-

@@ -30,15 +30,6 @@ console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
 console.log(TESTING ? 'Testing' : 'Production');
 // Note completed tests for each Visitor event
 
-// tested 10.13.20
-// consider using all Sockets as a way to elminate other events/functions
-const exposeAllSockets = (clientSocket) => {
-  clientSocket.emit('exposeAllSockets', (sockets) => {
-    console.log('All Sockets:');
-    console.table(sockets);
-  });
-};
-
 const leaveRoom = (clientSocket, message) => {
   clientSocket.emit('leaveRoom', message, (ack) => {
     console.group('Server Acknowledged: Leave Room:');
@@ -56,19 +47,59 @@ const enterRoom = (clientSocket, message) => {
   });
 };
 
-// tested 10.13.20
-const exposeAvailableRooms = (clientSocket) => {
-  clientSocket.emit('exposeAvailableRooms', (rooms) => {
-    console.log('Available Rooms:');
-    console.table(rooms);
+const exposeAllRooms = (clientSocket) => {
+  clientSocket.emit('exposeAllRooms', null, (rooms) => {
+    console.groupCollapsed('All Rooms:');
+    console.log(printJson(rooms));
+    console.groupEnd();
+  });
+};
+const exposeAllRoomsPromise = function(clientSocket) {
+  return new Promise(function(resolve) {
+    clientSocket.emit('exposeAllRooms', null, (rooms) => {
+      resolve(rooms);
+    });
   });
 };
 
-// tested 10.13.20
-const exposeAllRooms = (clientSocket) => {
-  clientSocket.emit('exposeAllRooms', (rooms) => {
-    console.log('All Rooms:');
-    console.table(rooms);
+// consider using all Sockets as a way to elminate other events/functions
+const exposeAllSockets = (clientSocket) => {
+  clientSocket.emit('exposeAllSockets', null, (sockets) => {
+    console.groupCollapsed('All Sockets:');
+    console.log(printJson(sockets));
+    console.groupEnd();
+  });
+};
+
+const exposeAvailableRooms = (clientSocket) => {
+  clientSocket.emit('exposeAvailableRooms', null, (rooms) => {
+    console.groupCollapsed('Available Rooms:');
+    console.log(printJson(rooms));
+    console.groupEnd();
+  });
+};
+
+const exposeOccupiedRooms = (clientSocket) => {
+  clientSocket.emit('exposeOccupiedRooms', null, (rooms) => {
+    console.groupCollapsed('Occupied Rooms:');
+    console.log(printJson(rooms));
+    console.groupEnd();
+  });
+};
+
+const exposePendingRooms = (clientSocket) => {
+  clientSocket.emit('exposePendingWarnings', null, (rooms) => {
+    console.groupCollapsed('Pending Rooms:');
+    console.log(printJson(rooms));
+    console.groupEnd();
+  });
+};
+
+const exposeVisitorsRooms = (clientSocket) => {
+  clientSocket.emit('exposeVisitorsRooms', null, (rooms) => {
+    console.groupCollapsed('Visitors Rooms:');
+    console.log(printJson(rooms));
+    console.groupEnd();
   });
 };
 
@@ -87,20 +118,6 @@ const exposureWarning = (clientSocket, message, cb) => {
     if (cb) {
       cb(ack);
     }
-  });
-};
-
-const exposeOccupiedRooms = (clientSocket) => {
-  clientSocket.emit('exposeOccupiedRooms', (rooms) => {
-    console.log('Occupied Rooms:');
-    console.table(rooms);
-  });
-};
-
-const exposePendingRooms = (clientSocket) => {
-  clientSocket.emit('exposePendingRooms', (rooms) => {
-    console.log('Pending Rooms:');
-    console.table(rooms);
   });
 };
 
@@ -230,9 +247,11 @@ module.exports = {
   exposureWarning,
   enterRoom,
   exposeAllRooms,
+  exposeAllRoomsPromise,
   exposeAllSockets,
   exposeAvailableRooms,
   exposeOccupiedRooms,
   exposePendingRooms,
+  exposeVisitorsRooms,
   leaveRoom,
 };
