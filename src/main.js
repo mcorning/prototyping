@@ -8,7 +8,7 @@ import router from './router';
 import store from './store';
 import vuetify from './plugins/vuetify';
 import VueSocketIO from 'vue-socket.io';
-import SocketIO from 'socket.io-client';
+// import SocketIO from 'socket.io-client';
 import config from '@/config.json';
 
 import SoteriaIcon from './components/svg/SoteriaLogo.vue';
@@ -22,7 +22,9 @@ console.log('url:', url);
 Vue.use(
   new VueSocketIO({
     debug: true,
-    connection: SocketIO(url),
+    // connection: SocketIO(url),
+    connection: url,
+    autoConnect: false,
   })
 );
 new Vue({

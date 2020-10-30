@@ -43,7 +43,7 @@ function addTestMessage(you, room) {
 }
 
 const getNow = () => {
-  const shortDateTimeFormat = 'lll';
+  // const shortDateTimeFormat = 'lll';
   const timeFormat = 'HH:MM:SS';
   return moment().format(timeFormat);
 };

@@ -6,6 +6,7 @@
         <v-col>Build: {{ $build }} </v-col>
         <v-col>Socket: {{ $socket.id }} </v-col>
       </v-row>
+      {{ $socket.id }}
     </v-system-bar>
 
     <v-card>
@@ -242,6 +243,13 @@ export default {
   },
   data() {
     return {
+      visitorSocket: {},
+      visitor: {
+        visitor: 'Me',
+        id: 'UniquelyMe',
+        nsp: 'enduringNet',
+      },
+
       pendingVisitors: new Map(),
       visitFormat: 'HH:mm on ddd, MMM DD',
 
@@ -293,6 +301,10 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
+      this.socketId = this.$socket.id;
+      this.log(`Server connected on socket ${this.socketId}`);
+    },
+    reconnect() {
       this.socketId = this.$socket.id;
 
       this.log(`Server connected on socket ${this.socketId}`);
@@ -392,7 +404,12 @@ export default {
 
     connectToServer() {
       this.log('Connecting to Server...');
-      this.$socket.connect();
+      this.$socket.io.opts.query = {
+        visitor: 'Me',
+        id: 'UniquelyMyself',
+        nsp: 'enduringNet',
+      };
+      this.$socket.connect(); //
     },
 
     getClockBg(thisClock) {
@@ -464,6 +481,11 @@ export default {
   async mounted() {
     let self = this;
     if (!self.$socket.id) {
+      self.$socket.io.opts.query = {
+        visitor: 'Me',
+        id: 'UniquelyMyself',
+        nsp: 'enduringNet',
+      };
       self.connectToServer();
     } else {
       // we may need to refesh this vue's property if we come from the other vue
@@ -485,6 +507,7 @@ export default {
     self.singaporeClock = self.getSingaporeTime();
     setInterval(self.getSingaporeTime, 60000);
     this.log(this.pendingVisitors, 'alert');
+
     console.log('Admin.vue mounted');
   },
 };
