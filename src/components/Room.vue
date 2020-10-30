@@ -214,7 +214,7 @@
     <v-system-bar color="secondary">
       <!-- <v-icon small>mdi-transit-connection-variant </v-icon> -->
       <v-row align="center">
-        <v-col cols="10">Socket: {{ $socket.id }}</v-col>
+        <v-col cols="10">Socket: {{ socketInfo() }}</v-col>
         <v-col cols="2" class="text-right">
           <v-btn @click="disconnectFromServer" text>
             <v-icon>mdi-door-closed-lock</v-icon>
@@ -785,6 +785,20 @@ export default {
     },
 
     // end helper methods
+    socketInfo() {
+      if (this.$socket.disconnected) {
+        return 'Connecting...';
+      }
+
+      const query = this.$socket.io.opts?.query;
+      if (!query) {
+        return `${this.$socket.id} isn't yours. Restart app.`;
+      }
+
+      const { id, nsp, room } = query;
+      const info = `${nsp} ${id} ${room}`;
+      return info;
+    },
 
     connectToServer() {
       const id = 'HeathlandsMedical';
@@ -797,7 +811,7 @@ export default {
         this.$socket.disconnect();
       }
       this.$socket.io.opts.query = {
-        visitor: 'Heathlands Medical',
+        room: 'Heathlands Medical',
         id: id,
         nsp: 'enduringNet',
       };

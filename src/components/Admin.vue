@@ -101,7 +101,7 @@
     </v-card>
     <v-system-bar color="secondary">
       <v-row align="center" justify="space-between">
-        <v-col>Socket: {{ $socket.id }}</v-col>
+        <v-col>Socket: {{ socketInfo() }}</v-col>
         <v-col class="text-center"
           ><v-btn @click="addTestMessage" text
             ><v-icon>mdi-test-tube</v-icon></v-btn
@@ -448,6 +448,20 @@ export default {
         });
       });
     },
+    socketInfo() {
+      if (this.$socket.disconnected) {
+        return 'Connecting...';
+      }
+
+      const query = this.$socket.io.opts?.query;
+      if (!query) {
+        return `${this.$socket.id} isn't yours. Restart app.`;
+      }
+
+      const { id, nsp, admin } = query;
+      const info = `${nsp} ${id} ${admin}`;
+      return info;
+    },
 
     addTestMessage() {
       // open up the message list beyond today
@@ -592,7 +606,7 @@ export default {
         this.$socket.disconnect();
       }
       this.$socket.io.opts.query = {
-        visitor: 'Tao',
+        admin: 'Tao',
         id: id,
         nsp: 'enduringNet',
       };

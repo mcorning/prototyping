@@ -190,7 +190,7 @@
     </v-card>
     <v-system-bar color="secondary">
       <v-row align="center" justify="space-between">
-        <v-col>Socket: {{ $socket.id }}</v-col>
+        <v-col>Socket: {{ socketInfo() }}</v-col>
         <v-col class="text-right">
           <v-btn @click="disconnectFromServer" text>
             <v-icon>mdi-door-closed-lock</v-icon>
@@ -755,6 +755,20 @@ export default {
       // this.checkedOut = !this.checkedOut;
       this.roomId = this.oldRoomId || this.roomId;
       this.changingRoom = -1;
+    },
+    socketInfo() {
+      if (this.$socket.disconnected) {
+        return 'Connecting...';
+      }
+
+      const query = this.$socket.io.opts?.query;
+      if (!query) {
+        return `${this.$socket.id} isn't yours. Restart app.`;
+      }
+
+      const { id, nsp, visitor } = query;
+      const info = `${nsp} ${id} ${visitor}`;
+      return info;
     },
 
     connectToServer() {
