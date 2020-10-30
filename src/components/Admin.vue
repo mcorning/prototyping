@@ -286,7 +286,7 @@ export default {
       ],
       availableRoomsHeaders: [
         { text: 'Type', value: 'type' },
-        { text: 'Room/Visitor', value: 'name' },
+        { text: 'Room/Visitor', value: 'visitor' },
         { text: 'Socket ID', value: 'id' },
       ],
       pendingRoomsHeaders: [{ text: 'Room', value: 'name' }],
@@ -387,6 +387,13 @@ export default {
   },
 
   methods: {
+    exposeEventPromise(clientSocket, event) {
+      return new Promise(function(resolve) {
+        clientSocket.emit(event, null, (results) => {
+          resolve(results);
+        });
+      });
+    },
     getTextColor(type) {
       return type == 'alert'
         ? 'red--text'
@@ -421,8 +428,18 @@ export default {
     getAllRooms() {
       this.$socket.emit('exposeAllRooms');
     },
-    getAvailableRooms() {
-      this.$socket.emit('exposeAvailableRooms');
+    async getAvailableRooms() {
+      let list = await this.exposeEventPromise(
+        this.$socket,
+        'exposeAvailableRooms'
+      );
+      this.availableRooms = list.map((v) => {
+        v['type'] = 'available';
+        return v;
+      });
+      this.listedRooms = [...this.availableRooms, ...this.visitorsRooms];
+
+      this.log(`Available Rooms: ${JSON.stringify(list, null, '\t')}`, 'debug');
     },
     getPendingRooms() {
       this.$socket.emit('exposePendingRooms');
@@ -430,8 +447,18 @@ export default {
     getOccupiedRooms() {
       this.$socket.emit('exposeOccupiedRooms');
     },
-    getVisitorRooms() {
-      this.$socket.emit('exposeVisitorsRooms');
+    async getVisitorRooms() {
+      let list = await this.exposeEventPromise(
+        this.$socket,
+        'exposeVisitorsRooms'
+      );
+      // let list = rooms.length ? rooms : ['No Visitors yet today.'];
+      this.visitorsRooms = list.map((v) => {
+        v['type'] = 'visitor';
+        return v;
+      });
+      this.listedRooms = [...this.availableRooms, ...this.visitorsRooms];
+      this.log(`Visitors Rooms: ${JSON.stringify(list, null, '\t')}`, 'debug');
     },
 
     // helper methods
