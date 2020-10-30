@@ -41,24 +41,28 @@ const leaveRoom = (clientSocket, message) => {
 // tested 10.13.20
 const enterRoom = (clientSocket, message) => {
   clientSocket.emit('enterRoom', message, (ack) => {
-    console.group('Server Acknowledged: Enter Room:');
+    console.group(`[${getNow()}] Server Acknowledged: Enter Room:`);
     console.log(ack);
     console.groupEnd();
   });
 };
 
+// general purpose event handler for clients
+const exposeEventPromise = function(clientSocket, event) {
+  return new Promise(function(resolve) {
+    clientSocket.emit(event, null, (results) => {
+      resolve(results);
+    });
+  });
+};
+
+//                     EVENT CONSOLE LOGS                            //
+// these calls do not return values to the caller
 const exposeAllRooms = (clientSocket) => {
   clientSocket.emit('exposeAllRooms', null, (rooms) => {
     console.groupCollapsed('All Rooms:');
     console.log(printJson(rooms));
     console.groupEnd();
-  });
-};
-const exposeAllRoomsPromise = function(clientSocket) {
-  return new Promise(function(resolve) {
-    clientSocket.emit('exposeAllRooms', null, (rooms) => {
-      resolve(rooms);
-    });
   });
 };
 
@@ -102,6 +106,7 @@ const exposeVisitorsRooms = (clientSocket) => {
     console.groupEnd();
   });
 };
+// end: EVENT CONSOLE LOGS                            //
 
 // tested 10.12.20
 const exposureWarning = (clientSocket, message, cb) => {
@@ -247,7 +252,7 @@ module.exports = {
   exposureWarning,
   enterRoom,
   exposeAllRooms,
-  exposeAllRoomsPromise,
+  exposeEventPromise,
   exposeAllSockets,
   exposeAvailableRooms,
   exposeOccupiedRooms,

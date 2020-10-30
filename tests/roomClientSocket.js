@@ -80,7 +80,7 @@ const onAvailableRoomsExposed = (message) => {
 };
 
 const onCheckIn = (message) => {
-  console.groupCollapsed('EnterRoom/CheckIn:');
+  console.groupCollapsed(`[${getNow()}] EnterRoom/CheckIn:`);
   console.log(success('Results:', printJson(message)));
   console.groupEnd();
 };
@@ -94,7 +94,7 @@ const onCheckOut = (message) => {
 // can't find a way to use this listener...yet
 const onNotifyRoom = (data, ack) => {
   const { exposureDates, room, visitor, roomMap } = data;
-  console.groupCollapsed('In onNotifyRoom:');
+  console.groupCollapsed(`[${getNow()}] In onNotifyRoom:`);
   console.table(data);
   let messageDates = groupMessagesByDateAndVisitor({
     array: messages,

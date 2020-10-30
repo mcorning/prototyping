@@ -43,7 +43,9 @@ function addTestMessage(you, room) {
 }
 
 const getNow = () => {
-  return moment().format('lll');
+  const shortDateTimeFormat = 'lll';
+  const timeFormat = 'HH:MM:SS';
+  return moment().format(timeFormat);
 };
 
 // context is passed by the State Machine.

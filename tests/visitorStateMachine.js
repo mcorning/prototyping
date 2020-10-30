@@ -14,10 +14,24 @@ const {
   groupMessagesByRoomAndDate,
   report,
   logResults,
+  printJson,
 } = require('./helpers');
 const { pickVisitor, groupBy, messages } = require('./visitorData.js');
 const { pickRoom, rooms } = require('./roomData.js');
-
+const {
+  OpenRoomConnection,
+  alertVisitor,
+  // closeRoom,
+  // exposeOccupiedRooms,
+  openRoom,
+} = require('./roomClientSocket');
+const {
+  OpenVisitorConnection,
+  exposureWarning,
+  enterRoom,
+  exposeEventPromise,
+  // leaveRoom,
+} = require('./visitorClientSocket');
 // const moment = require('moment');
 
 const clc = require('cli-color');
@@ -32,34 +46,16 @@ const TESTING = 0; // use this to control some log spew
 let testCount = 2;
 let visitorsToTest = 1;
 let availableRooms = new Map();
+
 console.log(highlight(getNow(), 'Starting visitorStateMachine.js'));
 console.log(TESTING ? 'TESTING' : 'PRODUCTION');
-
-// this socket permits us to see broadcast messages to a namespace
-// don't forget the {}
-// otherwise js won't interpret the reference as the funtion it is in roomClientSocket.js
-const {
-  OpenRoomConnection,
-  alertVisitor,
-  // closeRoom,
-  // exposeOccupiedRooms,
-  openRoom,
-} = require('./roomClientSocket');
-const {
-  OpenVisitorConnection,
-  exposureWarning,
-  enterRoom,
-  exposeAvailableRooms,
-  // leaveRoom,
-} = require('./visitorClientSocket');
 
 // NOTE: if you manually disconnect these sockets, you won't see any results
 // from the server after the run() method finishes
 // since Room and Visitor are objects now pick one of each here (not later)
 const roomSocket = OpenRoomConnection(pickRoom(rooms));
 const ROOM = roomSocket.query;
-logResults.entitle('Visitor State Machine Test Results');
-
+console.group(`{${getNow()}]Visitor State Machine Test Results`);
 console.groupCollapsed('Found Visitor');
 function visitorHoF(visitors) {
   const visitor = visitors.reduce((a, c, i, v) => {
@@ -166,9 +162,9 @@ const Mu = function(visitor) {
 
   // ensure one or more Rooms are open
   roomSocket.emit('openRoom', ROOM, (ack) => {
-    console.group('Inside Mu: Server Acknowledged: Open Room:');
+    console.group(`[${getNow()}] Inside Mu: Server Acknowledged: Open Room:`);
     availableRooms.set(ack.name, ack.id);
-    console.log(success(ack.msg));
+    console.log(success(printJson(ack)));
     console.groupEnd();
     logResults.add(`openRoom ack: ${ack}`);
   });
@@ -226,12 +222,18 @@ const VisitorQuarantined = function(visitor) {
   // event sent to Server
   // handled by onExposureWarning()
   exposureWarning(visitorSocket, msg, (ack) => {
-    console.log(
-      ack.reduce((a, c) => {
-        a = `${a} ${c}`;
-        return a;
-      })
-    );
+    console.group(`[${getNow()}] Visited Room Warning:`);
+    try {
+      console.log(
+        ack.reduce((a, c) => {
+          a = `${a} ${c}`;
+          return a;
+        })
+      );
+    } catch (error) {
+      console.log(ack);
+    }
+    console.groupEnd();
   });
 
   this.fireTransition = function() {
@@ -299,7 +301,7 @@ function run() {
     const visitor = new Visitor(VISITOR, ROOM, transitions);
     visitor.start();
   } while (--testCount > 0);
-  console.group('Tests Complete');
+  console.group(`[${getNow()}] Tests Complete`);
   console.timeEnd('Tests ran');
 
   console.log(success('Test complete'));
@@ -307,6 +309,38 @@ function run() {
   console.log('Test Results Log:');
   logResults.show();
   console.groupEnd();
+  getStateOfTheServer(visitorSocket);
 
   return;
+}
+async function getStateOfTheServer(socket) {
+  let events = [
+    { name: 'exposeAllRooms', caption: 'All Rooms Promise:' },
+    { name: 'exposeAllSockets', caption: 'All Sockets Promise:' },
+    { name: 'exposeAvailableRooms', caption: 'Available Rooms Promise:' },
+    { name: 'exposeOccupiedRooms', caption: 'Occupied Rooms Promise:' },
+    { name: 'exposePendingWarnings', caption: 'Pending Rooms Promise:' },
+    { name: 'exposeVisitorsRooms', caption: 'Visitors Rooms Promise:' },
+  ];
+  // this function needs only one declaration
+  async function keepPromises(events) {
+    events.forEach((event) => {
+      exposeEventPromise(socket, event.name).then((rooms) => {
+        console.groupCollapsed(event.caption);
+        console.log(printJson(rooms));
+        console.groupEnd();
+      });
+    });
+  }
+  keepPromises(events);
+
+  // These calls merely log event results to the console:
+  // exposeAllRooms(socket);
+  // exposeAllSockets(socket);
+  // exposeAvailableRooms(socket);
+  // exposeOccupiedRooms(socket);
+  // exposePendingRooms(socket);
+  // exposeVisitorsRooms(socket);
+
+  return socket;
 }

@@ -37,15 +37,16 @@ const {
   OpenVisitorConnection,
   exposureWarning,
   enterRoom,
-  exposeAllRooms,
-  exposeAllRoomsPromise,
-  exposeAllSockets,
-  exposeAvailableRooms,
-  exposeOccupiedRooms,
-  exposePendingRooms,
-  exposeVisitorsRooms,
+  exposeEventPromise,
   leaveRoom,
-  testPromise,
+
+  // exposeAllRooms,
+  // exposeAllRoomsPromise,
+  // exposeAllSockets,
+  // exposeAvailableRooms,
+  // exposeOccupiedRooms,
+  // exposePendingRooms,
+  // exposeVisitorsRooms,
 } = require('./visitorClientSocket');
 const {
   // getExposures,
@@ -65,7 +66,6 @@ const { pickRoom, rooms } = require('./roomData');
 
 SHOW &&
   console.log(highlight(getNow(), 'Starting visitorClientSocket.Test.js'));
-SHOW && console.log('Creating new Map');
 let connectionMap = new Map();
 connectionMap.set('rooms', new Map());
 connectionMap.set('visitors', new Map());
@@ -210,13 +210,12 @@ async function testExposureWarning(socket) {
   });
 
   exposureWarning(socket, message, (ack) => {
-    // logResults.entitle('Event acknowledgment callback:');
+    console.group(`[${getNow()}] Event (exposureWarning) ACK callback:`);
     console.log({
-      event: 'exposureWarning()',
       ack: ack,
     });
+    console.groupEnd();
   });
-  console.groupEnd();
   // this returns before all events finish. is that ok?
   return socket;
 }
@@ -285,20 +284,34 @@ async function report(results) {
 
 async function getStateOfTheServer(sockets) {
   const socket = sockets.visitor;
-  console.groupCollapsed('State of the Server');
+  let events = [
+    { name: 'exposeAllRooms', caption: 'All Rooms Promise:' },
+    { name: 'exposeAllSockets', caption: 'All Sockets Promise:' },
+    { name: 'exposeAvailableRooms', caption: 'Available Rooms Promise:' },
+    { name: 'exposeOccupiedRooms', caption: 'Occupied Rooms Promise:' },
+    { name: 'exposePendingWarnings', caption: 'Pending Rooms Promise:' },
+    { name: 'exposeVisitorsRooms', caption: 'Visitors Rooms Promise:' },
+  ];
+  // this function needs only one declaration
+  async function keepPromises(events) {
+    events.forEach((event) => {
+      exposeEventPromise(socket, event.name).then((rooms) => {
+        console.groupCollapsed(event.caption);
+        console.log(printJson(rooms));
+        console.groupEnd();
+      });
+    });
+  }
+  keepPromises(events);
 
-  exposeAllRoomsPromise(socket).then((rooms) => {
-    console.groupCollapsed('All Rooms Promise:');
-    console.log(printJson(rooms));
-    console.groupEnd();
-  });
-  exposeAllRooms(socket);
-  exposeAllSockets(socket);
-  exposeAvailableRooms(socket);
-  exposeOccupiedRooms(socket);
-  exposePendingRooms(socket);
-  exposeVisitorsRooms(socket);
-  console.groupEnd();
+  // These calls merely log event results to the console:
+  // exposeAllRooms(socket);
+  // exposeAllSockets(socket);
+  // exposeAvailableRooms(socket);
+  // exposeOccupiedRooms(socket);
+  // exposePendingRooms(socket);
+  // exposeVisitorsRooms(socket);
+
   return socket;
 }
 
@@ -341,5 +354,8 @@ testOpenRoomConnection()
   .then((socket) => testExposureWarning(socket)) // Visitor warns Rooms
   .then((socket) => testEnterRoom(socket)) // Visitor enters a room to test pending
   .then((sockets) => getStateOfTheServer(sockets)) // display effect on State of the Server
-  .then(() => console.log(notice(`             Test Complete            `)))
+  .then(() => {
+    console.groupEnd();
+    console.log(notice(`             Test Complete            `));
+  })
   .then(() => console.log(notice(`        Event Results to Follow       `)));
