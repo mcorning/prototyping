@@ -31,3 +31,4 @@ tests/Heathlands.Medical.js
 tests/promises.Promises.js
 tests/promises.Promises.Promises.js
 tests/archive/
+src/debug.log
