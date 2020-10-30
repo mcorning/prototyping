@@ -410,6 +410,8 @@ export default {
   },
 
   data: () => ({
+    search: '',
+
     rating: 3,
     deleting: false,
     dialog: false,
@@ -676,6 +678,11 @@ export default {
 
     connectToServer() {
       this.log('Connecting to Server...');
+      this.$socket.io.opts.query = {
+        visitor: 'Me',
+        id: 'UniquelyMyself',
+        nsp: 'enduringNet',
+      };
       this.$socket.connect();
     },
 

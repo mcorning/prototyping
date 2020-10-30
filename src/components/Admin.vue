@@ -307,12 +307,12 @@ export default {
     reconnect() {
       this.socketId = this.$socket.id;
 
-      this.log(`Server connected on socket ${this.socketId}`);
+      this.log(`Server re-connected on socket ${this.socketId}`);
     },
 
     disconnect() {
       this.log(
-        'The server disconnected your socket (probably because you refreshed the browser).'
+        `The server disconnected ${this.$socket.connected} your socket (${this.$socket.id}) (probably because your connection timed out).`
       );
     },
     // end socket.io reserved events
@@ -416,7 +416,7 @@ export default {
         id: 'UniquelyMyself',
         nsp: 'enduringNet',
       };
-      this.$socket.connect(); //
+      this.$socket.connect();
     },
 
     getClockBg(thisClock) {
@@ -457,6 +457,7 @@ export default {
         v['type'] = 'visitor';
         return v;
       });
+      alert(this.visitorsRooms);
       this.listedRooms = [...this.availableRooms, ...this.visitorsRooms];
       this.log(`Visitors Rooms: ${JSON.stringify(list, null, '\t')}`, 'debug');
     },
@@ -508,11 +509,6 @@ export default {
   async mounted() {
     let self = this;
     if (!self.$socket.id) {
-      self.$socket.io.opts.query = {
-        visitor: 'Me',
-        id: 'UniquelyMyself',
-        nsp: 'enduringNet',
-      };
       self.connectToServer();
     } else {
       // we may need to refesh this vue's property if we come from the other vue

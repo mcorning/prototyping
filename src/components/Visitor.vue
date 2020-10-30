@@ -407,6 +407,8 @@ export default {
   },
 
   data: () => ({
+    search: '',
+
     oldRoomId: '',
     changingRoom: false,
     rating: 3,
@@ -447,7 +449,7 @@ export default {
 
     disconnect() {
       this.log(
-        'The server disconnected your socket (probably because you refreshed the browser).'
+        `The server disconnected ${this.$socket.connected} your socket (${this.$socket.connected}) (probably because your connection timed out).`
       );
     },
     message(msg) {
@@ -487,6 +489,14 @@ export default {
   },
 
   methods: {
+    exposeEventPromise(clientSocket, event) {
+      return new Promise(function(resolve) {
+        clientSocket.emit(event, null, (results) => {
+          resolve(results);
+        });
+      });
+    },
+
     disconnectFromServer() {
       console.log('Disconnection from Server');
       this.$socket.disconnect(true); // passing true closes underlying connnection
@@ -634,6 +644,11 @@ export default {
     connectToServer() {
       this.disconnected = false;
       // this is async, so let the connect() function set the isConnected property
+      this.$socket.io.opts.query = {
+        visitor: 'Me',
+        id: 'UniquelyMyself',
+        nsp: 'enduringNet',
+      };
       this.$socket.connect();
     },
 
@@ -814,11 +829,18 @@ export default {
     await Name.$fetch();
     await State.$fetch();
     await Message.$fetch();
-    this.$socket.emit('exposeAvailableRooms');
     // log the useragent in case we can't recognize it
     this.log(navigator.userAgent);
-    let self = this;
-    alert(self.$route.query.room);
+    this.connectToServer();
+    // let self = this;
+    // if (!self.$socket.id) {
+    //   self.connectToServer();
+    // } else {
+    //   // we may need to refesh this vue's property if we come from the other vue
+    //   self.socketId = self.$socket.id;
+    //   self.log(`Mounted with socket ${self.socketId}`);
+    //   this.$socket.emit('exposeAvailableRooms');
+    // }
   },
 };
 </script>
