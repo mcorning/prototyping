@@ -1,12 +1,16 @@
 <template>
   <v-container>
     <v-system-bar color="secondary">
-      <v-row justify="space-between">
+      <v-row align="center" justify="space-between">
         <v-col>IO:{{ $socket.io.uri }}</v-col>
-        <v-col>Build: {{ $build }} </v-col>
-        <v-col>Socket: {{ $socket.id }} </v-col>
+        <v-col class="text-center">UA: {{ userAgent }}</v-col>
+
+        <v-col class="text-right">
+          <v-btn text @click="refreshConnection(true)"
+            ><v-icon>mdi-block-helper</v-icon>{{ $build }}</v-btn
+          ></v-col
+        >
       </v-row>
-      {{ $socket.id }}
     </v-system-bar>
 
     <v-card>
@@ -95,6 +99,21 @@
           </v-col> </v-row
       ></v-card-text>
     </v-card>
+    <v-system-bar color="secondary">
+      <v-row align="center" justify="space-between">
+        <v-col>Socket: {{ $socket.id }}</v-col>
+        <v-col class="text-center"
+          ><v-btn @click="addTestMessage" text
+            ><v-icon>mdi-test-tube</v-icon></v-btn
+          >
+        </v-col>
+        <v-col class="text-right">
+          <v-btn @click="disconnectFromServer" text>
+            <v-icon>mdi-door-closed-lock</v-icon>
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-system-bar>
     <v-card>
       <v-card-title>World Clock</v-card-title>
       <v-card-text>
@@ -123,6 +142,18 @@
               :time="zuluClock"
               :bg="getClockBg(zuluTime)"
               :color="getClockColor(zuluTime)"
+            ></clock>
+          </v-col>
+          <v-col>
+            <v-text-field
+              :value="indiaTime"
+              label="Jaipur"
+              readonly
+            ></v-text-field>
+            <clock
+              :time="indiaClock"
+              :bg="getClockBg(indiaTime)"
+              :color="getClockColor(indiaTime)"
             ></clock>
           </v-col>
           <v-col>
@@ -229,6 +260,22 @@ export default {
   components: { Clock },
 
   computed: {
+    userAgent() {
+      let ua = navigator.userAgent;
+      let userAgent;
+      if (ua.includes('Edg')) {
+        userAgent = 'Edge';
+      } else if (ua.includes('Chrome')) {
+        userAgent = 'Chrome';
+      } else if (ua.includes('Firefox/82')) {
+        userAgent = 'Firefox Dev';
+      } else if (ua.includes('Firefox') || ua.includes('KHTML')) {
+        userAgent = 'Firefox';
+      } else {
+        userAgent = 'Unknown ';
+      }
+      return userAgent;
+    },
     namespace: {
       get() {
         // this design has only one State entity record
@@ -266,6 +313,12 @@ export default {
         .tz('Europe/London')
         .format('llll'),
 
+      indiaClock: null,
+      indiaTime: mtz
+        .utc()
+        .tz('Asia/Kolkata')
+        .format('llll'),
+
       singaporeClock: null,
       singaporeTime: mtz
         .utc()
@@ -301,20 +354,21 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
-      this.socketId = this.$socket.id;
-      this.log(`Server connected on socket ${this.socketId}`);
+      if (this.$socket.io.opts?.query) {
+        const { room, id, nsp } = this.$socket.io.opts.query;
+        this.log(
+          `Server connected using Id:${id}, Room: ${room}, and nsp ${nsp} `
+        );
+        this.socketId = id;
+      }
     },
+
     reconnect() {
       this.socketId = this.$socket.id;
 
       this.log(`Server re-connected on socket ${this.socketId}`);
     },
 
-    disconnect() {
-      this.log(
-        `The server disconnected ${this.$socket.connected} your socket (${this.$socket.id}) (probably because your connection timed out).`
-      );
-    },
     // end socket.io reserved events
 
     //App event handlers
@@ -394,6 +448,30 @@ export default {
         });
       });
     },
+
+    addTestMessage() {
+      // open up the message list beyond today
+      this.daysBack = 14;
+      // get a random number of days back for test data
+      let days = this.getRandomIntBetween(2, 4);
+      let msg = {
+        visitor: this.yourId,
+        room: this.roomId,
+        message: 'Entered',
+        sentTime: moment()
+          .add(-days, 'day')
+          .toISOString(),
+      };
+      // cache the message in IndexedDB
+      this.messages = msg;
+      // log the test data
+      this.log(JSON.stringify(msg));
+      this.emit({
+        event: 'enterRoom',
+        message: msg,
+      });
+    },
+
     getTextColor(type) {
       return type == 'alert'
         ? 'red--text'
@@ -408,15 +486,9 @@ export default {
       this.$socket.emit('exposeOccupiedRooms');
       this.$socket.emit('exposeVisitorsRooms');
     },
-
-    connectToServer() {
-      this.log('Connecting to Server...');
-      this.$socket.io.opts.query = {
-        visitor: 'Me',
-        id: 'UniquelyMyself',
-        nsp: 'enduringNet',
-      };
-      this.$socket.connect();
+    disconnectFromServer() {
+      console.log('Disconnection from Server');
+      this.$socket.disconnect(true); // passing true closes underlying connnection
     },
 
     getClockBg(thisClock) {
@@ -492,6 +564,14 @@ export default {
       this.zuluClock = t;
       return t;
     },
+    getIndiaTime() {
+      let t = mtz
+        .utc()
+        .tz('Asia/Kolkata')
+        .format('hh:mm');
+      this.zuluClock = t;
+      return t;
+    },
     getSingaporeTime() {
       let t = mtz
         .utc()
@@ -499,6 +579,24 @@ export default {
         .format('hh:mm');
       this.singaporeClock = t;
       return t;
+    },
+
+    connectToServer() {
+      const id = '4257650091';
+      this.log('Connecting to Server...');
+      if (
+        this.$socket.connected &&
+        this.$socket.io.opts &&
+        this.$socket.io.opts.query.id != id
+      ) {
+        this.$socket.disconnect();
+      }
+      this.$socket.io.opts.query = {
+        visitor: 'Tao',
+        id: id,
+        nsp: 'enduringNet',
+      };
+      this.$socket.connect();
     },
   },
 
@@ -508,19 +606,6 @@ export default {
 
   async mounted() {
     let self = this;
-    if (!self.$socket.id) {
-      self.connectToServer();
-    } else {
-      // we may need to refesh this vue's property if we come from the other vue
-      self.socketId = self.$socket.id;
-      self.log(`Mounted with socket ${self.socketId}`);
-    }
-
-    this.refresh();
-    // let nsp = State.query().first()?.namespace;
-    // console.log('namespace', nsp);
-    // this.$socket.emit('welcomeAdmin', nsp, (ack) => this.log(ack));
-
     self.zuluClock = self.getZuluTime();
     setInterval(self.getZuluTime, 60000);
 
@@ -529,7 +614,13 @@ export default {
 
     self.singaporeClock = self.getSingaporeTime();
     setInterval(self.getSingaporeTime, 60000);
+
+    self.indiaClock = self.getIndiaTime();
+    setInterval(self.getiIndiaTime, 60000);
+
     this.log(this.pendingVisitors, 'alert');
+
+    this.connectToServer();
 
     console.log('Admin.vue mounted');
   },

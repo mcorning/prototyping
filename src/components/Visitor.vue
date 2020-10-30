@@ -10,9 +10,6 @@
           ></v-col
         >
       </v-row>
-
-      <!-- <v-spacer></v-spacer>
-      <span class="small">Room Manager: {{ managedRoom }}</span> -->
     </v-system-bar>
     <v-card dark>
       <v-card-title>Your Travel Diary</v-card-title>
@@ -192,13 +189,8 @@
       </v-card-text>
     </v-card>
     <v-system-bar color="secondary">
-      <v-row align="center">
+      <v-row align="center" justify="space-between">
         <v-col>Socket: {{ $socket.id }}</v-col>
-        <v-col class="text-right"
-          ><v-btn @click="addTestMessage" text
-            ><v-icon>mdi-test-tube</v-icon></v-btn
-          >
-        </v-col>
         <v-col class="text-right">
           <v-btn @click="disconnectFromServer" text>
             <v-icon>mdi-door-closed-lock</v-icon>
@@ -443,15 +435,15 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
-      this.socketId = this.$socket.id;
-      this.log(`Server connected on socket ${this.socketId}`);
+      if (this.$socket.io.opts?.query) {
+        const { room, id, nsp } = this.$socket.io.opts.query;
+        this.log(
+          `Server connected using Id:${id}, Room: ${room}, and nsp ${nsp} `
+        );
+        this.socketId = id;
+      }
     },
 
-    disconnect() {
-      this.log(
-        `The server disconnected ${this.$socket.connected} your socket (${this.$socket.connected}) (probably because your connection timed out).`
-      );
-    },
     message(msg) {
       this.log(msg);
     },
@@ -641,46 +633,12 @@ export default {
       });
     },
 
-    connectToServer() {
-      this.disconnected = false;
-      // this is async, so let the connect() function set the isConnected property
-      this.$socket.io.opts.query = {
-        visitor: 'Me',
-        id: 'UniquelyMyself',
-        nsp: 'enduringNet',
-      };
-      this.$socket.connect();
-    },
-
     emit(payload) {
       if (!this.$socket.id) {
         this.disconnected = true;
         return;
       }
       this.$socket.emit(payload.event, payload.message, payload.ack);
-    },
-
-    addTestMessage() {
-      // open up the message list beyond today
-      this.daysBack = 14;
-      // get a random number of days back for test data
-      let days = this.getRandomIntBetween(2, 4);
-      let msg = {
-        visitor: this.yourId,
-        room: this.roomId,
-        message: 'Entered',
-        sentTime: moment()
-          .add(-days, 'day')
-          .toISOString(),
-      };
-      // cache the message in IndexedDB
-      this.messages = msg;
-      // log the test data
-      this.log(JSON.stringify(msg));
-      this.emit({
-        event: 'enterRoom',
-        message: msg,
-      });
     },
 
     act(roomId = this.roomId) {
@@ -798,6 +756,25 @@ export default {
       this.roomId = this.oldRoomId || this.roomId;
       this.changingRoom = -1;
     },
+
+    connectToServer() {
+      const id = 'UniquelyMyself';
+      this.log('Connecting to Server...');
+      if (
+        this.$socket.connected &&
+        this.$socket.io.opts &&
+        this.$socket.io.opts.query.id != id
+      ) {
+        this.$socket.disconnect();
+      }
+      // this is async, so let the connect() function set the isConnected property
+      this.$socket.io.opts.query = {
+        visitor: 'Me',
+        id: id,
+        nsp: 'enduringNet',
+      };
+      this.$socket.connect();
+    },
   },
 
   watch: {
@@ -812,17 +789,7 @@ export default {
       }
     },
   },
-  async created() {
-    let self = this;
-    if (!self.socketId) {
-      this.log('Connecting to Server...');
-      self.connectToServer();
-    } else {
-      // we may need to refesh this vue's property if we come from the other vue
-      this.socketId = this.$socket.id;
-      self.log(`Mounted with socket ${self.socketId}`);
-    }
-  },
+  async created() {},
 
   async mounted() {
     await Room.$fetch();

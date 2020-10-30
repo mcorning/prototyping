@@ -476,14 +476,15 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
-      this.socketId = this.$socket.id;
-
-      this.log(`Server connected on socket ${this.socketId}`);
+      if (this.$socket.io.opts?.query) {
+        const { room, id, nsp } = this.$socket.io.opts.query;
+        this.log(
+          `Server connected using Id:${id}, Room: ${room}, and nsp ${nsp} `
+        );
+        this.socketId = id;
+      }
     },
 
-    disconnect() {
-      this.log('The server disconnected your socket.', 'alert');
-    },
     // end socket.io reserved events
 
     // Visitor routine events
@@ -676,16 +677,6 @@ export default {
       this.deleting = false;
     },
 
-    connectToServer() {
-      this.log('Connecting to Server...');
-      this.$socket.io.opts.query = {
-        visitor: 'Me',
-        id: 'UniquelyMyself',
-        nsp: 'enduringNet',
-      };
-      this.$socket.connect();
-    },
-
     emit(payload) {
       if (!this.$socket.id) {
         // this.dialog = true;
@@ -794,26 +785,39 @@ export default {
     },
 
     // end helper methods
+
+    connectToServer() {
+      const id = 'HeathlandsMedical';
+      this.log('Connecting to Server...');
+      if (
+        this.$socket.connected &&
+        this.$socket.io.opts &&
+        this.$socket.io.opts.query.id != id
+      ) {
+        this.$socket.disconnect();
+      }
+      this.$socket.io.opts.query = {
+        visitor: 'Heathlands Medical',
+        id: id,
+        nsp: 'enduringNet',
+      };
+      this.$socket.connect();
+    },
   },
 
   async created() {},
 
   async mounted() {
     console.log('Room.vue mounted');
-    let self = this;
-    if (!self.$socket.id) {
-      self.connectToServer();
-    } else {
-      // we may need to refesh this vue's property if we come from the other vue
-      self.socketId = self.$socket.id;
-      self.log(`Mounted with socket ${self.socketId}`);
-    }
+    // log the useragent in case we can't recognize it
+    this.log(navigator.userAgent);
+    this.log(`Mounted with socket ${self.socketId}`);
     await Room.$fetch();
     await Name.$fetch();
     await State.$fetch();
     await Message.$fetch();
-    // log the useragent in case we can't recognize it
-    self.log(navigator.userAgent);
+
+    this.connectToServer();
   },
 };
 </script>

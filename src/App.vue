@@ -6,7 +6,7 @@
 -->
 
       <div class="d-flex align-left">
-        <v-btn class="pl-0" text to="/admin">
+        <v-btn class="pl-0" text to="/home">
           <v-img
             alt="Enduring Net Logo"
             class="shrink "
@@ -98,8 +98,8 @@ export default {
     rating: 3,
     links: [
       {
-        label: 'Home',
-        url: '/home',
+        label: 'Admin',
+        url: '/admin',
       },
       {
         label: 'Room',
