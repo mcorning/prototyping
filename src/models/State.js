@@ -11,7 +11,7 @@ export default class State extends Model {
       managerId: this.string(''),
       organization: this.string(''),
       roomId: this.string(''),
-      yourId: this.string(''),
+      visitorId: this.string(''),
       zipcode: this.string(''),
       namespace: this.string('/'),
     };
@@ -50,8 +50,9 @@ export default class State extends Model {
     return p;
   }
   static async changeYourId(val) {
+    console.log('newid', val);
     let p = await this.$update({
-      data: { id: 0, yourId: val },
+      data: { id: 0, visitorId: val },
     });
     return p;
   }

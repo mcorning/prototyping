@@ -1,265 +1,65 @@
 <template>
   <v-container>
-    <v-system-bar color="secondary">
-      <v-row align="center">
-        <v-col class="text-left">{{ $socket.io.uri }}</v-col>
-        <v-col class="text-center">UA: {{ userAgent }}</v-col>
-        <v-col class="text-right">
-          <v-btn text @click="refreshConnection(true)"
-            ><v-icon>mdi-block-helper</v-icon>{{ $build }}</v-btn
-          ></v-col
-        >
-      </v-row>
-    </v-system-bar>
-    <v-card dark>
-      <v-card-title>Your Travel Diary</v-card-title>
-      <v-card-subtitle
-        >Log each Room you visit. Warn Rooms if you quarantine.
-      </v-card-subtitle>
-      <!-- <v-btn @click="testSocket">Ping</v-btn> -->
+    <systemBarTop>
+      <v-col class="text-center">UA: {{ userAgent }}</v-col>
+    </systemBarTop>
 
-      <v-card-text>
-        <v-row dense justify="space-between">
-          <v-col cols="3">
-            <v-combobox
-              v-if="names.length"
-              v-model="yourId"
-              :items="names"
-              label="Your ID"
-              hint="Must be unique"
-              clearable
-            ></v-combobox>
+    <diaryCard />
+    <v-row dense justify="space-between">
+      <v-col
+        ><visitorIdentityCard
+          :socket="$socket"
+          @visitor="visitorReady($event)"
+        />
+      </v-col>
+      <v-col v-if="firstTime"><firstTimeCard /></v-col>
+      <v-col
+        ><roomIdentityCard
+          :rooms="rooms"
+          :roomIsReadyToEnter="roomIsReadyToEnter"
+          :btnType="btnType"
+          :checkedOut="checkedOut"
+      /></v-col>
+    </v-row>
+    <connectionBanner v-if="$socket.disconnected" />
+    <enterRoomBanner v-if="changingRoom === true" :roomId="roomId" />
+    <exposureAlert />
+    <warnRoomCard :disabled="!messages.length" />
 
-            <v-text-field
-              v-else
-              label="Your ID"
-              @change="addYourId"
-            ></v-text-field>
-          </v-col>
+    <dataTableCard
+      :daysBack="daysBack"
+      :entered="entered"
+      :allVisits="allVisits"
+      :messages="messages"
+      :visits="visits"
+    />
 
-          <v-col cols="3">
-            <v-select
-              v-model="roomId"
-              :items="rooms"
-              label="Visit Room"
-              @change="changingRoom = true"
-            ></v-select>
-          </v-col>
-          <v-col cols="2">
-            <v-text-field label="Occupancy" :value="occupancy"></v-text-field>
-          </v-col>
-          <v-col>
-            <div v-show="roomIsReadyToEnter" class="text-center">
-              {{ checkedOut ? 'Check-in' : 'Check-out' }}
-              <v-btn
-                :color="checkedOut ? 'success' : 'warning'"
-                fab
-                dark
-                @click="act(roomId)"
-              >
-                <v-icon>{{ btnType }}</v-icon>
-              </v-btn>
-            </div>
-            <v-card v-if="firstTime">
-              <v-card-title>First Time?</v-card-title>
-              <v-card-text
-                >Enter your name in the Your ID field. We enable more than one
-                person to use the same instance of the app or device. You can
-                delete an entry with the X button.</v-card-text
-              >
-              <v-card-text
-                >You can only visit an open Room. The Room dropdown gets its
-                values from the Server.</v-card-text
-              >
-              <v-card-text
-                >When you see the Room you want is open, select it.</v-card-text
-              >
-              <v-card-text
-                >A selected room enables your Check-in button.</v-card-text
-              >
-            </v-card>
-          </v-col>
-        </v-row>
+    <systemBarBottom />
 
-        <v-card-text class=" py-1">
-          <v-banner v-if="disconnected" class="text-center">
-            At the moment, the Server doesn't know about you. Reconnect?
-            <template v-slot:actions>
-              <v-btn text color="secondary" @click="connectToServer">Yes</v-btn>
-              <v-btn text color="secondary" @click="disconnected = false"
-                >No</v-btn
-              >
-            </template>
-          </v-banner>
-          <v-banner
-            v-if="changingRoom === 1"
-            color="primary"
-            class="text-center"
-          >
-            Do you want to enter {{ roomId }} now?
-            <template v-slot:actions>
-              <v-btn text color="secondary" @click="changeRoom">Yes</v-btn>
-              <v-btn text color="secondary" @click="doNotChangeRoom">No</v-btn>
-            </template>
-          </v-banner>
-          <v-alert
-            :value="alert"
-            light
-            dismissible
-            border="left"
-            :color="alertColor"
-            elevation="5"
-            colored-border
-            :icon="alertIcon"
-            transition="scale-transition"
-            >{{ alertMessage }}
-          </v-alert>
-        </v-card-text>
-      </v-card-text>
-      <v-card-actions class="py-1">
-        <v-btn
-          color="error"
-          block
-          dark
-          @click="warnRooms"
-          :disabled="!messages.length"
-        >
-          Warn
-          <v-icon>mdi-home-alert</v-icon> Rooms
-        </v-btn>
-      </v-card-actions>
-      <v-card-text>
-        <v-list dense>
-          <v-row align="center" justify="space-between" dense>
-            <v-col cols="5">
-              <span
-                >{{ daysBack == 0 ? 'Today' : 'All' }} {{ entered }} visits
-              </span></v-col
-            >
-            <v-col>
-              <div class="text-center">
-                <v-checkbox
-                  :value="allVisits"
-                  label="See all visits"
-                  @change="toggleVisits"
-                ></v-checkbox></div
-            ></v-col>
-
-            <v-col>
-              <div class="text-center">
-                <v-btn
-                  fab
-                  color="primary"
-                  small
-                  @click="refreshConnection(false)"
-                  ><v-icon>mdi-email-sync-outline</v-icon></v-btn
-                >
-              </div>
-            </v-col>
-            <v-col>
-              <div class="text-center">
-                <v-btn
-                  color="warning"
-                  :disabled="!allVisits || !messages.length"
-                  @click="deleteAllMessages"
-                  >Delete all visits</v-btn
-                >
-              </div></v-col
-            >
-          </v-row>
-          <v-data-table
-            :headers="messageHeaders"
-            :items="visits"
-            multi-sort
-            item-key="id"
-            dense
-            :items-per-page="5"
-            class="elevation-1"
-          >
-            <template v-slot:item.sentTime="{ item }">
-              {{ visitedDate(item.sentTime) }}
-            </template>
-            <template v-slot:item.action="{ item }">
-              <v-icon @click="deleteMessage(item.id)">
-                mdi-delete
-              </v-icon>
-            </template>
-          </v-data-table>
-        </v-list>
-      </v-card-text>
-    </v-card>
-    <v-system-bar color="secondary">
-      <v-row align="center" justify="space-between">
-        <v-col>Socket: {{ socketInfo() }}</v-col>
-        <v-col class="text-right">
-          <v-btn @click="disconnectFromServer" text>
-            <v-icon>mdi-door-closed-lock</v-icon>
-          </v-btn>
-        </v-col>
-      </v-row>
-    </v-system-bar>
-    <v-card>
-      <v-card-title>Audit Trail</v-card-title>
-      <v-card-title>
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Search"
-          single-line
-          hide-details
-        ></v-text-field>
-      </v-card-title>
-      <v-data-table
-        :search="search"
-        :headers="logHeaders"
-        :items="cons"
-        multi-sort
-        must-sort
-        :sort-by="['sentTime', 'type']"
-        :sort-desc="[true, false]"
-        calculate-widths
-        item-key="id"
-        dense
-        :items-per-page="15"
-        group-by="type"
-        class="elevation-1"
-      >
-        <template v-slot:item.message="{ item }">
-          <v-card flat :class="getTextColor(item.type)">
-            {{ item.message }}
-          </v-card>
-        </template>
-        <template v-slot:item.sentTime="{ item }">
-          <v-card flat min-width="200" class="text-right">
-            {{ visitedDate(item.sentTime) }}</v-card
-          >
-        </template>
-        <template v-slot:item.type="{ item }">
-          <v-icon :color="getIconColor(item.type)">mdi-{{ item.type }}</v-icon>
-        </template>
-      </v-data-table>
-      <div class="text-center">
-        How are we doing on the Visiter experience?
-        <v-rating
-          v-model="rating"
-          background-color="primary lighten-3"
-          color="primary"
-          large
-        ></v-rating>
-      </div>
-    </v-card>
+    <auditTrailCard :cons="cons" />
   </v-container>
 </template>
+<script type="application/javascript" src="@/components/js/helpers.js"></script>
 
 <script>
 import moment from 'moment';
 
 import Message from '@/models/Message';
-import Name from '@/models/Name';
 import Room from '@/models/Room';
 import State from '@/models/State';
+import systemBarTop from '@/components/cards/visitor/systemBarTop';
+import diaryCard from '@/components/cards/visitor/diaryCard';
+import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
+import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
+import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
+import connectionBanner from '@/components/cards/visitor/connectionBanner';
+import enterRoomBanner from '@/components/cards/visitor/enterRoomBanner';
+import exposureAlert from '@/components/cards/visitor/exposureAlert';
+import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
+import systemBarBottom from '@/components/cards/visitor/systemBarBottom';
+import dataTableCard from '@/components/cards/visitor/dataTableCard';
+import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
 
-// window.onerror = function(message, source, lineno, colno, error) {
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
   console.log(error.stack);
@@ -267,9 +67,29 @@ window.onerror = function(message, url, lineNo, columnNo, error) {
 };
 export default {
   name: 'LctVisitor',
-  components: {},
-
+  components: {
+    systemBarTop,
+    diaryCard,
+    visitorIdentityCard,
+    firstTimeCard,
+    roomIdentityCard,
+    connectionBanner,
+    enterRoomBanner,
+    exposureAlert,
+    warnRoomCard,
+    systemBarBottom,
+    dataTableCard,
+    auditTrailCard,
+  },
   computed: {
+    visitorData() {
+      return {
+        visitors: this.visitors,
+        checkedOut: this.checkedOut,
+        btnType: this.btnType,
+      };
+    },
+
     userAgent() {
       let ua = navigator.userAgent;
       let userAgent;
@@ -298,7 +118,7 @@ export default {
     },
 
     firstTime() {
-      return !this.names.length;
+      return false; //!this.visitors.length;
     },
 
     roomIsReadyToEnter() {
@@ -316,29 +136,6 @@ export default {
       set(newVal) {
         // static update function on Message model
         Message.update(newVal);
-      },
-    },
-
-    yourId: {
-      get() {
-        let yourId = this.state?.yourId;
-        if (yourId) {
-          // yourId isn't yet available to methods, so pass the arg here explicitly
-          this.openMyRoom(yourId);
-        }
-        return yourId;
-      },
-      set(newVal) {
-        if (newVal) {
-          // static update function on Name model
-          Name.update(newVal).catch((e) => console.log(e));
-          this.openMyRoom(newVal);
-        } else {
-          Name.delete(this.yourId);
-        }
-
-        // static changeYourId function on State model
-        State.changeYourId(newVal);
       },
     },
 
@@ -372,12 +169,8 @@ export default {
       },
     },
 
-    rooms() {
+    pastRooms() {
       return Room.all().map((v) => v.roomId);
-    },
-
-    names() {
-      return Name.all().map((v) => v.yourId);
     },
 
     visits() {
@@ -404,52 +197,43 @@ export default {
     oldRoomId: '',
     changingRoom: false,
     rating: 3,
-    disconnected: true,
     alertIcon: 'mdi-alert',
     alertColor: '',
     alert: false,
     alertMessage: '',
     occupancy: 0,
     socketId: '',
+    enabled: { visitor: {}, room: {} },
 
     // isConnected: false,
     cons: [],
+    rooms: [],
     daysBack: 0,
     socketServerOnline: false,
     visitFormat: 'HH:mm on ddd, MMM DD',
     checkedOut: true,
-    messageHeaders: [
-      { text: 'Room', value: 'room' },
-      { text: 'Visitor', value: 'visitor' },
-      { text: 'Message', value: 'message' },
-      { text: 'Sent  ', value: 'sentTime' },
-      { text: 'Delete', value: 'action' },
-    ],
-    logHeaders: [
-      { text: 'Message', value: 'message' },
-      { text: 'Type', value: 'type' },
-      { text: 'Sent  ', value: 'sentTime' },
-    ],
   }),
 
   sockets: {
     // socket.io reserved events
     connect() {
       if (this.$socket.io.opts?.query) {
-        const { room, id, nsp } = this.$socket.io.opts.query;
+        const { visitor, id, nsp } = this.$socket.io.opts.query;
         this.log(
-          `Server connected using Id:${id}, Room: ${room}, and nsp ${nsp} `
+          `...Server connected using Id:${id}, Visitor: ${visitor}, and nsp ${nsp} `
         );
-        this.socketId = id;
+        this.exposeEventPromise(this.$socket, 'exposeAvailableRooms').then(
+          (rooms) => (this.rooms = rooms)
+        );
       }
+    },
+    disconnect() {
+      this.log('Disconnected from Server');
     },
 
     message(msg) {
       this.log(msg);
     },
-    // pong() {
-    //   this.log('Server ponged ');
-    // },
 
     // end socket.io reserved events
     // Server fires this event when a Room opens/closes
@@ -498,13 +282,6 @@ export default {
       window.location.reload(hard);
     },
 
-    getTextColor(type) {
-      return type == 'alert' ? 'red--text' : '';
-    },
-    getIconColor(type) {
-      return type == 'alert' ? 'red' : 'gray';
-    },
-
     // this is a (more?) functional way to do grouping
     groupByFn(arr, fn) {
       return arr
@@ -526,24 +303,6 @@ export default {
         acc[key].push(obj[val]);
         return acc;
       }, {});
-    },
-
-    // Server on.connection() does not know the name of the new connection.
-    // So we fire this event right after connection is made to pass the name of the room to the server.
-    // The Server needs this name to alert Visitors.
-    openMyRoom(yourID) {
-      let payload = {
-        event: 'openMyRoom',
-        message: yourID,
-        ack: (ack) => {
-          this.log(ack);
-          // this.alertColor = 'success';
-          // this.alertMessage = ack;
-          // this.alertIcon = 'mdi-email-open';
-          // this.alert = true;
-        },
-      };
-      this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
     addYourId(val) {
@@ -635,7 +394,6 @@ export default {
 
     emit(payload) {
       if (!this.$socket.id) {
-        this.disconnected = true;
         return;
       }
       this.$socket.emit(payload.event, payload.message, payload.ack);
@@ -680,11 +438,6 @@ export default {
     getRandomIntBetween(min, max) {
       // return Math.floor(Math.random() * Math.floor(max))-1;
       return Math.random() * (max - min) + min;
-    },
-
-    visitedDate(date) {
-      let x = moment(new Date(date)).format(this.visitFormat);
-      return x;
     },
 
     // handleMessage(msg) {
@@ -756,42 +509,36 @@ export default {
       this.roomId = this.oldRoomId || this.roomId;
       this.changingRoom = -1;
     },
-    socketInfo() {
-      if (this.$socket.disconnected) {
-        return 'Connecting...';
-      }
-
-      const query = this.$socket.io.opts?.query;
-      if (!query) {
-        return `${this.$socket.id} isn't yours. Restart app.`;
-      }
-
-      const { id, nsp, visitor } = query;
-      const info = `${nsp} ${id} ${visitor}`;
-      return info;
-    },
-
     connectToServer() {
-      const id = 'UniquelyMyself';
       this.log('Connecting to Server...');
       if (
         this.$socket.connected &&
         this.$socket.io.opts &&
-        this.$socket.io.opts.query.id != id
+        this.$socket.io.opts.query.id != this.enabled.visitor?.id
       ) {
         this.$socket.disconnect();
       }
       // this is async, so let the connect() function set the isConnected property
       this.$socket.io.opts.query = {
-        visitor: 'Me',
-        id: id,
-        nsp: 'enduringNet',
+        visitor: this.enabled.visitor.visitor,
+        id: this.enabled.visitor.id,
+        nsp: this.enabled.visitor.nsp,
       };
       this.$socket.connect();
+    },
+
+    visitorReady(visitor) {
+      this.enabled.visitor = visitor;
+      this.connectToServer();
     },
   },
 
   watch: {
+    enabled() {
+      if (enabled.visitor && enabled.room) {
+        this.enterRoom();
+      }
+    },
     roomId(newRoomId, oldRoomId) {
       if (this.changingRoom === -1) {
         this.changingRoom = 0;
@@ -807,21 +554,12 @@ export default {
 
   async mounted() {
     await Room.$fetch();
-    await Name.$fetch();
     await State.$fetch();
     await Message.$fetch();
+
     // log the useragent in case we can't recognize it
-    this.log(navigator.userAgent);
-    this.connectToServer();
-    // let self = this;
-    // if (!self.$socket.id) {
-    //   self.connectToServer();
-    // } else {
-    //   // we may need to refesh this vue's property if we come from the other vue
-    //   self.socketId = self.$socket.id;
-    //   self.log(`Mounted with socket ${self.socketId}`);
-    //   this.$socket.emit('exposeAvailableRooms');
-    // }
+    // this.log(navigator.userAgent);
+    console.log('Visitor.vue mounted');
   },
 };
 </script>

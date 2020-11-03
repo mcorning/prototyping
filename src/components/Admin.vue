@@ -355,9 +355,9 @@ export default {
     // socket.io reserved events
     connect() {
       if (this.$socket.io.opts?.query) {
-        const { room, id, nsp } = this.$socket.io.opts.query;
+        const { admin, id, nsp } = this.$socket.io.opts.query;
         this.log(
-          `Server connected using Id:${id}, Room: ${room}, and nsp ${nsp} `
+          `...Server connected using Id:${id}, Admin: ${admin}, and nsp ${nsp} `
         );
         this.socketId = id;
       }
@@ -603,7 +603,11 @@ export default {
         this.$socket.io.opts &&
         this.$socket.io.opts.query.id != id
       ) {
-        this.$socket.disconnect();
+        // can we have two open connections?
+        // yes, but you can still have only a Room or Visitor
+        // and we still don't know if even the admin and Room or Visitor
+        // sockets will work on the server independently
+        //this.$socket.disconnect();
       }
       this.$socket.io.opts.query = {
         admin: 'Tao',
@@ -635,6 +639,8 @@ export default {
     this.log(this.pendingVisitors, 'alert');
 
     this.connectToServer();
+
+    // get all the avaiable state data from the server here
 
     console.log('Admin.vue mounted');
   },

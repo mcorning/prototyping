@@ -278,7 +278,7 @@
 import moment from 'moment';
 
 import Message from '@/models/Message';
-import Name from '@/models/Name';
+import Visitor from '@/models/Visitor';
 import Room from '@/models/Room';
 import State from '@/models/State';
 
@@ -479,7 +479,7 @@ export default {
       if (this.$socket.io.opts?.query) {
         const { room, id, nsp } = this.$socket.io.opts.query;
         this.log(
-          `Server connected using Id:${id}, Room: ${room}, and nsp ${nsp} `
+          `...Server connected using Id:${id}, Room: ${room}, and nsp ${nsp} `
         );
         this.socketId = id;
       }
@@ -824,14 +824,14 @@ export default {
   async mounted() {
     console.log('Room.vue mounted');
     // log the useragent in case we can't recognize it
-    this.log(navigator.userAgent);
-    this.log(`Mounted with socket ${self.socketId}`);
     await Room.$fetch();
-    await Name.$fetch();
+    await Visitor.$fetch();
     await State.$fetch();
     await Message.$fetch();
 
     this.connectToServer();
+    this.log(navigator.userAgent);
+    console.log('Room.vue mounted');
   },
 };
 </script>
