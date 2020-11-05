@@ -5,25 +5,28 @@
     </systemBarTop>
 
     <diaryCard />
+
     <v-row dense justify="space-between">
-      <v-col
-        ><visitorIdentityCard
-          :socket="$socket"
-          @visitor="visitorReady($event)"
-        />
-      </v-col>
+      <v-col><visitorIdentityCard @visitor="visitorReady($event)" /> </v-col>
       <v-col v-if="firstTime"><firstTimeCard /></v-col>
-      <v-col
+      <v-col v-if="$socket.connected"
         ><roomIdentityCard
+          :log="log"
           :rooms="rooms"
-          :roomIsReadyToEnter="roomIsReadyToEnter"
-          :btnType="btnType"
-          :checkedOut="checkedOut"
+          :visitor="enabled.visitor"
+          @roomSelected="onRoomSelected($event)"
       /></v-col>
     </v-row>
+
     <connectionBanner v-if="$socket.disconnected" />
-    <enterRoomBanner v-if="changingRoom === true" :roomId="roomId" />
+
+    <enterRoomBanner
+      v-if="changingRoom === true"
+      :selectedRoom="selectedRoom"
+    />
+
     <exposureAlert />
+
     <warnRoomCard :disabled="!messages.length" />
 
     <dataTableCard
@@ -34,7 +37,10 @@
       :visits="visits"
     />
 
-    <systemBarBottom />
+    <systemBarBottom
+      :socketMessage="socketMessage"
+      :log="log"
+    ></systemBarBottom>
 
     <auditTrailCard :cons="cons" />
   </v-container>
@@ -47,7 +53,7 @@ import moment from 'moment';
 import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
-import systemBarTop from '@/components/cards/visitor/systemBarTop';
+import systemBarTop from '@/components/cards/systemBarTop';
 import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
 import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
@@ -56,7 +62,7 @@ import connectionBanner from '@/components/cards/visitor/connectionBanner';
 import enterRoomBanner from '@/components/cards/visitor/enterRoomBanner';
 import exposureAlert from '@/components/cards/visitor/exposureAlert';
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
-import systemBarBottom from '@/components/cards/visitor/systemBarBottom';
+import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/visitor/dataTableCard';
 import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
 
@@ -192,6 +198,7 @@ export default {
   },
 
   data: () => ({
+    socketMessage: 'visitor',
     search: '',
 
     oldRoomId: '',
@@ -220,33 +227,57 @@ export default {
       if (this.$socket.io.opts?.query) {
         const { visitor, id, nsp } = this.$socket.io.opts.query;
         this.log(
-          `...Server connected using Id:${id}, Visitor: ${visitor}, and nsp ${nsp} `
+          `Server connected using Id: ${id}, Visitor: ${visitor}, and nsp ${nsp} `,
+          'Network'
         );
-        this.exposeEventPromise(this.$socket, 'exposeAvailableRooms').then(
-          (rooms) => (this.rooms = rooms)
-        );
+        // this.exposeEventPromise(this.$socket, 'exposeAvailableRooms').then(
+        //   (rooms) => {
+        //     this.rooms = rooms;
+        //     this.log(rooms);
+        //   }
+        // );
       }
     },
-    disconnect() {
-      this.log('Disconnected from Server');
+    disconnect(reason) {
+      this.log(`Disconnect: ${reason}`, 'Network');
     },
+    error(reason) {
+      this.log(`Error ${reason}`, 'Network');
+    },
+    connect_error(reason) {
+      this.log(`Connect_error ${reason}`, 'Network');
+    },
+    connect_timeout(reason) {
+      this.log(`Connect_timeout ${reason}`, 'Network');
+    },
+    reconnect(reason) {
+      this.log(`Recconnect ${reason}`, 'Network');
+    },
+    reconnect_attempt(reason) {
+      this.log(`Reconnect_attempt ${reason}`, 'Network');
+    },
+    reconnecting(reason) {
+      this.log(`Reconnecting ${reason}`, 'Network');
+    },
+    reconnect_error(reason) {
+      this.log(`Reconnect_error ${reason}`, 'Network');
+    },
+    reconnect_failed(reason) {
+      this.log(`Reconnect_failed ${reason}`, 'Network');
+    },
+    // end socket.io reserved events
 
     message(msg) {
       this.log(msg);
     },
 
     // end socket.io reserved events
-    // Server fires this event when a Room opens/closes
+
     availableRoomsExposed(rooms) {
-      Room.$deleteAll();
-      console.assert(
-        this.rooms.length == 0,
-        'Should have no rooms before update'
-      );
-      rooms.forEach((room) => {
-        Room.update(room.name);
-      });
+      this.log(rooms);
     },
+
+    // Server fires this event when a Room opens/closes
 
     exposureAlert(alertMessage) {
       this.log(alertMessage, 'alert');
@@ -265,6 +296,10 @@ export default {
   },
 
   methods: {
+    onRoomSelected(selectedRoom) {
+      alert('selected room: ' + JSON.stringify(selectedRoom, null, 3));
+    },
+
     exposeEventPromise(clientSocket, event) {
       return new Promise(function(resolve) {
         clientSocket.emit(event, null, (results) => {
@@ -510,7 +545,6 @@ export default {
       this.changingRoom = -1;
     },
     connectToServer() {
-      this.log('Connecting to Server...');
       if (
         this.$socket.connected &&
         this.$socket.io.opts &&
@@ -528,6 +562,7 @@ export default {
     },
 
     visitorReady(visitor) {
+      // enabled holds two objects: room and visitor
       this.enabled.visitor = visitor;
       this.connectToServer();
     },

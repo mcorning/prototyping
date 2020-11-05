@@ -2,8 +2,8 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Home from '../views/Home.vue';
 import Visitor from '@/components/Visitor.vue';
-import Room from '@/components/Room.vue';
-import Admin from '@/components/Admin.vue';
+// import Room from '@/components/Room.vue';
+// import Admin from '@/components/Admin.vue';
 // import State from '@/models/State';
 
 Vue.use(VueRouter);
@@ -32,7 +32,8 @@ const routes = [
   {
     path: '/admin',
     name: 'Admin',
-    component: Admin,
+    component: () =>
+      import(/* webpackChunkName: "admin" */ '@/components/Admin.vue'),
   },
   // {
   //   path: '/',
@@ -44,12 +45,14 @@ const routes = [
   {
     path: '/visitor',
     name: 'Visitor',
-    component: Visitor,
+    component: () =>
+      import(/* webpackChunkName: "visitor" */ '@/components/Visitor.vue'),
   },
   {
     path: '/room',
     name: 'Room',
-    component: Room,
+    component: () =>
+      import(/* webpackChunkName: "room" */ '@/components/Room.vue'),
   },
   {
     path: '/about',

@@ -13,10 +13,16 @@
 
 <script>
 export default {
+  props: {
+    socketMessage: {
+      type: String,
+    },
+    log: { type: Function },
+  },
   computed: {},
   data() {
     return {
-      socketInfo: 'Pick a Visitor',
+      socketInfo: `Pick a ${this.socketMessage}`,
     };
   },
   sockets: {
@@ -28,11 +34,11 @@ export default {
         return;
       }
 
-      const { id, nsp, visitor } = query;
-      this.socketInfo = `${visitor}  [${id} ${nsp}]`;
+      const { id, nsp, visitor, room } = query;
+      this.socketInfo = `${visitor || room}  [${id} ${nsp}]`;
     },
     disconnect() {
-      this.socketInfo = 'Pick a Visitor';
+      this.socketInfo = `Pick a ${this.socketMessage}`;
     },
   },
   methods: {

@@ -4,14 +4,14 @@
       <v-row>
         <v-col>
           <v-select
-            v-model="rooms.room"
-            :items="rooms"
+            v-model="selectedRoom"
+            :items="availableRooms"
             item-text="room"
             item-value="id"
             label="Pick your Room"
             hint="You can log a visit when a Room is online"
             persistent-hint
-            @change="changingRoom = true"
+            @change="changingRoom"
           ></v-select>
         </v-col>
 
@@ -27,7 +27,7 @@
               :color="checkedOut ? 'success' : 'warning'"
               fab
               dark
-              @click="act(roomId)"
+              @click="act(selectedRoom.room)"
             >
               <v-icon>{{ btnType }}</v-icon>
             </v-btn>
@@ -39,36 +39,75 @@
 </template>
 
 <script>
+// This Visitor's version of roomIdentityCard.vue does not use the Room entity.
+// This version listens for availableRoomsExposed event to populate the rooms property.
 export default {
   props: {
+    log: { type: Function },
     rooms: {
       type: Array,
     },
-    roomIsReadyToEnter: {
-      type: Boolean,
-    },
-    btnType: {
-      type: String,
+    //   roomIsReadyToEnter: {
+    //     type: Boolean,
+    //   },
+    visitor: {
+      type: Object,
     },
 
-    checkedOut: {
-      type: Boolean,
-    },
+    //   checkedOut: {
+    //     type: Boolean,
+    //   },
   },
   computed: {
+    roomIsReadyToEnter() {
+      return (
+        this.availableRooms.includes(this.selectedRoom.room) &&
+        this.visitor.visitor
+      );
+    },
+    btnType() {
+      return this.checkedOut ? 'mdi-account-plus' : 'mdi-account-minus';
+    },
     occupancy() {
       return 1;
     },
   },
   data() {
     return {
-      roomId: '',
-      changingRoom: false,
+      availableRooms: [],
+      checkedOut: true,
+      selectedRoom: { room: '', id: '' },
     };
   },
-  methods: { changingRooms() {} },
+  sockets: {
+    availableRoomsExposed(rooms) {
+      this.availableRooms = rooms;
+      this.log(
+        `availableRooms: ${JSON.stringify(this.availableRooms, null, 3)}`,
+        'roomIdentityCard'
+      );
+    },
+  },
+  methods: {
+    exposeEventPromise(event) {
+      let self = this;
+      return new Promise(function(resolve) {
+        self.$socket.emit(event, null, (results) => {
+          resolve(results);
+        });
+      });
+    },
+    changingRoom() {
+      // send the Room data back to Visitor so it can add the Visitor data to emit with enterRoom on the Server
+      this.$emit('roomSelected', this.selectedRoom);
+    },
+  },
+
   async mounted() {
     console.log('socket connected?', this.$socket.connected);
+    this.log('Mounted', 'roomIdentityCard');
+    this.availableRooms = await this.exposeEventPromise('exposeAvailableRooms');
+    this.log(`Available Rooms: ${this.availableRooms}`, 'roomIdentityCard');
   },
 };
 </script>

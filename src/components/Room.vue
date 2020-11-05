@@ -1,37 +1,27 @@
 <template>
   <v-container>
-    <v-system-bar color="secondary">
-      <v-row align="center">
-        <v-col class="text-left">{{ $socket.io.uri }}</v-col>
-        <v-col class="text-center">UA: {{ userAgent }}</v-col>
-        <v-col class="text-right">
-          <v-btn text @click="refreshConnection(true)"
-            ><v-icon>mdi-block-helper</v-icon>{{ $build }}</v-btn
-          ></v-col
-        >
-      </v-row>
-    </v-system-bar>
-    <v-card>
-      <v-card-title>Room Control</v-card-title>
-      <v-card-subtitle
-        >Monitor Visitors and alert them as necessary</v-card-subtitle
-      >
+    <systemBarTop>
+      <v-col class="text-center">UA: {{ userAgent }}</v-col>
+    </systemBarTop>
 
+    <roomIntroCard />
+    <roomIdentityCard @room="handleRoom($event)" />
+    <firstTimeCard />
+    <v-card>
       <v-card-text class="pb-0">
         <v-row>
-          <v-col cols="6" class="col-md-3">
-            <v-combobox
-              v-model="roomId"
-              @change="changeRoom"
+          <!-- <v-col cols="6" class="col-md-3">
+            <v-select
+              v-model="selectedRoom"
               :items="rooms"
-              label="Public place: Building.Room"
+              label="Public place or gathering"
               clearable
-              placeholder="Example: CareCenter.Lobby"
-              :rules="[rules.counter, rules.nameDelimiter]"
-            ></v-combobox>
-          </v-col>
+              placeholder="Example: CareCenter Lobby"
+              @change="changeRoom"
+            ></v-select>
+          </v-col> -->
           <v-col class="col-md-4 pl-10">
-            <!-- <div v-if="roomId" class="text-center">
+            <div v-if="roomId" class="text-center">
               <v-btn
                 :color="closed ? 'success' : 'warning'"
                 fab
@@ -43,22 +33,7 @@
               <span class="pl-3">
                 {{ closed ? 'Open Room' : 'Close Room' }}
               </span>
-            </div> -->
-            <v-card v-if="!roomId">
-              <v-card-title>First time (or starting over)?</v-card-title>
-              <v-card-text
-                >Enter your two-part Room name (e.g.,
-                Building.Room).</v-card-text
-              >
-              <v-card-text>
-                You can manage more than one Room, but you can only open one
-                Room at a time. You can delete an entry with the X button.
-              </v-card-text>
-              <v-card-text>
-                When you open a Room, the Server adds your Room to Visitor pages
-                so they can enter.
-              </v-card-text>
-            </v-card>
+            </div>
           </v-col>
 
           <!-- <v-col cols="5" class="col-md-5">
@@ -211,19 +186,14 @@
         </v-btn>
       </v-card-actions>-->
     </v-card>
-    <v-system-bar color="secondary">
-      <!-- <v-icon small>mdi-transit-connection-variant </v-icon> -->
-      <v-row align="center">
-        <v-col cols="10">Socket: {{ socketInfo() }}</v-col>
-        <v-col cols="2" class="text-right">
-          <v-btn @click="disconnectFromServer" text>
-            <v-icon>mdi-door-closed-lock</v-icon>
-          </v-btn>
-        </v-col>
-      </v-row>
-    </v-system-bar>
+    <systemBarBottom
+      :socketMessage="socketMessage"
+      :log="log"
+    ></systemBarBottom>
+    <auditTrailCard :cons="cons" />
+
     <v-card>
-      <v-card-title>Audit Trail</v-card-title>
+      <!-- <v-card-title>Audit Trail</v-card-title>
       <v-card-title>
         <v-text-field
           v-model="search"
@@ -269,7 +239,7 @@
           color="primary"
           large
         ></v-rating>
-      </div>
+      </div> -->
     </v-card>
   </v-container>
 </template>
@@ -281,6 +251,12 @@ import Message from '@/models/Message';
 import Visitor from '@/models/Visitor';
 import Room from '@/models/Room';
 import State from '@/models/State';
+import systemBarTop from '@/components/cards/systemBarTop';
+import roomIntroCard from '@/components/cards/room/roomIntroCard';
+import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
+import firstTimeCard from '@/components/cards/room/firstTimeCard';
+import systemBarBottom from '@/components/cards/systemBarBottom';
+import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
 
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
@@ -290,7 +266,14 @@ window.onerror = function(message, url, lineNo, columnNo, error) {
 
 export default {
   name: 'LctRoom',
-  components: {},
+  components: {
+    systemBarTop,
+    roomIntroCard,
+    roomIdentityCard,
+    firstTimeCard,
+    systemBarBottom,
+    auditTrailCard,
+  },
   computed: {
     userAgent() {
       let ua = navigator.userAgent;
@@ -410,6 +393,8 @@ export default {
   },
 
   data: () => ({
+    socketMessage: 'room',
+    selectedRoom: { room: 'Add a Room...', id: '' },
     search: '',
 
     rating: 3,
@@ -479,12 +464,39 @@ export default {
       if (this.$socket.io.opts?.query) {
         const { room, id, nsp } = this.$socket.io.opts.query;
         this.log(
-          `...Server connected using Id:${id}, Room: ${room}, and nsp ${nsp} `
+          `Server connected using Id: ${id}, Room: ${room}, and nsp ${nsp} `,
+          'Network'
         );
         this.socketId = id;
       }
     },
-
+    disconnect(reason) {
+      this.log(`Disconnect: ${reason}`, 'Network');
+    },
+    error(reason) {
+      this.log(`Error ${reason}`, 'Network');
+    },
+    connect_error(reason) {
+      this.log(`Connect_error ${reason}`, 'Network');
+    },
+    connect_timeout(reason) {
+      this.log(`Connect_timeout ${reason}`, 'Network');
+    },
+    reconnect(reason) {
+      this.log(`Recconnect ${reason}`, 'Network');
+    },
+    reconnect_attempt(reason) {
+      this.log(`Reconnect_attempt ${reason}`, 'Network');
+    },
+    reconnecting(reason) {
+      this.log(`Reconnecting ${reason}`, 'Network');
+    },
+    reconnect_error(reason) {
+      this.log(`Reconnect_error ${reason}`, 'Network');
+    },
+    reconnect_failed(reason) {
+      this.log(`Reconnect_failed ${reason}`, 'Network');
+    },
     // end socket.io reserved events
 
     // Visitor routine events
@@ -801,21 +813,26 @@ export default {
     },
 
     connectToServer() {
-      const id = 'HeathlandsMedical';
-      this.log('Connecting to Server...');
+      // this.log('Connecting to Server...');
       if (
         this.$socket.connected &&
         this.$socket.io.opts &&
-        this.$socket.io.opts.query.id != id
+        this.$socket.io.opts.query.id != this.selectedRoom.id
       ) {
         this.$socket.disconnect();
       }
       this.$socket.io.opts.query = {
-        room: 'Heathlands Medical',
-        id: id,
+        room: this.selectedRoom.room,
+        id: this.selectedRoom.id,
         nsp: 'enduringNet',
       };
       this.$socket.connect();
+    },
+    handleRoom(room) {
+      alert('Handling Room:' + room.room);
+      this.selectedRoom.room = room.room;
+      this.selectedRoom.id = room.id;
+      this.connectToServer();
     },
   },
 
@@ -829,7 +846,6 @@ export default {
     await State.$fetch();
     await Message.$fetch();
 
-    this.connectToServer();
     this.log(navigator.userAgent);
     console.log('Room.vue mounted');
   },

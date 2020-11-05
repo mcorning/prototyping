@@ -4,7 +4,7 @@
       <v-row>
         <v-col>
           <v-text-field
-            v-if="visitors.length == 0"
+            v-if="!visitors.length || selectedVisitor.visitor === 'Onboard me'"
             label="Enter your handle or nickname"
             hint="How do you want to be seen?"
             persistent-hint
@@ -35,12 +35,6 @@ import State from '@/models/State';
 import base64id from 'base64id';
 
 export default {
-  props: {
-    socket: {
-      type: Object,
-    },
-  },
-
   computed: {
     visitors() {
       return Visitor.all();
@@ -54,9 +48,8 @@ export default {
 
   data() {
     return {
-      handle: '',
       nsp: 'enduringNet',
-      selectedVisitor: { visitor: '', id: '' },
+      selectedVisitor: { visitor: 'OnBoard me', id: '' },
     };
   },
 
@@ -70,12 +63,12 @@ export default {
     updateVisitor(newVal) {
       this.selectedVisitor.id = base64id.generateId();
       // static update function on Visitor model
-      Visitor.update(newVal, this.uniqueId, this.nsp).catch((e) =>
+      Visitor.update(newVal, this.selectedVisitor.id, this.nsp).catch((e) =>
         console.log(e)
       );
 
       // static changeYourId function on State model
-      State.changeYourId(this.uniqueId);
+      State.changeYourId(this.selectedVisitor.id);
 
       // you may want to do this in Visitor.vue
       // this.connectToServer();
