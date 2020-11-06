@@ -4,13 +4,14 @@
       <v-row>
         <v-col>
           <v-select
-            v-model="selectedRoom"
+            v-model="roomSelected"
             :items="availableRooms"
             item-text="room"
             item-value="id"
             label="Pick your Room"
-            hint="You can log a visit when a Room is online"
             persistent-hint
+            return-object
+            single-line
             @change="changingRoom"
           ></v-select>
         </v-col>
@@ -27,7 +28,7 @@
               :color="checkedOut ? 'success' : 'warning'"
               fab
               dark
-              @click="act(selectedRoom.room)"
+              @click="act(roomSelected.room)"
             >
               <v-icon>{{ btnType }}</v-icon>
             </v-btn>
@@ -39,6 +40,9 @@
 </template>
 
 <script>
+import helpers from '@/components/js/helpers.js';
+const { printJson } = helpers;
+
 // This Visitor's version of roomIdentityCard.vue does not use the Room entity.
 // This version listens for availableRoomsExposed event to populate the rooms property.
 export default {
@@ -61,7 +65,7 @@ export default {
   computed: {
     roomIsReadyToEnter() {
       return (
-        this.availableRooms.includes(this.selectedRoom.room) &&
+        this.availableRooms.includes(this.roomSelected.room) &&
         this.visitor.visitor
       );
     },
@@ -76,15 +80,15 @@ export default {
     return {
       availableRooms: [],
       checkedOut: true,
-      selectedRoom: { room: '', id: '' },
+      roomSelected: { room: '', id: '' },
     };
   },
   sockets: {
     availableRoomsExposed(rooms) {
       this.availableRooms = rooms;
       this.log(
-        `availableRooms: ${JSON.stringify(this.availableRooms, null, 3)}`,
-        'roomIdentityCard'
+        `roomIdentityCard: ${printJson(this.availableRooms)}`,
+        'Event: availableRoomsExposed'
       );
     },
   },
@@ -99,15 +103,20 @@ export default {
     },
     changingRoom() {
       // send the Room data back to Visitor so it can add the Visitor data to emit with enterRoom on the Server
-      this.$emit('roomSelected', this.selectedRoom);
+      this.log(printJson(this.roomSelected));
+      this.$emit('roomSelected', this.roomSelected);
     },
   },
 
   async mounted() {
+    let self = this;
     console.log('socket connected?', this.$socket.connected);
     this.log('Mounted', 'roomIdentityCard');
     this.availableRooms = await this.exposeEventPromise('exposeAvailableRooms');
-    this.log(`Available Rooms: ${this.availableRooms}`, 'roomIdentityCard');
+    this.log(
+      `Available Rooms: ${printJson(self.availableRooms)}`,
+      'roomIdentityCard'
+    );
   },
 };
 </script>

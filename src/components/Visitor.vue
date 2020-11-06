@@ -7,9 +7,10 @@
     <diaryCard />
 
     <v-row dense justify="space-between">
-      <v-col><visitorIdentityCard @visitor="visitorReady($event)" /> </v-col>
-      <v-col v-if="firstTime"><firstTimeCard /></v-col>
-      <v-col v-if="$socket.connected"
+      <v-col cols="6"
+        ><visitorIdentityCard @visitor="visitorReady($event)" />
+      </v-col>
+      <v-col v-show="$socket.connected"
         ><roomIdentityCard
           :log="log"
           :rooms="rooms"
@@ -18,7 +19,10 @@
       /></v-col>
     </v-row>
 
-    <connectionBanner v-if="$socket.disconnected" />
+    <connectionBanner
+      v-if="$socket.disconnected"
+      @reconnect="connectToServer"
+    />
 
     <enterRoomBanner
       v-if="changingRoom === true"
@@ -48,6 +52,9 @@
 <script type="application/javascript" src="@/components/js/helpers.js"></script>
 
 <script>
+import helpers from '@/components/js/helpers.js';
+const { printJson } = helpers;
+
 import moment from 'moment';
 
 import Message from '@/models/Message';
@@ -56,7 +63,6 @@ import State from '@/models/State';
 import systemBarTop from '@/components/cards/systemBarTop';
 import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
-import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import connectionBanner from '@/components/cards/visitor/connectionBanner';
 import enterRoomBanner from '@/components/cards/visitor/enterRoomBanner';
@@ -77,7 +83,6 @@ export default {
     systemBarTop,
     diaryCard,
     visitorIdentityCard,
-    firstTimeCard,
     roomIdentityCard,
     connectionBanner,
     enterRoomBanner,
@@ -123,12 +128,8 @@ export default {
       return this.groupBy(payload);
     },
 
-    firstTime() {
-      return false; //!this.visitors.length;
-    },
-
     roomIsReadyToEnter() {
-      return this.rooms.includes(this.roomId) && this.yourId;
+      return this.rooms.includes(this.enabled.room.id) && this.yourId;
     },
 
     allVisits() {
@@ -145,17 +146,17 @@ export default {
       },
     },
 
-    roomId: {
-      get() {
-        return this.state?.roomId;
-      },
-      set(newVal) {
-        // static changeRoomId function on State model
-        State.changeRoomId(newVal);
-        // static update function on Room model
-        Room.update(newVal).catch((e) => console.log(e));
-      },
-    },
+    // roomId: {
+    //   get() {
+    //     return this.state?.roomId;
+    //   },
+    //   set(newVal) {
+    //     // static changeRoomId function on State model
+    //     State.changeRoomId(newVal);
+    //     // static update function on Room model
+    //     Room.update(newVal).catch((e) => console.log(e));
+    //   },
+    // },
 
     managedRoom: {
       get() {
@@ -182,7 +183,7 @@ export default {
     visits() {
       let allVisits = this.messages.filter((v) => this.isBetween(v.sentTime));
       if (this.daysBack == 0) {
-        return allVisits.filter((v) => this.roomId == v.room);
+        return allVisits.filter((v) => this.enabled.room.id == v.room);
       }
       return allVisits;
     },
@@ -212,7 +213,6 @@ export default {
     socketId: '',
     enabled: { visitor: {}, room: {} },
 
-    // isConnected: false,
     cons: [],
     rooms: [],
     daysBack: 0,
@@ -228,7 +228,7 @@ export default {
         const { visitor, id, nsp } = this.$socket.io.opts.query;
         this.log(
           `Server connected using Id: ${id}, Visitor: ${visitor}, and nsp ${nsp} `,
-          'Network'
+          'Visitor.vue'
         );
         // this.exposeEventPromise(this.$socket, 'exposeAvailableRooms').then(
         //   (rooms) => {
@@ -239,31 +239,31 @@ export default {
       }
     },
     disconnect(reason) {
-      this.log(`Disconnect: ${reason}`, 'Network');
+      this.log(`Disconnect: ${reason}`, 'Visitor.vue');
     },
     error(reason) {
-      this.log(`Error ${reason}`, 'Network');
+      this.log(`Error ${reason}`, 'Visitor.vue');
     },
     connect_error(reason) {
-      this.log(`Connect_error ${reason}`, 'Network');
+      this.log(`Connect_error ${reason}`, 'Visitor.vue');
     },
     connect_timeout(reason) {
-      this.log(`Connect_timeout ${reason}`, 'Network');
+      this.log(`Connect_timeout ${reason}`, 'Visitor.vue');
     },
     reconnect(reason) {
-      this.log(`Recconnect ${reason}`, 'Network');
+      this.log(`Recconnect ${reason}`, 'Visitor.vue');
     },
     reconnect_attempt(reason) {
-      this.log(`Reconnect_attempt ${reason}`, 'Network');
+      this.log(`Reconnect_attempt ${reason}`, 'Visitor.vue');
     },
     reconnecting(reason) {
-      this.log(`Reconnecting ${reason}`, 'Network');
+      this.log(`Reconnecting ${reason}`, 'Visitor.vue');
     },
     reconnect_error(reason) {
-      this.log(`Reconnect_error ${reason}`, 'Network');
+      this.log(`Reconnect_error ${reason}`, 'Visitor.vue');
     },
     reconnect_failed(reason) {
-      this.log(`Reconnect_failed ${reason}`, 'Network');
+      this.log(`Reconnect_failed ${reason}`, 'Visitor.vue');
     },
     // end socket.io reserved events
 
@@ -274,7 +274,7 @@ export default {
     // end socket.io reserved events
 
     availableRoomsExposed(rooms) {
-      this.log(rooms);
+      this.log(`Visitor: ${rooms}`, 'Event: availableRoomsExposed');
     },
 
     // Server fires this event when a Room opens/closes
@@ -288,7 +288,7 @@ export default {
     },
 
     updatedOccupancy(payload) {
-      if (payload.room == this.roomId) {
+      if (payload.room == this.enabled.room.id) {
         this.occupancy = payload.occupancy;
       }
       this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
@@ -297,7 +297,20 @@ export default {
 
   methods: {
     onRoomSelected(selectedRoom) {
-      alert('selected room: ' + JSON.stringify(selectedRoom, null, 3));
+      this.enabled.room = selectedRoom;
+      if (this.enabled.visitor && this.enabled.room) {
+        this.enterRoom();
+      }
+    },
+
+    enterRoom() {
+      let msg = {
+        visitor: this.enabled.visitor,
+        room: this.enabled.room,
+        message: this.checkedOut ? 'Entered' : 'Departed',
+        sentTime: new Date().toISOString(),
+      };
+      this.$socket.emit('enterRoom', msg, (ACK) => console.log(ACK));
     },
 
     exposeEventPromise(clientSocket, event) {
@@ -434,10 +447,10 @@ export default {
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
-    act(roomId = this.roomId) {
+    act(roomId = this.enabled.room.id) {
       let msg = {
-        visitor: this.yourId,
-        room: roomId,
+        visitor: this.enabled.visitor,
+        room: this.enabled.room,
         message: this.checkedOut ? 'Entered' : 'Departed',
         sentTime: new Date().toISOString(),
       };
@@ -520,9 +533,8 @@ export default {
 
     pingServer() {
       // Send the "pingServer" event to the server.
-      // this.log(`this.isConnected: ${this.isConnected}`);
       this.log(`Using socket ${this.$socket.id}...`);
-      this.$socket.emit('pingServer', this.roomId, (ack) =>
+      this.$socket.emit('pingServer', this.enabled.room.id, (ack) =>
         this.log('...' + ack)
       );
       // this.log('pinging server');
@@ -544,6 +556,7 @@ export default {
       this.roomId = this.oldRoomId || this.roomId;
       this.changingRoom = -1;
     },
+
     connectToServer() {
       if (
         this.$socket.connected &&
@@ -552,7 +565,6 @@ export default {
       ) {
         this.$socket.disconnect();
       }
-      // this is async, so let the connect() function set the isConnected property
       this.$socket.io.opts.query = {
         visitor: this.enabled.visitor.visitor,
         id: this.enabled.visitor.id,
@@ -568,23 +580,19 @@ export default {
     },
   },
 
-  watch: {
-    enabled() {
-      if (enabled.visitor && enabled.room) {
-        this.enterRoom();
-      }
-    },
-    roomId(newRoomId, oldRoomId) {
-      if (this.changingRoom === -1) {
-        this.changingRoom = 0;
-        return;
-      }
-      this.oldRoomId = oldRoomId;
-      if (newRoomId || oldRoomId) {
-        this.changingRoom = 1;
-      }
-    },
-  },
+  // watch: {
+
+  //   roomId(newRoomId, oldRoomId) {
+  //     if (this.changingRoom === -1) {
+  //       this.changingRoom = 0;
+  //       return;
+  //     }
+  //     this.oldRoomId = oldRoomId;
+  //     if (newRoomId || oldRoomId) {
+  //       this.changingRoom = 1;
+  //     }
+  //   },
+  // },
   async created() {},
 
   async mounted() {

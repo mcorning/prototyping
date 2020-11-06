@@ -35,7 +35,9 @@ export default {
       }
 
       const { id, nsp, visitor, room } = query;
-      this.socketInfo = `${visitor || room}  [${id} ${nsp}]`;
+      this.socketInfo = `${visitor || room}  [${id} ${nsp}] ${
+        this.$socket.connected ? 'connected' : 'disconnected'
+      }`;
     },
     disconnect() {
       this.socketInfo = `Pick a ${this.socketMessage}`;

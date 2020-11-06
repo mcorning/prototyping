@@ -1,57 +1,72 @@
 <template>
-  <v-card>
-    <v-card-text>
-      <v-row align="center" justify="space-between">
-        <!-- <v-col>
-          <v-text-field
-            v-model="newRoom"
-            label="Enter the public name of your site or gathering"
-            hint="This name should be uniquely recognizable to all Rooms"
-            persistent-hint
-            clearable
-            @change="updateRoom"
-          ></v-text-field>
-        </v-col>
-        <v-col cols="1" class="text-center">
-          OR
-        </v-col> -->
-        <v-col>
-          <v-select
-            v-model="selectedRoom"
-            :items="rooms"
-            item-text="room"
-            item-value="id"
-            label="Pick your Room"
-            clearable
-            return-object
-            single-line
-            @change="emitRoom"
-          ></v-select>
-        </v-col>
-      </v-row>
-    </v-card-text>
-  </v-card>
+  <v-container>
+    <firstTimeCard v-if="firstTime" />
+
+    <v-card>
+      <v-card-text>
+        <v-row align="center" justify="space-between">
+          <v-col>
+            <v-text-field
+              v-if="onboard"
+              label="Enter the public name of your site or gathering"
+              hint="This name should be uniquely recognizable to all Rooms"
+              persistent-hint
+              clearable
+              @change="updateRoom"
+            ></v-text-field>
+
+            <v-select
+              v-else
+              v-model="selectedRoom"
+              :items="rooms"
+              item-text="room"
+              item-value="id"
+              label="Pick your Room"
+              clearable
+              return-object
+              single-line
+              @change="emitRoom"
+            ></v-select>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+  </v-container>
 </template>
 
 <script>
-import Room from '@/models/Room';
-import State from '@/models/State';
 import base64id from 'base64id';
 
+import Room from '@/models/Room';
+import State from '@/models/State';
+import firstTimeCard from '@/components/cards/room/firstTimeCard';
+
+const ONBOARD = 'Onboard my Room...';
 export default {
+  components: { firstTimeCard },
+
   computed: {
-    onboard() {
-      return !this.rooms.length || this.selectedRoom.room === 'Onboard my Room';
+    firstTime() {
+      // rooms[0]==ONBOARD
+      return this.rooms.length < 2;
     },
 
+    onboard() {
+      // we might ber deleting the selectedRoom
+      return this.selectedRoom?.room === ONBOARD;
+    },
+
+    // source for selectedRoom dropdown
+    // merges
     rooms() {
-      let rooms = [{ room: 'Onboard my Room', id: '' }];
+      let rooms = [{ room: ONBOARD, id: '' }];
       let allRooms = Room.all();
-      return [...rooms, ...allRooms];
+      let x = [...allRooms, ...rooms];
+      return x;
     },
 
     lastRoom() {
-      let id = State.find(0).visitorId;
+      let id = State.find(0).roomId;
       let r = this.findRoomWithId(id);
       return r;
     },
@@ -72,49 +87,25 @@ export default {
     },
 
     emitRoom() {
-      if (this.selectedRoom.room == 'Onboard my Room') {
-        let p = prompt('Enter your Room name');
-        if (!p) {
-          return;
-        }
-        this.selectedRoom.room = p;
-        this.updateRoom();
-        alert('Added Room ' + this.selectedRoom.room);
+      if (this.selectedRoom) {
+        State.changeRoomId(this.selectedRoom.id);
+        this.$emit('room', this.selectedRoom);
       }
-
-      let v = this.findRoomWithId();
-      State.changeYourId(v.id);
-      this.$emit('room', v);
     },
 
-    // update IndexedDb and set values for selection
-    updateRoom() {
+    updateRoom(newVal) {
+      this.selectedRoom.room = newVal;
       this.selectedRoom.id = base64id.generateId();
-      Room.update(this.selectedRoom.room, this.selectedRoom.id, this.nsp)
+      Room.update(newVal, this.selectedRoom.id, this.nsp)
         .then((r) => console.log('New Room:', r))
         .catch((e) => console.log(e));
+      this.emitRoom();
     },
-    // updateRoom(newRoom) {
-    //   if (!this.selectedRoom) {
-    //     this.selectedRoom = { room: newRoom, id: '' };
-    //   }
-    //   if (newRoom) {
-    //     this.selectedRoom.id = base64id.generateId();
-    //     // static update function on Room model
-    //     Room.update(newRoom, this.selectedRoom.id, this.nsp).catch((e) =>
-    //       console.log(e)
-    //     );
-
-    //     // static changeYourId function on State model
-    //     State.changeYourId(this.selectedRoom.id);
-
-    //     // you may want to do this in Room.vue
-    //     // this.connectToServer();
-
-    //     this.$emit('room', this.room);
-    //     this.selectedRoom.room = newRoom;
-    //   }
-    // },
+    selectedRoomInit() {
+      let id = State.find(0).roomId;
+      let r = this.findRoomWithId(id);
+      this.selectedRoom = r;
+    },
   },
   watch: {
     selectedRoom(newVal, oldVal) {
@@ -126,6 +117,7 @@ export default {
   async mounted() {
     await State.$fetch();
     await Room.$fetch();
+    this.selectedRoomInit();
   },
 };
 </script>

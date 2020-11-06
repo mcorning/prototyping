@@ -6,7 +6,6 @@
 
     <roomIntroCard />
     <roomIdentityCard @room="handleRoom($event)" />
-    <firstTimeCard />
     <v-card>
       <v-card-text class="pb-0">
         <v-row>
@@ -254,7 +253,6 @@ import State from '@/models/State';
 import systemBarTop from '@/components/cards/systemBarTop';
 import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
-import firstTimeCard from '@/components/cards/room/firstTimeCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
 import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
 
@@ -270,7 +268,6 @@ export default {
     systemBarTop,
     roomIntroCard,
     roomIdentityCard,
-    firstTimeCard,
     systemBarBottom,
     auditTrailCard,
   },
@@ -465,37 +462,37 @@ export default {
         const { room, id, nsp } = this.$socket.io.opts.query;
         this.log(
           `Server connected using Id: ${id}, Room: ${room}, and nsp ${nsp} `,
-          'Network'
+          'Room.vue'
         );
         this.socketId = id;
       }
     },
     disconnect(reason) {
-      this.log(`Disconnect: ${reason}`, 'Network');
+      this.log(`Disconnect: ${reason}`, 'Room.vue');
     },
     error(reason) {
-      this.log(`Error ${reason}`, 'Network');
+      this.log(`Error ${reason}`, 'Room.vue');
     },
     connect_error(reason) {
-      this.log(`Connect_error ${reason}`, 'Network');
+      this.log(`Connect_error ${reason}`, 'Room.vue');
     },
     connect_timeout(reason) {
-      this.log(`Connect_timeout ${reason}`, 'Network');
+      this.log(`Connect_timeout ${reason}`, 'Room.vue');
     },
     reconnect(reason) {
-      this.log(`Recconnect ${reason}`, 'Network');
+      this.log(`Recconnect ${reason}`, 'Room.vue');
     },
     reconnect_attempt(reason) {
-      this.log(`Reconnect_attempt ${reason}`, 'Network');
+      this.log(`Reconnect_attempt ${reason}`, 'Room.vue');
     },
     reconnecting(reason) {
-      this.log(`Reconnecting ${reason}`, 'Network');
+      this.log(`Reconnecting ${reason}`, 'Room.vue');
     },
     reconnect_error(reason) {
-      this.log(`Reconnect_error ${reason}`, 'Network');
+      this.log(`Reconnect_error ${reason}`, 'Room.vue');
     },
     reconnect_failed(reason) {
-      this.log(`Reconnect_failed ${reason}`, 'Network');
+      this.log(`Reconnect_failed ${reason}`, 'Room.vue');
     },
     // end socket.io reserved events
 
@@ -828,10 +825,9 @@ export default {
       };
       this.$socket.connect();
     },
+
     handleRoom(room) {
-      alert('Handling Room:' + room.room);
-      this.selectedRoom.room = room.room;
-      this.selectedRoom.id = room.id;
+      this.selectedRoom = room;
       this.connectToServer();
     },
   },
