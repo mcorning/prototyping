@@ -5,186 +5,8 @@
     </systemBarTop>
 
     <roomIntroCard />
-    <roomIdentityCard @room="handleRoom($event)" />
-    <v-card>
-      <v-card-text class="pb-0">
-        <v-row>
-          <!-- <v-col cols="6" class="col-md-3">
-            <v-select
-              v-model="selectedRoom"
-              :items="rooms"
-              label="Public place or gathering"
-              clearable
-              placeholder="Example: CareCenter Lobby"
-              @change="changeRoom"
-            ></v-select>
-          </v-col> -->
-          <v-col class="col-md-4 pl-10">
-            <div v-if="roomId" class="text-center">
-              <v-btn
-                :color="closed ? 'success' : 'warning'"
-                fab
-                dark
-                @click="act"
-              >
-                <v-icon>{{ btnType }}</v-icon>
-              </v-btn>
-              <span class="pl-3">
-                {{ closed ? 'Open Room' : 'Close Room' }}
-              </span>
-            </div>
-          </v-col>
-
-          <!-- <v-col cols="5" class="col-md-5">
-            <v-card>
-              <v-card-text>
-                Rooms are easy to get ready.
-                <ol>
-                  <li>Choose a room</li>
-                  <li>Click the Open Room button.</li>
-                </ol>
-                Then watch as people checkin...
-                <p class="pb-0">Visitor exposure alerts are automatic.</p>
-              </v-card-text>
-            </v-card>
-          </v-col>-->
-
-          <v-alert
-            :value="alert"
-            dark
-            dismissible
-            border="left"
-            :color="alertColor"
-            elevation="2"
-            colored-border
-            :icon="alertIcon"
-            transition="scale-transition"
-          >
-            <span color="gray">{{ alertMessage }}</span>
-          </v-alert>
-          <!-- <v-dialog v-model="dialog" persistent max-width="290">
-            <v-card>
-              <v-card-title class="headline">Room Management</v-card-title>
-              <v-card-text
-                >Are you sure you want to delete {{ roomId }}?</v-card-text
-              >
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="green darken-1" text @click="deleteRoom"
-                  >Yes</v-btn
-                >
-                <v-btn color="green darken-1" text @click="dialog = false"
-                  >No</v-btn
-                >
-              </v-card-actions>
-            </v-card>
-          </v-dialog>-->
-          <v-col cols="6" v-if="hasRoomManager">
-            <v-text-field
-              label="Room Manager ID"
-              v-model="managedRoom"
-            ></v-text-field>
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-row dense>
-        <v-col cols="12">
-          <v-card-text class="pb-0">
-            <v-subheader>
-              <v-row align="center" justify="space-between">
-                <v-col>
-                  <span>
-                    Today's Visitor Log - {{ entered }} visits [{{
-                      uniqueVisitorNames.length
-                    }}
-                    unique visitor(s)]
-                  </span>
-                </v-col>
-                <v-col>
-                  <v-checkbox
-                    :value="seeAllVisits"
-                    label="See all visits"
-                    @change="toggleVisits"
-                  ></v-checkbox>
-                </v-col>
-                <div class="text-center">
-                  <v-btn
-                    fab
-                    color="primary"
-                    small
-                    @click="refreshConnection(false)"
-                    ><v-icon>mdi-email-sync-outline</v-icon></v-btn
-                  >
-                </div>
-                <v-col>
-                  <div class="text-center">
-                    <v-btn
-                      color="warning"
-                      :disabled="!seeAllVisits || !messages.length"
-                      @click="deleteAllMessages"
-                      >Delete all visits</v-btn
-                    >
-                  </div></v-col
-                >
-              </v-row>
-            </v-subheader>
-            <v-data-table
-              :headers="messageHeaders"
-              :items="visits"
-              item-key="id"
-              dense
-              class="elevation-1"
-            >
-              <template v-slot:item.sentTime="{ item }">{{
-                visitedDate(item.sentTime)
-              }}</template>
-              <template v-slot:item.action="{ item }">
-                <v-icon @click="deleteMessage(item.id)">mdi-delete</v-icon>
-              </template>
-            </v-data-table>
-          </v-card-text>
-        </v-col>
-        <v-col cols="6">
-          <v-card-text v-if="listUniqueVisitors">
-            <v-subheader>Unique Visitors Today</v-subheader>
-
-            <v-list dense max-height="2" height="2">
-              <v-list-item-group v-model="uniqueVisitorNames" color="primary">
-                <v-list-item
-                  v-for="(visitor, i) in uniqueVisitorNames"
-                  :key="i"
-                >
-                  <v-list-item-content>
-                    <v-list-item-title v-text="visitor"></v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list-item-group>
-            </v-list>
-          </v-card-text>
-        </v-col>
-      </v-row>
-
-      <v-card-text v-if="alerts.length">
-        <v-data-table
-          :headers="alertHeaders"
-          :items="alerts"
-          item-key="id"
-          dense
-          class="elevation-1"
-        >
-          <template v-slot:item.sentTime="{ item }">{{
-            visitedDate(item.sentTime)
-          }}</template>
-        </v-data-table>
-      </v-card-text>
-      <!-- <v-card-actions>
-        
-        <span class="pr-3">Alert Room's Visitors </span>
-        <v-btn color="error" fab dark>
-          <v-icon x-large>mdi-alert</v-icon>
-        </v-btn>
-      </v-card-actions>-->
-    </v-card>
+    <roomIdentityCard @room="handleRoom($event)" @act="emit($event)" />
+    <roomVisitorsCard :selectedRoom="selectedRoom" :log="log" />
     <systemBarBottom
       :socketMessage="socketMessage"
       :log="log"
@@ -253,6 +75,7 @@ import State from '@/models/State';
 import systemBarTop from '@/components/cards/systemBarTop';
 import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
+import roomVisitorsCard from '@/components/cards/room/roomVisitorsCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
 import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
 
@@ -268,6 +91,7 @@ export default {
     systemBarTop,
     roomIntroCard,
     roomIdentityCard,
+    roomVisitorsCard,
     systemBarBottom,
     auditTrailCard,
   },
@@ -304,41 +128,41 @@ export default {
     },
 
     rooms() {
-      return Room.all().map((v) => v.roomId);
+      return Room.all().map((v) => v.selectedRoom.id);
     },
-    roomId: {
-      get() {
-        // state will be null at first
-        // but second call should have value.
-        // somewhere, when rooms is empty, '
-        // the system wants to return the string 'null'
-        // and we want an empty string
-        // so it is written
-        // so it shall be done
-        let roomId = this.state?.roomId;
-        if (roomId) {
-          // roomId isn't yet available to methods, so pass the arg here explicitly
-          this.openMyRoom(roomId);
-        }
-        return roomId;
-      },
-      set(newVal) {
-        // if we have a newVal, use it
-        if (newVal) {
-          // static update function on Room model
-          Room.update(newVal).catch((e) => console.log(e));
-          this.openMyRoom(newVal);
-        }
-        // else delete the last used roomId (then delete the roomId in state)
-        else {
-          Room.delete(this.roomId).then((r) => console.log('rooms', r));
-        }
-        // change the roomId after we don't need the old value
-        // (e.g., when deleting a Room from IndexDB)
-        // static changeRoomId function on State model
-        State.changeRoomId(newVal);
-      },
-    },
+    // roomId: {
+    //   get() {
+    //     // state will be null at first
+    //     // but second call should have value.
+    //     // somewhere, when rooms is empty, '
+    //     // the system wants to return the string 'null'
+    //     // and we want an empty string
+    //     // so it is written
+    //     // so it shall be done
+    //     let roomId = this.state?.roomId;
+    //     if (roomId) {
+    //       // roomId isn't yet available to methods, so pass the arg here explicitly
+    //       this.openMyRoom(roomId);
+    //     }
+    //     return roomId;
+    //   },
+    //   set(newVal) {
+    //     // if we have a newVal, use it
+    //     if (newVal) {
+    //       // static update function on Room model
+    //       Room.update(newVal).catch((e) => console.log(e));
+    //       this.openMyRoom(newVal);
+    //     }
+    //     // else delete the last used roomId (then delete the roomId in state)
+    //     else {
+    //       Room.delete(this.roomId).then((r) => console.log('rooms', r));
+    //     }
+    //     // change the roomId after we don't need the old value
+    //     // (e.g., when deleting a Room from IndexDB)
+    //     // static changeRoomId function on State model
+    //     State.changeRoomId(newVal);
+    //   },
+    // },
     managedRoom: {
       get() {
         return this.state?.managerId;
@@ -346,10 +170,6 @@ export default {
       set(newVal) {
         State.updateManagerId(newVal);
       },
-    },
-
-    seeAllVisits() {
-      return this.daysBack != 0;
     },
     messages: {
       get() {
@@ -360,38 +180,11 @@ export default {
         Message.update(newVal);
       },
     },
-
-    visits() {
-      if (!this.messages.length) {
-        return [];
-      }
-
-      if (this.daysBack == 0) {
-        // limit visits to those of the current Room (previous vues may have used different Rooms)
-        let roomVisits = this.messages.filter((v) => {
-          return this.roomId == v.room && this.isToday(v.sentTime);
-        });
-        return roomVisits;
-      }
-      return this.messages;
-    },
-
-    entered() {
-      return this.visits.filter((v) => v.message.toLowerCase() == 'entered')
-        .length;
-    },
-
-    uniqueVisitorNames() {
-      return Array.from(new Set(this.messages.map((v) => v.visitor)));
-    },
-    btnType() {
-      return this.closed ? 'mdi-door-open' : 'mdi-door-closed-lock';
-    },
   },
 
   data: () => ({
     socketMessage: 'room',
-    selectedRoom: { room: 'Add a Room...', id: '' },
+    selectedRoom: {},
     search: '',
 
     rating: 3,
@@ -412,24 +205,12 @@ export default {
     today: 'YYYY-MM-DD',
     closed: true,
 
-    listUniqueVisitors: false,
-    visitFormat: 'HH:mm on ddd, MMM DD',
-    messageHeaders: [
-      { text: 'Visitor', value: 'visitor' },
-      { text: 'Message', value: 'message' },
-      { text: 'Sent  ', value: 'sentTime' },
-      { text: 'Room', value: 'room' },
-      { text: 'Delete', value: 'action' },
-    ],
     logHeaders: [
       { text: 'Message', value: 'message' },
       { text: 'Type', value: 'type' },
       { text: 'Sent  ', value: 'sentTime' },
     ],
-    alertHeaders: [
-      { text: 'Date of Alert', value: 'sentTime' },
-      { text: 'Visitor', value: 'visitor' },
-    ],
+
     alerts: [],
     yourId: '',
 
@@ -625,26 +406,26 @@ export default {
     },
 
     // main methods
-    openMyRoom(roomId) {
-      let payload = {
-        event: 'openMyRoom',
-        message: roomId,
-        ack: (ack) => {
-          this.log(ack);
-          this.alertColor = 'success';
-          this.alertMessage = ack;
-          this.alertIcon = 'mdi-email-open';
-          this.alert = true;
-        },
-      };
-      this.$socket.emit(payload.event, payload.message, payload.ack);
-    },
+    // openMyRoom(roomId) {
+    //   let payload = {
+    //     event: 'openMyRoom',
+    //     message: roomId,
+    //     ack: (ack) => {
+    //       this.log(ack);
+    //       this.alertColor = 'success';
+    //       this.alertMessage = ack;
+    //       this.alertIcon = 'mdi-email-open';
+    //       this.alert = true;
+    //     },
+    //   };
+    //   this.$socket.emit(payload.event, payload.message, payload.ack);
+    // },
 
     changeRoom(val) {
       let msg;
       if (!val || this.rooms.length > 1) {
         msg = {
-          room: this.roomId,
+          room: this.selectedRoom.id,
           message: val ? 'Closed' : 'Deleted',
           sentTime: new Date().toISOString(),
         };
@@ -657,13 +438,14 @@ export default {
             this.alertMessage = msg;
             this.alertColor = val ? 'success' : 'warning';
             this.alert = true;
-            this.log(`Closed Room ${this.roomId}`);
+            this.log(`Closed Room ${this.selectedRoom.id}`);
           },
         });
       }
       if (val && this.rooms.length) {
         msg = {
-          room: this.roomId,
+          room: this.selectedRoom.room,
+          id: this.selectedRoom.id,
           message: 'Opened',
           sentTime: new Date().toISOString(),
         };
@@ -685,46 +467,21 @@ export default {
     reset() {
       this.deleting = false;
     },
-
+    // handles the act event from roomIdentityCard (and any later $socket.emit calls)
+    // attempts reconnect, if necessary
     emit(payload) {
       if (!this.$socket.id) {
-        // this.dialog = true;
-        alert('No socket. Attempting to reopen.');
-        return;
+        this.connectToServer();
       }
       let msg =
         `Emitting ${payload.event}` +
-        (payload.message.visitor
-          ? ` to server for ${payload.message.visitor}`
-          : '');
+        (payload.message.room ? ` to server for ${payload.message.room}` : '');
       this.log(msg);
-      this.$socket.emit(payload.event, payload.message, payload.ack);
-    },
-
-    act() {
-      let msg = {
-        room: this.roomId,
-        message: this.closed ? 'Opened' : 'Closed',
-        sentTime: new Date().toISOString(),
-      };
-      this.messages = msg;
-
-      let event = this.closed ? 'openRoom' : 'closeRoom';
-      this.emit({
-        event: event,
-        message: msg,
-        ack: (ack) => {
-          this.alertColor = 'success';
-          this.alertMessage = ack.message;
-          this.alert = true;
-        },
+      this.$socket.emit(payload.event, payload.message, (ack) => {
+        this.log(ack, 'ACKS');
       });
-      this.closed = !this.closed;
     },
 
-    toggleVisits() {
-      this.daysBack = !this.daysBack ? 14 : 0;
-    },
     // end main methods
 
     // helper methods
@@ -741,23 +498,13 @@ export default {
       });
     },
 
-    testSocket(event) {
-      // this.$socket.emit(event, 'data');
-      this.pingServer(event);
-    },
-
     pingServer() {
       this.log(`Using socket ${this.$socket.id}...`);
-      this.$socket.emit(
-        'pingServer',
-        this.roomId,
-        (ack) => '...' + this.log(ack)
-      );
-    },
-
-    visitedDate(date) {
-      let x = moment(new Date(date)).format(this.visitFormat);
-      return x;
+      this.emit({
+        event: 'pingServer',
+        message: this.selectedRoom.id,
+        ack: (ack) => '...' + this.log(ack),
+      });
     },
 
     isToday(date) {
@@ -779,18 +526,6 @@ export default {
         .format('YYYY-MM-DD');
       let test = visit.isBetween(past, tomorrow);
       return test;
-    },
-
-    deleteMessage(id) {
-      let m = `Deleting message ${id}`;
-      this.log(m);
-      Message.delete(id);
-    },
-
-    deleteAllMessages() {
-      this.log(`Deleting all messages`);
-      Message.deleteAll();
-      this.refreshConnection(true);
     },
 
     // end helper methods
@@ -830,18 +565,31 @@ export default {
       this.selectedRoom = room;
       this.connectToServer();
     },
+
+    findRoomWithId(id = this.selectedRoom?.id) {
+      let r = Room.find(id) || '';
+      return r;
+    },
+
+    selectedRoomInit() {
+      let x = State.find(0);
+      let id = x.roomId;
+      let r = this.findRoomWithId(id);
+      this.selectedRoom = r;
+      this.connectToServer();
+    },
   },
 
   async created() {},
 
   async mounted() {
-    console.log('Room.vue mounted');
-    // log the useragent in case we can't recognize it
+    await Message.$fetch();
     await Room.$fetch();
     await Visitor.$fetch();
     await State.$fetch();
-    await Message.$fetch();
+    this.selectedRoomInit();
 
+    // log the useragent in case we can't recognize it
     this.log(navigator.userAgent);
     console.log('Room.vue mounted');
   },

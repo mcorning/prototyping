@@ -1,0 +1,2 @@
+Room onboarding should default to text field
+what is dark banner? make it larger.
