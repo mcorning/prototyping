@@ -58,8 +58,8 @@ const exposeEventPromise = function(clientSocket, event) {
 
 //                     EVENT CONSOLE LOGS                            //
 // these calls do not return values to the caller
-const exposeAllRooms = (clientSocket) => {
-  clientSocket.emit('exposeAllRooms', null, (rooms) => {
+const exposeOpenRooms = (clientSocket) => {
+  clientSocket.emit('exposeOpenRooms', null, (rooms) => {
     console.groupCollapsed('All Rooms:');
     console.log(printJson(rooms));
     console.groupEnd();
@@ -251,7 +251,7 @@ module.exports = {
   OpenVisitorConnection,
   exposureWarning,
   enterRoom,
-  exposeAllRooms,
+  exposeOpenRooms,
   exposeEventPromise,
   exposeAllSockets,
   exposeAvailableRooms,

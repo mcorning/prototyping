@@ -16,7 +16,7 @@ export default class Message extends Model {
   // val must be an object
   static async update(val) {
     const { visitor, room, message, sentTime } = val;
-    let p = await this.$update({
+    let p = await this.$create({
       data: {
         visitor: visitor,
         room: room,

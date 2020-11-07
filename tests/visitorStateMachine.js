@@ -315,7 +315,7 @@ function run() {
 }
 async function getStateOfTheServer(socket) {
   let events = [
-    { name: 'exposeAllRooms', caption: 'All Rooms Promise:' },
+    { name: 'exposeOpenRooms', caption: 'All Rooms Promise:' },
     { name: 'exposeAllSockets', caption: 'All Sockets Promise:' },
     { name: 'exposeAvailableRooms', caption: 'Available Rooms Promise:' },
     { name: 'exposeOccupiedRooms', caption: 'Occupied Rooms Promise:' },
@@ -335,7 +335,7 @@ async function getStateOfTheServer(socket) {
   keepPromises(events);
 
   // These calls merely log event results to the console:
-  // exposeAllRooms(socket);
+  // exposeOpenRooms(socket);
   // exposeAllSockets(socket);
   // exposeAvailableRooms(socket);
   // exposeOccupiedRooms(socket);

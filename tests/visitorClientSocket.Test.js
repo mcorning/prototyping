@@ -40,8 +40,7 @@ const {
   exposeEventPromise,
   leaveRoom,
 
-  // exposeAllRooms,
-  // exposeAllRoomsPromise,
+  // exposeOpenRooms,
   // exposeAllSockets,
   // exposeAvailableRooms,
   // exposeOccupiedRooms,
@@ -285,7 +284,7 @@ async function report(results) {
 async function getStateOfTheServer(sockets) {
   const socket = sockets.visitor;
   let events = [
-    { name: 'exposeAllRooms', caption: 'All Rooms Promise:' },
+    { name: 'exposeOpenRooms', caption: 'All Rooms Promise:' },
     { name: 'exposeAllSockets', caption: 'All Sockets Promise:' },
     { name: 'exposeAvailableRooms', caption: 'Available Rooms Promise:' },
     { name: 'exposeOccupiedRooms', caption: 'Occupied Rooms Promise:' },
@@ -305,7 +304,7 @@ async function getStateOfTheServer(sockets) {
   keepPromises(events);
 
   // These calls merely log event results to the console:
-  // exposeAllRooms(socket);
+  // exposeOpenRooms(socket);
   // exposeAllSockets(socket);
   // exposeAvailableRooms(socket);
   // exposeOccupiedRooms(socket);

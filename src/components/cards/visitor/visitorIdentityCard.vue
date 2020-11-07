@@ -66,7 +66,7 @@ export default {
     },
 
     lastVisitor() {
-      let id = State.find(0).visitorId;
+      let id = State.find(0)?.visitorId;
       let v = this.findVisitorWithId(id);
       return v;
     },
@@ -103,6 +103,10 @@ export default {
 
     selectedVisitorInit() {
       let x = State.find(0);
+      if (!x) {
+        alert('State appears empty');
+        return;
+      }
       let id = x.visitorId;
       let v = this.findVisitorWithId(id);
       this.selectedVisitor = v;

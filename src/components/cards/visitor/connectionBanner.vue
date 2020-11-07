@@ -1,9 +1,7 @@
 <template>
-  <v-banner color="secondary" class="text-center">
-    At the moment, the Server doesn't know about you. Reconnect?
-    <template v-slot:actions>
-      <v-btn text color="white" @click="$emit('reconnect')">Yes</v-btn>
-    </template>
+  <v-banner color="warning" class="text-center">
+    The Server appears to be down. When it comes back up, this warning will
+    disappear. Then you will be able to log in to Rooms, as usual.
   </v-banner>
 </template>
 

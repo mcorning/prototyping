@@ -1,6 +1,6 @@
 <template>
   <v-card>
-    <v-card-text>
+    <v-card-text v-if="loaded">
       <v-list dense>
         <v-row align="center" justify="space-between" dense>
           <v-col cols="5">
@@ -59,25 +59,47 @@
 </template>
 
 <script>
+import moment from 'moment';
+import Message from '@/models/Message';
+
 export default {
   props: {
-    daysBack: {
-      type: Number,
+    roomId: {
+      type: String,
+      default: '',
     },
-    entered: {
-      type: Number,
+    log: { type: Function },
+  },
+  computed: {
+    allVisits() {
+      return this.daysBack != 0;
     },
-    allVisits: {
-      type: Boolean,
+
+    messages() {
+      return Message.all();
     },
-    messages: {
-      type: Array,
+
+    visits() {
+      let allVisits = this.messages.filter((v) => this.isBetween(v.sentTime));
+      if (this.daysBack == 0) {
+        return allVisits.filter((v) => this.roomId == v.room);
+      }
+      return allVisits;
     },
-    visits: {
-      type: Array,
+
+    entered() {
+      return this.visits.filter((v) => v.message == 'Entered').length;
+    },
+
+    departed() {
+      return this.visits.filter((v) => v.message == 'Departed').length;
     },
   },
+
   data: () => ({
+    daysBack: 0,
+
+    loaded: false,
     messageHeaders: [
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
@@ -87,11 +109,47 @@ export default {
     ],
   }),
   methods: {
-    toggleVisits: function() {},
-    refreshConnection: function() {},
-    deleteAllMessages: function() {},
-    deleteMessage: function() {},
-    visitedDate: function() {},
+    isBetween(date) {
+      let visit = moment(date);
+
+      let past = moment()
+        .add(-this.daysBack, 'day')
+        .format('YYYY-MM-DD');
+      let tomorrow = moment()
+        .add(1, 'day')
+        .format('YYYY-MM-DD');
+      let test = visit.isBetween(past, tomorrow);
+      return test;
+    },
+
+    deleteMessage(id) {
+      let m = `Deleting message ${id}`;
+      this.log(m);
+      Message.delete(id);
+    },
+
+    deleteAllMessages() {
+      this.log(`Deleting all messages`);
+      Message.deleteAll();
+      this.refreshConnection(true);
+    },
+
+    refreshConnection(hard) {
+      window.location.reload(hard);
+    },
+
+    toggleVisits() {
+      this.daysBack = !this.daysBack ? 14 : 0;
+    },
+
+    visitedDate(date) {
+      let x = moment(new Date(date)).format(this.visitFormat);
+      return x;
+    },
+  },
+  async mounted() {
+    await Message.$fetch();
+    this.loaded = true;
   },
 };
 </script>

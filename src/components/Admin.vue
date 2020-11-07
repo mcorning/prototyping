@@ -494,7 +494,7 @@ export default {
         : '';
     },
     refresh() {
-      this.$socket.emit('exposeAllRooms');
+      this.$socket.emit('exposeOpenRooms');
       this.$socket.emit('exposeAvailableRooms');
       this.$socket.emit('exposePendingRooms');
       this.$socket.emit('exposeOccupiedRooms');
@@ -512,7 +512,7 @@ export default {
       return thisClock.includes('PM') ? 'black' : 'gray';
     },
     getAllRooms() {
-      this.$socket.emit('exposeAllRooms');
+      this.$socket.emit('exposeOpenRooms');
     },
     async getAvailableRooms() {
       let list = await this.exposeEventPromise(

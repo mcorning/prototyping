@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <div>
     <systemBarTop>
       <v-col class="text-center">UA: {{ userAgent }}</v-col>
     </systemBarTop>
@@ -62,7 +62,7 @@
         ></v-rating>
       </div> -->
     </v-card>
-  </v-container>
+  </div>
 </template>
 
 <script>
@@ -130,39 +130,7 @@ export default {
     rooms() {
       return Room.all().map((v) => v.selectedRoom.id);
     },
-    // roomId: {
-    //   get() {
-    //     // state will be null at first
-    //     // but second call should have value.
-    //     // somewhere, when rooms is empty, '
-    //     // the system wants to return the string 'null'
-    //     // and we want an empty string
-    //     // so it is written
-    //     // so it shall be done
-    //     let roomId = this.state?.roomId;
-    //     if (roomId) {
-    //       // roomId isn't yet available to methods, so pass the arg here explicitly
-    //       this.openMyRoom(roomId);
-    //     }
-    //     return roomId;
-    //   },
-    //   set(newVal) {
-    //     // if we have a newVal, use it
-    //     if (newVal) {
-    //       // static update function on Room model
-    //       Room.update(newVal).catch((e) => console.log(e));
-    //       this.openMyRoom(newVal);
-    //     }
-    //     // else delete the last used roomId (then delete the roomId in state)
-    //     else {
-    //       Room.delete(this.roomId).then((r) => console.log('rooms', r));
-    //     }
-    //     // change the roomId after we don't need the old value
-    //     // (e.g., when deleting a Room from IndexDB)
-    //     // static changeRoomId function on State model
-    //     State.changeRoomId(newVal);
-    //   },
-    // },
+
     managedRoom: {
       get() {
         return this.state?.managerId;
@@ -176,8 +144,15 @@ export default {
         return Message.all();
       },
       set(newVal) {
+        // flatten newVal
+        const msg = {
+          room: newVal.room.room,
+          visitor: newVal.visitor.visitor,
+          sentTime: newVal.sentTime,
+          message: newVal.message,
+        };
         // static update function on Message model
-        Message.update(newVal);
+        Message.update(msg);
       },
     },
   },
@@ -279,7 +254,7 @@ export default {
 
     // Visitor routine events
     checkIn(msg) {
-      this.messages = JSON.stringify(msg, null, 2);
+      this.messages = msg;
     },
 
     checkOut(msg) {
@@ -573,7 +548,7 @@ export default {
 
     selectedRoomInit() {
       let x = State.find(0);
-      let id = x.roomId;
+      let id = x?.roomId;
       let r = this.findRoomWithId(id);
       this.selectedRoom = r;
       this.connectToServer();

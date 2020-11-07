@@ -86,7 +86,7 @@ export default {
     },
 
     lastRoom() {
-      let id = State.find(0).roomId;
+      let id = State.find(0)?.roomId;
       let r = this.findRoomWithId(id);
       return r;
     },
@@ -108,7 +108,7 @@ export default {
 
       newRoom: '',
       nsp: 'enduringNet',
-      selectedRoom: { room: this.lastRoom, id: '' },
+      selectedRoom: {},
     };
   },
 
@@ -158,7 +158,7 @@ export default {
       this.emitRoom();
     },
     selectedRoomInit() {
-      let id = State.find(0).roomId;
+      let id = State.find(0)?.roomId;
       let r = this.findRoomWithId(id);
       this.selectedRoom = r;
     },

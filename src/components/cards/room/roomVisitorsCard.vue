@@ -101,7 +101,6 @@
 
 <script>
 import moment from 'moment';
-
 import Message from '@/models/Message';
 
 export default {

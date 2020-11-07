@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <div>
     <systemBarTop>
       <v-col class="text-center">UA: {{ userAgent }}</v-col>
     </systemBarTop>
@@ -10,11 +10,13 @@
       <v-col cols="6"
         ><visitorIdentityCard @visitor="visitorReady($event)" />
       </v-col>
-      <v-col v-show="$socket.connected"
-        ><roomIdentityCard
+      <v-col v-show="$socket.connected">
+        <!-- bput this back later 
+                  :rooms="rooms" -->
+        <roomIdentityCard
           :log="log"
-          :rooms="rooms"
-          :visitor="enabled.visitor"
+          :enabled="enabled"
+          @roomEntered="act($event)"
           @roomSelected="onRoomSelected($event)"
       /></v-col>
     </v-row>
@@ -23,24 +25,21 @@
       v-if="$socket.disconnected"
       @reconnect="connectToServer"
     />
-
+    <!--       v-if="enabled.canEnter === 1"
+ -->
     <enterRoomBanner
-      v-if="enterRoomEnabled"
+      v-if="false"
       :selectedRoom="enabled.room"
       @enterRoom="onEnterRoom($event)"
     />
+
+    <messageBanner :bgcolor="messageColor"> {{ roomMessage }}</messageBanner>
 
     <exposureAlert />
 
     <warnRoomCard :disabled="!messages.length" />
 
-    <dataTableCard
-      :daysBack="daysBack"
-      :entered="entered"
-      :allVisits="allVisits"
-      :messages="messages"
-      :visits="visits"
-    />
+    <dataTableCard :roomId="enabled.room.id" :log="log" />
 
     <systemBarBottom
       :socketMessage="socketMessage"
@@ -48,7 +47,7 @@
     ></systemBarBottom>
 
     <auditTrailCard :cons="cons" />
-  </v-container>
+  </div>
 </template>
 <script type="application/javascript" src="@/components/js/helpers.js"></script>
 
@@ -67,6 +66,7 @@ import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard'
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import connectionBanner from '@/components/cards/visitor/connectionBanner';
 import enterRoomBanner from '@/components/cards/visitor/enterRoomBanner';
+import messageBanner from '@/components/cards/visitor/messageBanner';
 import exposureAlert from '@/components/cards/visitor/exposureAlert';
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
@@ -87,6 +87,7 @@ export default {
     roomIdentityCard,
     connectionBanner,
     enterRoomBanner,
+    messageBanner,
     exposureAlert,
     warnRoomCard,
     systemBarBottom,
@@ -107,23 +108,6 @@ export default {
       };
     },
 
-    userAgent() {
-      let ua = navigator.userAgent;
-      let userAgent;
-      if (ua.includes('Edg')) {
-        userAgent = 'Edge';
-      } else if (ua.includes('Chrome')) {
-        userAgent = 'Chrome';
-      } else if (ua.includes('Firefox/82')) {
-        userAgent = 'Firefox Dev';
-      } else if (ua.includes('Firefox') || ua.includes('KHTML')) {
-        userAgent = 'Firefox';
-      } else {
-        userAgent = 'Unknown';
-      }
-      return userAgent;
-    },
-
     exposureWarning() {
       if (!this.messages.length) return {};
       let payload = {
@@ -138,17 +122,20 @@ export default {
       return this.rooms.includes(this.enabled.room.id) && this.yourId;
     },
 
-    allVisits() {
-      return this.daysBack != 0;
-    },
-
     messages: {
       get() {
         return Message.all();
       },
       set(newVal) {
+        // flatten newVal
+        const msg = {
+          room: newVal.room.room,
+          visitor: newVal.visitor.visitor,
+          sentTime: newVal.sentTime,
+          message: newVal.message,
+        };
         // static update function on Message model
-        Message.update(newVal);
+        Message.update(msg);
       },
     },
 
@@ -174,25 +161,27 @@ export default {
       return Room.all().map((v) => v.roomId);
     },
 
-    visits() {
-      let allVisits = this.messages.filter((v) => this.isBetween(v.sentTime));
-      if (this.daysBack == 0) {
-        return allVisits.filter((v) => this.enabled.room.id == v.room);
+    userAgent() {
+      let ua = navigator.userAgent;
+      let userAgent;
+      if (ua.includes('Edg')) {
+        userAgent = 'Edge';
+      } else if (ua.includes('Chrome')) {
+        userAgent = 'Chrome';
+      } else if (ua.includes('Firefox/82')) {
+        userAgent = 'Firefox Dev';
+      } else if (ua.includes('Firefox') || ua.includes('KHTML')) {
+        userAgent = 'Firefox';
+      } else {
+        userAgent = 'Unknown';
       }
-      return allVisits;
-    },
-    entered() {
-      return this.visits.filter((v) => v.message == 'Entered').length;
-    },
-    departed() {
-      return this.visits.filter((v) => v.message == 'Departed').length;
-    },
-    btnType() {
-      return this.checkedOut ? 'mdi-account-plus' : 'mdi-account-minus';
+      return userAgent;
     },
   },
 
   data: () => ({
+    roomMessage: 'Thanks for making us safer together...',
+    messageColor: 'success lighten-1',
     socketMessage: 'visitor',
     search: '',
 
@@ -209,7 +198,6 @@ export default {
 
     cons: [],
     rooms: [],
-    daysBack: 0,
     socketServerOnline: false,
     visitFormat: 'HH:mm on ddd, MMM DD',
     checkedOut: true,
@@ -270,6 +258,12 @@ export default {
     availableRoomsExposed(rooms) {
       this.log(`Visitor: ${rooms}`, 'Event: availableRoomsExposed');
     },
+    openRoomsExposed(rooms) {
+      this.log(
+        `Visitor sees open Rooms: ${printJson(rooms)}`,
+        'Event: openRoomsExposed'
+      );
+    },
 
     // Server fires this event when a Room opens/closes
 
@@ -293,23 +287,27 @@ export default {
     onRoomSelected(selectedRoom) {
       this.enabled.room = selectedRoom;
       this.enabled.canEnter += 1;
-      alert('onRoomSelected: ' + this.enabled.canEnter);
     },
 
     enterRoom() {
       // disables the banner
       this.enabled.canEnter = -1;
-      alert('enterRoom: ' + this.enabled.canEnter);
-
       let msg = {
         visitor: this.enabled.visitor,
         room: this.enabled.room,
         message: this.checkedOut ? 'Entered' : 'Departed',
         sentTime: new Date().toISOString(),
       };
+      const self = this;
       this.$socket.emit('enterRoom', msg, (ACK) => {
-        // ACK.result is true if we entered the Room
-        // this.enabled.canEnter = ACK.result;
+        if (ACK.error) {
+          self.roomMessage = ACK.error;
+          self.messageColor = 'error darken-2';
+          alert(ACK.error);
+        } else {
+          self.messageColor = 'success lighten-1';
+          self.roomMessage = `Welcome to ${ACK.room.room}`;
+        }
         this.log(ACK, 'ACKS');
       });
     },
@@ -471,10 +469,6 @@ export default {
       this.log(`You checked ${m}  ${roomId}`);
     },
 
-    toggleVisits() {
-      this.daysBack = !this.daysBack ? 14 : 0;
-    },
-
     // helper methods
     log(msg, type = 'information') {
       this.cons.push({
@@ -512,19 +506,6 @@ export default {
       this.log(`Deleting all messages`);
       Message.deleteAll();
       this.refreshConnection(true);
-    },
-
-    isBetween(date) {
-      let visit = moment(date);
-
-      let past = moment()
-        .add(-this.daysBack, 'day')
-        .format('YYYY-MM-DD');
-      let tomorrow = moment()
-        .add(1, 'day')
-        .format('YYYY-MM-DD');
-      let test = visit.isBetween(past, tomorrow);
-      return test;
     },
 
     testSocket(event) {
@@ -578,10 +559,10 @@ export default {
       // enabled holds two objects: room and visitor
       this.enabled.visitor = visitor;
       this.enabled.canEnter += 1;
-      alert('visitorReady: ' + this.enabled.canEnter);
       this.connectToServer();
     },
     onEnterRoom(proceed) {
+      this.enabled.canEnter = -1;
       if (proceed) {
         this.enterRoom();
       }
