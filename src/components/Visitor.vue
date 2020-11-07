@@ -25,8 +25,9 @@
     />
 
     <enterRoomBanner
-      v-if="changingRoom === true"
-      :selectedRoom="selectedRoom"
+      v-if="enterRoomEnabled"
+      :selectedRoom="enabled.room"
+      @enterRoom="onEnterRoom($event)"
     />
 
     <exposureAlert />
@@ -93,6 +94,11 @@ export default {
     auditTrailCard,
   },
   computed: {
+    enterRoomEnabled() {
+      let enableEntry = this.$socket.connected && this.enabled.canEnter;
+      return enableEntry;
+    },
+
     visitorData() {
       return {
         visitors: this.visitors,
@@ -145,18 +151,6 @@ export default {
         Message.update(newVal);
       },
     },
-
-    // roomId: {
-    //   get() {
-    //     return this.state?.roomId;
-    //   },
-    //   set(newVal) {
-    //     // static changeRoomId function on State model
-    //     State.changeRoomId(newVal);
-    //     // static update function on Room model
-    //     Room.update(newVal).catch((e) => console.log(e));
-    //   },
-    // },
 
     managedRoom: {
       get() {
@@ -211,7 +205,7 @@ export default {
     alertMessage: '',
     occupancy: 0,
     socketId: '',
-    enabled: { visitor: {}, room: {} },
+    enabled: { visitor: {}, room: {}, canEnter: -1 },
 
     cons: [],
     rooms: [],
@@ -298,19 +292,26 @@ export default {
   methods: {
     onRoomSelected(selectedRoom) {
       this.enabled.room = selectedRoom;
-      if (this.enabled.visitor && this.enabled.room) {
-        this.enterRoom();
-      }
+      this.enabled.canEnter += 1;
+      alert('onRoomSelected: ' + this.enabled.canEnter);
     },
 
     enterRoom() {
+      // disables the banner
+      this.enabled.canEnter = -1;
+      alert('enterRoom: ' + this.enabled.canEnter);
+
       let msg = {
         visitor: this.enabled.visitor,
         room: this.enabled.room,
         message: this.checkedOut ? 'Entered' : 'Departed',
         sentTime: new Date().toISOString(),
       };
-      this.$socket.emit('enterRoom', msg, (ACK) => console.log(ACK));
+      this.$socket.emit('enterRoom', msg, (ACK) => {
+        // ACK.result is true if we entered the Room
+        // this.enabled.canEnter = ACK.result;
+        this.log(ACK, 'ACKS');
+      });
     },
 
     exposeEventPromise(clientSocket, event) {
@@ -576,7 +577,14 @@ export default {
     visitorReady(visitor) {
       // enabled holds two objects: room and visitor
       this.enabled.visitor = visitor;
+      this.enabled.canEnter += 1;
+      alert('visitorReady: ' + this.enabled.canEnter);
       this.connectToServer();
+    },
+    onEnterRoom(proceed) {
+      if (proceed) {
+        this.enterRoom();
+      }
     },
   },
 

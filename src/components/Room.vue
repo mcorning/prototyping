@@ -279,7 +279,7 @@ export default {
 
     // Visitor routine events
     checkIn(msg) {
-      this.messages = msg;
+      this.messages = JSON.stringify(msg, null, 2);
     },
 
     checkOut(msg) {

@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <div>
     <v-col v-if="firstTime"><firstTimeCard /></v-col>
 
     <v-card>
@@ -30,7 +30,7 @@
         </v-row>
       </v-card-text>
     </v-card>
-  </v-container>
+  </div>
 </template>
 
 <script>
@@ -106,6 +106,7 @@ export default {
       let id = x.visitorId;
       let v = this.findVisitorWithId(id);
       this.selectedVisitor = v;
+      this.$emit('visitor', this.selectedVisitor);
     },
   },
   watch: {
