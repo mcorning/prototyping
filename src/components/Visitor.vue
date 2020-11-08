@@ -33,9 +33,11 @@
       @enterRoom="onEnterRoom($event)"
     />
 
-    <messageBanner :bgcolor="messageColor"> {{ roomMessage }}</messageBanner>
+    <messageBanner :bgcolor="messageColor">
+      {{ feedbackMessage }}</messageBanner
+    >
 
-    <exposureAlert>{{ alertMessage }}</exposureAlert>
+    <exposureAlert v-if="alertMessage">{{ alertMessage }}</exposureAlert>
 
     <warnRoomCard :disabled="!messages.length" @warnRooms="warnRooms" />
 
@@ -180,7 +182,7 @@ export default {
   },
 
   data: () => ({
-    roomMessage: 'Thanks for making us safer together...',
+    feedbackMessage: 'Thanks for making us safer together...',
     messageColor: 'success lighten-1',
     socketMessage: 'visitor',
     search: '',
@@ -271,8 +273,8 @@ export default {
       this.log(alertMessage, 'alert');
       this.alert = true;
       this.alertIcon = 'mdi-alert';
-      this.alertColor = 'error';
-      this.alertMessage = alertMessage;
+      this.messageColor = 'error';
+      this.feedbackMessage = alertMessage;
     },
 
     updatedOccupancy(payload) {
@@ -301,12 +303,12 @@ export default {
       const self = this;
       this.$socket.emit('enterRoom', msg, (ACK) => {
         if (ACK.error) {
-          self.roomMessage = ACK.error;
+          self.feedbackMessage = ACK.error;
           self.messageColor = 'error darken-2';
           alert(ACK.error);
         } else {
           self.messageColor = 'success lighten-1';
-          self.roomMessage = `Welcome to ${ACK.room.room}`;
+          self.feedbackMessage = `Welcome to ${ACK.room.room}`;
         }
         this.log(ACK, 'ACKS');
       });
@@ -382,11 +384,6 @@ export default {
     // Alert payload contains all the dates for that Room.
     // Server relays message to each Room.
     warnRooms() {
-      // // reset, if necessary, alert so we can hit the warn rooms more than once, if necessary.
-
-      //testing late alerts
-      this.alert = false;
-
       // Example warnings collection
       // [
       //   ['sentTime', '2020-10-27T19:05:53.082Z'],
@@ -432,8 +429,9 @@ export default {
         ack: (ack) => {
           this.alert = true;
           this.alertIcon = 'mdi-alert';
-          this.alertColor = 'warning';
-          this.alertMessage = ack;
+          this.messageColor = 'warning';
+          this.feedbackMessage = ack.result.flat();
+          console.log('exposureWarning result:', ack.result);
         },
       });
     },
@@ -442,6 +440,7 @@ export default {
       return v.room == room && v.message.toLowerCase() == 'entered';
     },
 
+    // used when sending individual Room warnings to Server (not currently used)
     // emit the exposureWarning to each Room occupied by Visitor
     emitExposureWarning(v) {
       this.log(
@@ -457,8 +456,9 @@ export default {
         ack: (ack) => {
           this.alert = true;
           this.alertIcon = 'mdi-alert';
-          this.alertColor = 'warning';
-          this.alertMessage = ack;
+          this.messageColor = 'warning';
+          this.feedbackMessage = ack.result.flat();
+          console.log('exposureWarning result:', ack.result);
         },
       });
     },

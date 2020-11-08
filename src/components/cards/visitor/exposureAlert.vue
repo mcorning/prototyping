@@ -9,7 +9,7 @@
     colored-border
     :icon="alertIcon"
     transition="scale-transition"
-  >
+    >Alert!
     <slot></slot>
   </v-alert>
 </template>
