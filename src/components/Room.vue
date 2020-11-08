@@ -96,6 +96,12 @@ export default {
     auditTrailCard,
   },
   computed: {
+    getNow() {
+      // const shortDateTimeFormat = 'lll';
+      const timeFormat = 'HH:MM:SS';
+      return moment().format(timeFormat);
+    },
+
     userAgent() {
       let ua = navigator.userAgent;
       let userAgent;
@@ -147,7 +153,7 @@ export default {
         // flatten newVal
         const msg = {
           room: newVal.room.room,
-          visitor: newVal.visitor.visitor,
+          visitor: newVal.visitor.id,
           sentTime: newVal.sentTime,
           message: newVal.message,
         };
@@ -262,94 +268,58 @@ export default {
     },
     // end socket.io reserved events
 
-    // Room event handlers
-    // Server sent notifyRoom (because Server received exposureWarning from Visitor)
-    // Room takes over and sends Server an alertVisitor event to all effected Visitors
     notifyRoom(data, ack) {
-      this.alert = false;
-      // data can be on object or an array
-
-      const { exposureDates, room, visitor } = data.length ? data[0] : data;
-
-      let messageDates = this.groupBy({
+      const { exposureDates, room, visitor } = data;
+      console.groupCollapsed(
+        `[${this.getNow}] Room Client: onNotifyRoom, Server Acknowledged:`
+      );
+      console.log('Input data:');
+      console.table(data);
+      let messageDates = this.groupMessagesByDateAndVisitor({
         array: this.messages,
         prop: 'sentTime',
         val: 'visitor',
       });
-      if (!Object.keys(messageDates).length) {
-        alert(
-          'UNEXEPECTED STATE: \nThere should be messages from the alerting Visitor.'
-        );
-        return;
-      }
-      console.log('messageDates:', messageDates);
-
-      let alerts = new Map();
-      // of only a single incoming date, make a Set with that
-      // otherwise use the object for the Set
-      let exposureDatesSet =
-        typeof exposureDates == 'string'
-          ? new Set().add(exposureDates)
-          : new Set(exposureDates);
-
-      console.log('Alert Dates', exposureDatesSet);
-      console.log('Here are the necessary Exposure Alerts');
-
-      // walk through the exposure dates from sick visitor..
-      exposureDatesSet.forEach((date) => {
-        //... looking for other visitors in the room on those exposure dates
-        // remember, messageDates is grouped by visitor
-        messageDates[moment(date).format(this.today)]?.forEach((v) => {
-          let phrase =
-            v != visitor
-              ? 'BE ADVISED: you may have been exposed to the virus'
-              : 'CONFIRMING: you may have exposed others to the virus';
-          let msg = `${v}, ${phrase} on date(s): ${moment(date).format(
-            'llll'
-          )}`;
-          let alert = alerts.get(v);
-          alerts.set(
-            v,
-            alert ? alert.concat(`, ${moment(date).format('llll')}`) : msg
-          );
+      console.log(`Room's grouped messages:`);
+      console.table(messageDates);
+      exposureDates.forEach((date) => {
+        // list all visitors on this date
+        messageDates[date].forEach((other) => {
+          // use other.visitor and visitor.vistor is you use object visitor in Message
+          // else use other and  visitor
+          if (other == visitor) {
+            console.log(
+              `${visitor}, we sent an exposure alert to another occupant in ${room} on ${date}`
+            );
+          } else {
+            console.log(
+              `Alerting ${other} that they were in ${room} on ${date}`
+            );
+            let warning = {
+              // note above
+              visitor: other,
+              id: other,
+              message: `${other}, to stop the spread, self-quarantine for 14 days.`,
+              sentTime: new Date().toISOString(),
+            };
+            const socket = this.$socket;
+            console.assert(
+              socket.connected,
+              `Socket ${socket.id} is disconnected? `
+            );
+            socket.emit('alertVisitor', warning, (result) => {
+              this.log(result, 'EVENT: alertVisitor');
+            });
+          }
         });
       });
-
-      // iterate the Map and emit alertVisitor event
-      // Server will ensure a Visitor is online before forwarding event
-      // otherwise, cache Visitor until they login again
-      for (let [key, value] of alerts.entries()) {
-        this.emit({
-          event: 'alertVisitor',
-          message: {
-            visitor: key,
-            message: `${value}. To stop the spread, self-quarantine for 14 days.`,
-            sentTime: new Date().toISOString(),
-          },
-          ack: (ack) => {
-            this.log(ack, 'alert');
-          },
-        });
-      }
-
+      console.groupEnd();
+      // use visitor.vistor is you use object visitor in Message
+      // else visitor
       if (ack) ack(`${visitor}, ${room} alerted`);
-      this.alertMessage = Object.keys(messageDates).length
-        ? `Visitor warning triggered Exposure Alert for ${
-            Object.keys(messageDates).length
-          } exposure date(s) in ${room}.`
-        : `Exposure Alert does not apply: No other visitor(s) to ${room} during exposure dates.`;
-      this.alertColor = 'warning';
-      this.alertIcon = 'mdi-home-alert';
-      this.alert = true;
     },
 
-    // used for UI only == Visitors.vue only
-    // updatedOccupancy(payload) {
-    //   if (payload.room == this.roomId) {
-    //     this.occupancy = payload.occupancy;
-    //   }
-    //   this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
-    // },
+    // end sockets:
   },
 
   methods: {
@@ -363,6 +333,21 @@ export default {
 
     getIconColor(type) {
       return type == 'alert' ? 'red' : 'gray';
+    },
+
+    groupMessagesByDateAndVisitor(payload) {
+      const { array, prop, val } = payload;
+
+      return array
+        .filter((v) => v[val]) // ignore Room Opened/Closed messages
+        .reduce(function(a, c) {
+          let key = moment(c[prop]).format('YYYY-MM-DD');
+          if (!a[key]) {
+            a[key] = [];
+          }
+          a[key].push(c[val]);
+          return a;
+        }, {});
     },
 
     groupBy(payload) {

@@ -35,9 +35,9 @@
 
     <messageBanner :bgcolor="messageColor"> {{ roomMessage }}</messageBanner>
 
-    <exposureAlert />
+    <exposureAlert>{{ alertMessage }}</exposureAlert>
 
-    <warnRoomCard :disabled="!messages.length" />
+    <warnRoomCard :disabled="!messages.length" @warnRooms="warnRooms" />
 
     <dataTableCard :roomId="enabled.room.id" :log="log" />
 
@@ -130,7 +130,7 @@ export default {
         // flatten newVal
         const msg = {
           room: newVal.room.room,
-          visitor: newVal.visitor.visitor,
+          visitor: newVal.visitor.id,
           sentTime: newVal.sentTime,
           message: newVal.message,
         };
@@ -329,6 +329,18 @@ export default {
       window.location.reload(hard);
     },
 
+    groupBy(payload) {
+      const { array, prop, val } = payload;
+      return array.reduce(function(acc, obj) {
+        acc.set(obj[prop], (acc.get(obj[prop]) || []).concat(obj[val]));
+        return acc;
+      }, new Map());
+    },
+
+    addYourId(val) {
+      this.yourId = val;
+    },
+
     // this is a (more?) functional way to do grouping
     groupByFn(arr, fn) {
       return arr
@@ -339,21 +351,30 @@ export default {
         }, {});
     },
 
-    groupBy(payload) {
+    groupMessagesByRoomAndDate(payload) {
       const { array, prop, val } = payload;
-
-      return array.reduce(function(acc, obj) {
-        let key = obj[prop];
-        if (!acc[key]) {
-          acc[key] = [];
-        }
-        acc[key].push(obj[val]);
-        return acc;
-      }, {});
-    },
-
-    addYourId(val) {
-      this.yourId = val;
+      let visitDates = [];
+      return array
+        .filter((v) => v[val]) // ignore Room Opened/Closed messages
+        .reduce(function(a, c) {
+          // if Message does not store the entire visitor and room objects
+          // then c[prop] is sufficient; otherwise use c[prop].id
+          let key = c[prop];
+          if (!a[key]) {
+            a[key] = {
+              room: '',
+              dates: [],
+            };
+          }
+          visitDates.push(moment(c[val]).format('YYYY-MM-DD'));
+          // if Message does not store the entire visitor and room objects
+          // then c.room is sufficient; otherwise use c.room.room
+          a[key] = {
+            room: c.room,
+            dates: visitDates,
+          };
+          return a;
+        }, {});
     },
 
     // Visitor groups all messages by Room.
@@ -366,45 +387,48 @@ export default {
       //testing late alerts
       this.alert = false;
 
-      // returns something like this:
-      // WARNING MESSAGE STRUCT:
-      //{
-      //   sentTime: '2020-09-19T00:56:54.570Z',
-      //   visitor: {
-      //     visior: 'Nurse Jackie',
-      //     id: 'FWzLl5dS9sr9FxDsAAAB',
-      //     nsp: 'enduringNet',
-      //   },
-      //   warning: {              // ONE ROOM PER WARNING
-      //     room: {
-      //       room: 'Heathlands Medical',
-      //       id: 'd6QoVa_JZxnM_0BoAAAA',
+      // Example warnings collection
+      // [
+      //   ['sentTime', '2020-10-27T19:05:53.082Z'],
+      //   [
+      //     'visitor',
+      //     {
+      //       visitor: 'AirGas Inc',
+      //       id: 'JgvrILSxDwXRWJUpAAAC',
       //       nsp: 'enduringNet',
       //     },
-      //     dates: [
-      //       '2020-09-19T00:33:04.248Z',  // WARNING CAN
-      //       '2020-09-14T02:53:33.738Z',  // HAVE MULTIPLE
-      //       '2020-09-18T07:15:00.00Z',   // VISIT DATES
-      //     ],
-      //   },
-      // };
+      //   ],
+      //   [
+      //     'warnings',
+      //     {
+      //       d6QoVa_JZxnM_0BoAAAA: {
+      //         room: 'Heathlands Medical',
+      //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
+      //       },
+      //       e1suC3Rdpj_1PuR3AAAB: {
+      //         room: 'Heathlands Cafe',
+      //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
+      //       },
+      //     },
+      //   ],
+      // ];
 
-      console.table(this.exposureWarning);
-      this.log(
-        `Warning: ${Object.entries(this.exposureWarning)
-          .toString()
-          .split(',')
-          .join(', ')}`,
-        'alert'
-      );
-
+      const payload = {
+        array: this.messages.filter(
+          (v) => v.visitor == this.enabled.visitor.id
+        ),
+        prop: 'room',
+        val: 'sentTime',
+      };
+      const msg = {
+        sentTime: new Date().toISOString(),
+        visitor: this.enabled.visitor.visitor,
+        warnings: this.groupMessagesByRoomAndDate(payload),
+      };
+      this.log(msg, 'exposureWarning');
       this.emit({
         event: 'exposureWarning',
-        message: {
-          visitor: this.yourId,
-          warning: this.exposureWarning,
-          sentTime: new Date().toISOString(),
-        },
+        message: msg,
         ack: (ack) => {
           this.alert = true;
           this.alertIcon = 'mdi-alert';

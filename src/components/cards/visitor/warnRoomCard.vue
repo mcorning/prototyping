@@ -5,7 +5,7 @@
         height="5em"
         color="error"
         dark
-        @click="warnRooms"
+        @click="$emit('warnRooms')"
         :disabled="disabled"
       >
         Warn
