@@ -153,7 +153,10 @@ export default {
         // flatten newVal
         const msg = {
           room: newVal.room.room,
-          visitor: newVal.visitor.id,
+          visitor: newVal.visitor.visitor,
+          roomId: newVal.room.id,
+          visitorId: newVal.visitor.id,
+          nsp: newVal.nsp,
           sentTime: newVal.sentTime,
           message: newVal.message,
         };

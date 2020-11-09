@@ -19,14 +19,14 @@
       </div>
 
       <v-spacer></v-spacer>
-      <v-btn
+      <!-- <v-btn
         v-for="link in links"
         :key="`${link.label}-header-link`"
         text
         rounded
         :to="link.url"
         >{{ link.label }}</v-btn
-      >
+      > -->
     </v-app-bar>
     <v-main>
       <router-view></router-view>

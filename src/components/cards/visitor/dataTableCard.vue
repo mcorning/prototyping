@@ -3,7 +3,7 @@
     <v-card-text v-if="loaded">
       <v-list dense>
         <v-row align="center" justify="space-between" dense>
-          <v-col cols="5">
+          <v-col>
             <span
               >{{ daysBack == 0 ? 'Today' : 'All' }} {{ entered }} visits
             </span></v-col
@@ -64,7 +64,7 @@ import Message from '@/models/Message';
 
 export default {
   props: {
-    roomId: {
+    roomName: {
       type: String,
       default: '',
     },
@@ -82,7 +82,9 @@ export default {
     visits() {
       let allVisits = this.messages.filter((v) => this.isBetween(v.sentTime));
       if (this.daysBack == 0) {
-        return allVisits.filter((v) => this.roomId == v.room);
+        return allVisits.filter((v) => {
+          return this.roomName == v.room;
+        });
       }
       return allVisits;
     },

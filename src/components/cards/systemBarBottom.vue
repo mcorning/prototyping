@@ -1,10 +1,14 @@
 <template>
   <v-system-bar color="secondary">
-    <v-row align="center" justify="space-between">
+    <v-row align="center">
       <v-col>{{ socketInfo }}</v-col>
-      <v-col class="text-right">
-        <v-btn @click="disconnectFromServer" text>
+
+      <v-col cols="2" class="text-right">
+        <!-- <v-btn @click="disconnectFromServer" text>
           <v-icon>mdi-door-closed-lock</v-icon>
+        </v-btn> -->
+        <v-btn @click="$emit('showDetails')" text>
+          <v-icon>mdi-glasses</v-icon>
         </v-btn>
       </v-col>
     </v-row>
@@ -22,7 +26,7 @@ export default {
   computed: {},
   data() {
     return {
-      socketInfo: `Pick a ${this.socketMessage}`,
+      socketInfo: '',
     };
   },
   sockets: {
@@ -34,10 +38,8 @@ export default {
         return;
       }
 
-      const { id, nsp, visitor, room } = query;
-      this.socketInfo = `${visitor || room}  [${id} ${nsp}] ${
-        this.$socket.connected ? 'connected' : 'disconnected'
-      }`;
+      const { id, nsp } = query;
+      this.socketInfo = `${id} ${nsp}`;
     },
     disconnect() {
       this.socketInfo = `Pick a ${this.socketMessage}`;

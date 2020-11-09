@@ -1,33 +1,30 @@
 <template>
   <div>
     <systemBarTop>
-      <v-col class="text-center">UA: {{ userAgent }}</v-col>
+      <!-- <v-col class="text-center">UA: {{ userAgent }}</v-col> -->
     </systemBarTop>
 
     <diaryCard />
-
-    <v-row dense justify="space-between">
-      <v-col><visitorIdentityCard @visitor="visitorReady($event)" /> </v-col>
-      <v-col v-show="$socket.connected">
-        <!-- bput this back later 
+    <v-containte4r>
+      <v-row dense justify="space-between">
+        <v-col><visitorIdentityCard @visitor="visitorReady($event)" /> </v-col>
+        <v-col v-show="$socket.connected">
+          <!-- bput this back later 
                   :rooms="rooms" -->
-        <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
-      /></v-col>
-    </v-row>
-    <v-rwo v-if="showEntryRoomCard">
-      <roomEntryCard :log="log" @roomChanged="act($event)" />
-    </v-rwo>
-
+          <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
+        /></v-col>
+      </v-row>
+      <v-row v-if="showEntryRoomCard">
+        <roomEntryCard :log="log" @roomChanged="act($event)" />
+      </v-row>
+    </v-containte4r>
     <connectionBanner
-      v-if="$socket.disconnected"
+      v-if="disconnectedFromServer"
       @reconnect="connectToServer"
     />
-    <!--       v-if="enabled.canEnter === 1"
- -->
-    <enterRoomBanner
-      v-if="false"
-      :selectedRoom="enabled.room"
-      @enterRoom="onEnterRoom($event)"
+    <connectionDialog
+      v-if="disconnectedFromServer"
+      @reconnect="connectToServer"
     />
 
     <messageBanner :bgcolor="messageColor">
@@ -38,14 +35,16 @@
 
     <warnRoomCard :disabled="!messages.length" @warnRooms="warnRooms" />
 
-    <dataTableCard :roomId="enabled.room.id" :log="log" />
-
     <systemBarBottom
       :socketMessage="socketMessage"
+      @showDetails="showDetails = !showDetails"
       :log="log"
     ></systemBarBottom>
+    <div v-if="showDetails">
+      <dataTableCard :roomName="roomName" :log="log" />
 
-    <auditTrailCard :cons="cons" />
+      <auditTrailCard :cons="cons" />
+    </div>
   </div>
 </template>
 <script type="application/javascript" src="@/components/js/helpers.js"></script>
@@ -59,13 +58,13 @@ import moment from 'moment';
 import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
+import connectionDialog from '@/components/cards/Dialog';
 import systemBarTop from '@/components/cards/systemBarTop';
 import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
 import connectionBanner from '@/components/cards/visitor/connectionBanner';
-import enterRoomBanner from '@/components/cards/visitor/enterRoomBanner';
 import messageBanner from '@/components/cards/visitor/messageBanner';
 import exposureAlert from '@/components/cards/visitor/exposureAlert';
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
@@ -81,13 +80,13 @@ window.onerror = function(message, url, lineNo, columnNo, error) {
 export default {
   name: 'LctVisitor',
   components: {
+    connectionDialog,
     systemBarTop,
     diaryCard,
     visitorIdentityCard,
     roomIdentityCard,
     roomEntryCard,
     connectionBanner,
-    enterRoomBanner,
     messageBanner,
     exposureAlert,
     warnRoomCard,
@@ -96,6 +95,15 @@ export default {
     auditTrailCard,
   },
   computed: {
+    roomName() {
+      return this.enabled.room.room;
+    },
+
+    checkConnection() {
+      const x = this.$socket.disconnected;
+      return x;
+    },
+
     enterRoomEnabled() {
       let enableEntry = this.$socket.connected && this.enabled.canEnter;
       return enableEntry;
@@ -131,7 +139,10 @@ export default {
         // flatten newVal
         const msg = {
           room: newVal.room.room,
-          visitor: newVal.visitor.id,
+          visitor: newVal.visitor.visitor,
+          roomId: newVal.room.id,
+          visitorId: newVal.visitor.id,
+          nsp: newVal.nsp,
           sentTime: newVal.sentTime,
           message: newVal.message,
         };
@@ -181,8 +192,9 @@ export default {
   },
 
   data: () => ({
+    disconnectedFromServer: true,
     showEntryRoomCard: false,
-
+    showDetails: false,
     feedbackMessage:
       'Thanks for making us safer together using Local Contact Tracing...',
     messageColor: 'success lighten-1',
@@ -210,6 +222,7 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
+      this.disconnectedFromServer = false;
       if (this.$socket.io.opts?.query) {
         const { visitor, id, nsp } = this.$socket.io.opts.query;
         this.log(
@@ -225,6 +238,7 @@ export default {
       }
     },
     disconnect(reason) {
+      this.disconnectedFromServer = true;
       this.log(`Disconnect: ${reason}`, 'Visitor.vue');
     },
     error(reason) {
@@ -327,7 +341,8 @@ export default {
 
     disconnectFromServer() {
       console.log('Disconnection from Server');
-      this.$socket.disconnect(true); // passing true closes underlying connnection
+      this.$socket.disconnect(); // passing true closes underlying connnection
+      // this.$socket.disconnect(true); // passing true closes underlying connnection
     },
 
     refreshConnection(hard) {

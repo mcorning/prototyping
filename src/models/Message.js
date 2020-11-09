@@ -7,7 +7,10 @@ export default class Message extends Model {
     return {
       id: this.attr(null),
       room: this.string(''),
+      roomId: this.string(''),
       visitor: this.string(''),
+      visitorId: this.string(''),
+      nsp: this.string(''),
       sentTime: this.string(''),
       message: this.string(''),
     };
@@ -15,11 +18,14 @@ export default class Message extends Model {
 
   // val must be an object
   static async update(val) {
-    const { visitor, room, message, sentTime } = val;
+    const { visitor, room, visitorId, roomId, nsp, message, sentTime } = val;
     let p = await this.$create({
       data: {
-        visitor: visitor,
         room: room,
+        roomId: roomId,
+        visitor: visitor,
+        visitorId: visitorId,
+        nsp: nsp,
         message: message,
         sentTime: sentTime,
       },
