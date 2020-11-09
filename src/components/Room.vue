@@ -82,7 +82,7 @@ import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
   console.log(error.stack);
-  alert('onerror: ' + message);
+  alert('onerror: ' + error.stack);
 };
 
 export default {
@@ -271,47 +271,49 @@ export default {
     },
     // end socket.io reserved events
 
+    // sent from Server after Visitor sends exposureWarning
     notifyRoom(data, ack) {
       const { exposureDates, room, visitor } = data;
-      console.groupCollapsed(
-        `[${this.getNow}] Room Client: onNotifyRoom, Server Acknowledged:`
+      // console.groupCollapsed(
+      //   `[${this.getNow}] Room Client: onNotifyRoom, Server Acknowledged:`
+      // );
+      // console.log('Input data:');
+      // console.table(data);
+      // let messageDates = this.groupMessagesByDateAndVisitor({
+      //   array: this.messages,
+      //   prop: 'sentTime',
+      //   val: 'visitorId',
+      // });
+      // console.log(`Room's grouped messages:`);
+      // console.table(messageDates);
+
+      // filter messages for getMessageDates
+      const messageDates = this.getMessageDates(
+        data,
+        this.messages.filter((v) => v.message == 'Entered')
       );
-      console.log('Input data:');
-      console.table(data);
-      let messageDates = this.groupMessagesByDateAndVisitor({
-        array: this.messages,
-        prop: 'sentTime',
-        val: 'visitor',
-      });
-      console.log(`Room's grouped messages:`);
-      console.table(messageDates);
       exposureDates.forEach((date) => {
         // list all visitors on this date
         messageDates[date].forEach((other) => {
-          // use other.visitor and visitor.vistor is you use object visitor in Message
-          // else use other and  visitor
-          if (other == visitor) {
-            console.log(
-              `${visitor}, we sent an exposure alert to another occupant in ${room} on ${date}`
+          if (other.id == visitor.id) {
+            this.log(
+              `${visitor.val2}, we sent an exposure alert to another occupant in ${room} on ${date}`,
+              'EVENT: notifyRoom'
             );
           } else {
-            console.log(
-              `Alerting ${other} that they were in ${room} on ${date}`
+            this.log(
+              `Alerting ${other.val2} that they were in ${room} on ${date}`,
+              'EVENT: notifyRoom'
             );
-            let warning = {
-              // note above
-              visitor: other,
-              id: other,
-              message: `${other}, to stop the spread, self-quarantine for 14 days.`,
+            const warning = {
+              visitor: other.val2,
+              visitorId: other.id,
+              message: `${other.val2}, to stop the spread, self-quarantine for 14 days.`,
               sentTime: new Date().toISOString(),
             };
-            const socket = this.$socket;
-            console.assert(
-              socket.connected,
-              `Socket ${socket.id} is disconnected? `
-            );
-            socket.emit('alertVisitor', warning, (result) => {
-              this.log(result, 'EVENT: alertVisitor');
+
+            this.$socket.emit('alertVisitor', warning, (result) => {
+              this.log(result, 'ACK: alertVisitor');
             });
           }
         });
@@ -326,6 +328,37 @@ export default {
   },
 
   methods: {
+    groupMessagesByDateAndVisitor(payload) {
+      const { array, prop, val, val2 } = payload;
+
+      return array.reduce(function(a, c) {
+        let key = moment(c[prop]).format('YYYY-MM-DD');
+        if (!a[key]) {
+          a[key] = [];
+        }
+        a[key].push({ id: c[val], val2: c[val2] });
+        return a;
+      }, {});
+    },
+
+    getMessageDates(data, messages) {
+      console.groupCollapsed(
+        `[${this.getNow}] Room Client: onNotifyRoom, Server Acknowledged:`
+      );
+      console.log('Input data:');
+      console.table(data);
+      let messageDates = this.groupMessagesByDateAndVisitor({
+        array: messages,
+        prop: 'sentTime',
+        val: 'visitorId',
+        val2: 'visitor',
+      });
+      console.log(`Room's grouped messages:`);
+      console.table(messageDates);
+      return messageDates;
+    },
+
+    //#region - other methods
     refreshConnection(hard) {
       window.location.reload(hard);
     },
@@ -336,21 +369,6 @@ export default {
 
     getIconColor(type) {
       return type == 'alert' ? 'red' : 'gray';
-    },
-
-    groupMessagesByDateAndVisitor(payload) {
-      const { array, prop, val } = payload;
-
-      return array
-        .filter((v) => v[val]) // ignore Room Opened/Closed messages
-        .reduce(function(a, c) {
-          let key = moment(c[prop]).format('YYYY-MM-DD');
-          if (!a[key]) {
-            a[key] = [];
-          }
-          a[key].push(c[val]);
-          return a;
-        }, {});
     },
 
     groupBy(payload) {
@@ -367,7 +385,6 @@ export default {
           return a;
         }, {});
     },
-
     // main methods
     // openMyRoom(roomId) {
     //   let payload = {
@@ -541,6 +558,26 @@ export default {
       this.selectedRoom = r;
       this.connectToServer();
     },
+    //#endregion
+
+    // Emitters:   Visitor            Server        Room
+    // Handlers:   Server             Room          Serveer         Visitor
+    // Event path: exposureWarning -> notifyRoom -> alertVisitor -> exposureAlert
+
+    // Room handles notifyRoom event from Server
+    //   * based on data in exposureWarning from Visitor
+    //       * Visitor object
+    //       * collection of Room/dates
+    // exposureAlert contains a primary message to the Visitors:
+    //    * the Visitor who issued the exposureWarning sees a confirmation message,
+    //    * the other Visitor(s) receive
+    //       * a message recommending self-quarantine
+    //       * a packet of dates of possible exposure that is stored in the Visitor log
+
+    // Room emits alertVisitor to Server sending
+    //    * a Visitor object composed of data received when Visitors entered Room
+    //         * visitor:   nickname of Visitor
+    //         * visitorId: Visitor's generated ID
   },
 
   async created() {},

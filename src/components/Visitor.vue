@@ -5,7 +5,7 @@
     </systemBarTop>
 
     <diaryCard />
-    <v-containte4r>
+    <v-container>
       <v-row dense justify="space-between">
         <v-col><visitorIdentityCard @visitor="visitorReady($event)" /> </v-col>
         <v-col v-show="$socket.connected">
@@ -17,7 +17,7 @@
       <v-row v-if="showEntryRoomCard">
         <roomEntryCard :log="log" @roomChanged="act($event)" />
       </v-row>
-    </v-containte4r>
+    </v-container>
     <connectionBanner
       v-if="disconnectedFromServer"
       @reconnect="connectToServer"
@@ -397,49 +397,26 @@ export default {
         }, {});
     },
 
-    // Visitor groups all messages by Room.
-    // Visitor iterates list sending an alertRoom event to socket.io server for each Room.
-    // Alert payload contains all the dates for that Room.
-    // Server relays message to each Room.
     warnRooms() {
-      // Example warnings collection
-      // [
-      //   ['sentTime', '2020-10-27T19:05:53.082Z'],
-      //   [
-      //     'visitor',
-      //     {
-      //       visitor: 'AirGas Inc',
-      //       id: 'JgvrILSxDwXRWJUpAAAC',
-      //       nsp: 'enduringNet',
-      //     },
-      //   ],
-      //   [
-      //     'warnings',
-      //     {
-      //       d6QoVa_JZxnM_0BoAAAA: {
-      //         room: 'Heathlands Medical',
-      //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
-      //       },
-      //       e1suC3Rdpj_1PuR3AAAB: {
-      //         room: 'Heathlands Cafe',
-      //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
-      //       },
-      //     },
-      //   ],
-      // ];
-
+      const self = this;
       const payload = {
         array: this.messages.filter(
-          (v) => v.visitor == this.enabled.visitor.id
+          (v) => v.visitor == this.enabled.visitor.visitor
         ),
         prop: 'room',
         val: 'sentTime',
       };
+      if (payload.array.length == 0) {
+        alert('No messages for ' + this.enabled.visitor.visitor);
+        return;
+      }
+
       const msg = {
         sentTime: new Date().toISOString(),
-        visitor: this.enabled.visitor.visitor,
+        visitor: this.enabled.visitor,
         warnings: this.groupMessagesByRoomAndDate(payload),
       };
+      console.log('exposureWarning', printJson(msg));
       this.log(msg, 'exposureWarning');
       this.emit({
         event: 'exposureWarning',
@@ -448,7 +425,7 @@ export default {
           this.alert = true;
           this.alertIcon = 'mdi-alert';
           this.messageColor = 'warning';
-          this.feedbackMessage = ack.result.flat();
+          this.feedbackMessage = ack.result.flat().flat();
           console.log('exposureWarning result:', ack.result);
         },
       });
@@ -475,7 +452,7 @@ export default {
           this.alert = true;
           this.alertIcon = 'mdi-alert';
           this.messageColor = 'warning';
-          this.feedbackMessage = ack.result.flat();
+          this.feedbackMessage = ack.result.flat().flat();
           console.log('exposureWarning result:', ack.result);
         },
       });
@@ -615,6 +592,17 @@ export default {
         this.enterRoom();
       }
     },
+
+    // Visitor emits exposureWarning to Server sending
+    //    * the Visitor object and
+    //    * a collection of Rooms and dates visited
+
+    // Server emits exposureAlert to Visitor based on Room(s)' response to exposureWarning from Visitor
+    //exposureAlert contains a primary message to the Visitors:
+    //    * the Visitor who issued the exposureWarning sees a confirmation message,
+    //    * the other Visitor(s) receive
+    //       * a message recommending self-quarantine
+    //       * a packet of dates of possible exposure that is stored in the Visitor log
   },
 
   // watch: {
