@@ -197,7 +197,7 @@ export default {
     showDetails: false,
     feedbackMessage:
       'Thanks for making us safer together using Local Contact Tracing...',
-    messageColor: 'success lighten-1',
+    messageColor: 'secondary lighten-1',
     socketMessage: 'visitor',
     search: '',
 
