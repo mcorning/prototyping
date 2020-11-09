@@ -5,13 +5,14 @@
     <v-card>
       <v-card-text>
         <v-row align="center" justify="space-between">
-          <v-col cols="6">
+          <v-col>
             <v-text-field
               v-if="onboard"
               label="Enter the public name of your site or gathering"
               hint="This name should be uniquely recognizable to all Rooms"
               persistent-hint
               clearable
+              autofocus
               @change="updateRoom"
             ></v-text-field>
 

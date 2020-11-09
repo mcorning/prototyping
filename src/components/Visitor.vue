@@ -7,19 +7,16 @@
     <diaryCard />
 
     <v-row dense justify="space-between">
-      <v-col cols="6"
-        ><visitorIdentityCard @visitor="visitorReady($event)" />
-      </v-col>
+      <v-col><visitorIdentityCard @visitor="visitorReady($event)" /> </v-col>
       <v-col v-show="$socket.connected">
         <!-- bput this back later 
                   :rooms="rooms" -->
-        <roomIdentityCard
-          :log="log"
-          :enabled="enabled"
-          @roomEntered="act($event)"
-          @roomSelected="onRoomSelected($event)"
+        <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
       /></v-col>
     </v-row>
+    <v-rwo v-if="showEntryRoomCard">
+      <roomEntryCard :log="log" @roomChanged="act($event)" />
+    </v-rwo>
 
     <connectionBanner
       v-if="$socket.disconnected"
@@ -66,6 +63,7 @@ import systemBarTop from '@/components/cards/systemBarTop';
 import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
+import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
 import connectionBanner from '@/components/cards/visitor/connectionBanner';
 import enterRoomBanner from '@/components/cards/visitor/enterRoomBanner';
 import messageBanner from '@/components/cards/visitor/messageBanner';
@@ -87,6 +85,7 @@ export default {
     diaryCard,
     visitorIdentityCard,
     roomIdentityCard,
+    roomEntryCard,
     connectionBanner,
     enterRoomBanner,
     messageBanner,
@@ -182,7 +181,10 @@ export default {
   },
 
   data: () => ({
-    feedbackMessage: 'Thanks for making us safer together...',
+    showEntryRoomCard: false,
+
+    feedbackMessage:
+      'Thanks for making us safer together using Local Contact Tracing...',
     messageColor: 'success lighten-1',
     socketMessage: 'visitor',
     search: '',
@@ -289,6 +291,7 @@ export default {
     onRoomSelected(selectedRoom) {
       this.enabled.room = selectedRoom;
       this.enabled.canEnter += 1;
+      this.showEntryRoomCard = true;
     },
 
     enterRoom() {
@@ -308,7 +311,7 @@ export default {
           alert(ACK.error);
         } else {
           self.messageColor = 'success lighten-1';
-          self.feedbackMessage = `Welcome to ${ACK.room.room}`;
+          self.feedbackMessage = `Welcome to ${ACK.room.room.id}`;
         }
         this.log(ACK, 'ACKS');
       });
@@ -470,16 +473,16 @@ export default {
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
-    act(roomId = this.enabled.room.id) {
+    act(checkedOut) {
       let msg = {
         visitor: this.enabled.visitor,
         room: this.enabled.room,
-        message: this.checkedOut ? 'Entered' : 'Departed',
+        message: checkedOut ? 'Entered' : 'Departed',
         sentTime: new Date().toISOString(),
       };
       this.messages = msg;
 
-      let event = this.checkedOut ? 'enterRoom' : 'leaveRoom';
+      let event = checkedOut ? 'enterRoom' : 'leaveRoom';
 
       this.emit({
         event: event,
@@ -488,9 +491,15 @@ export default {
           this.log(ack.message);
         },
       });
-      this.checkedOut = !this.checkedOut;
-      let m = this.checkedOut ? 'out of' : 'into';
-      this.log(`You checked ${m}  ${roomId}`);
+      this.messageColor = checkedOut ? 'dark success' : 'dark warning ';
+      this.feedbackMessage = checkedOut
+        ? `Welcome to ${this.enabled.room.room}`
+        : 'See you next time...';
+
+      let m = checkedOut ? 'out of' : 'into';
+      this.log(
+        `You checked ${m} ${this.enabled.room.room} {${this.enabled.room.id}}`
+      );
     },
 
     // helper methods

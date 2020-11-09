@@ -1,22 +1,26 @@
 <template>
-  <v-card>
+  <v-card class="mx-auto" max-width="344" outlined>
     <v-card-text>
       <v-row>
-        <v-col>
-          <v-select
-            v-model="roomSelected"
-            :items="openRooms"
-            item-text="room"
-            item-value="id"
-            label="Pick your Room"
-            persistent-hint
-            return-object
-            single-line
-            @change="changingRoom"
-          ></v-select>
+        <v-col cols="6">
+          <v-row>
+            <v-btn
+              :color="checkedOut ? 'success' : 'warning'"
+              fab
+              dark
+              @click="onChangeRoom"
+            >
+              <v-icon>{{ btnType }}</v-icon>
+            </v-btn></v-row
+          >
+          <v-row>
+            {{ checkedOut ? 'Check-in' : 'Check-out' }}
+          </v-row>
         </v-col>
-      </v-row>
-    </v-card-text>
+        <v-col cols="6">
+          <v-text-field label="Occupancy" :value="occupancy"></v-text-field>
+        </v-col> </v-row
+    ></v-card-text>
   </v-card>
 </template>
 
@@ -34,8 +38,20 @@ export default {
     rooms: {
       type: Array,
     },
+
+    enabled: {
+      type: Object,
+    },
   },
-  computed: {},
+  computed: {
+    btnType() {
+      return this.checkedOut ? 'mdi-account-plus' : 'mdi-account-minus';
+    },
+
+    occupancy() {
+      return 1;
+    },
+  },
   data() {
     return {
       openRooms: [],
@@ -62,6 +78,13 @@ export default {
     },
   },
   methods: {
+    emit(payload) {
+      if (!this.$socket.id) {
+        return;
+      }
+      this.$socket.emit(payload.event, payload.message, payload.ack);
+    },
+
     exposeEventPromise(event) {
       let self = this;
       return new Promise(function(resolve) {
@@ -69,6 +92,15 @@ export default {
           resolve(results);
         });
       });
+    },
+
+    onChangeRoom() {
+      this.$emit('roomChanged', this.checkedOut);
+      //  checkedOut instantiates as true,
+      // meaning the default action is to EnterRoom
+      // so on the second click, checkedOut will be false
+      // and act will Leave Room
+      this.checkedOut = !this.checkedOut;
     },
 
     changingRoom() {

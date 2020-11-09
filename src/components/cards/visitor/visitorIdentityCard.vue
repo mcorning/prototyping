@@ -1,7 +1,5 @@
 <template>
   <div>
-    <v-col v-if="firstTime"><firstTimeCard /></v-col>
-
     <v-card>
       <v-card-text>
         <v-row>
@@ -30,6 +28,8 @@
         </v-row>
       </v-card-text>
     </v-card>
+
+    <v-col v-if="firstTime"><firstTimeCard /></v-col>
   </div>
 </template>
 
@@ -92,6 +92,7 @@ export default {
 
     // update IndexedDb and set values for selection
     updateVisitor(newVal) {
+      console.assert(this.selectedVisitor, 'Missing selectedVisior object.');
       this.selectedVisitor.visitor = newVal;
       this.selectedVisitor.id = base64id.generateId();
       // static update function on Visitor model
@@ -102,9 +103,15 @@ export default {
     },
 
     selectedVisitorInit() {
+      // first check for any visitor (onboarding will not have one yet)
+      if (!Visitor.exists()) {
+        // ensure there is a property (may be removed by removing a Visitor)
+        this.selectedVisitor = { visitor: '', id: '' };
+        return;
+      }
       let x = State.find(0);
       if (!x) {
-        alert('State appears empty');
+        alert('Welcome to Local Contact Tracing');
         return;
       }
       let id = x.visitorId;
@@ -117,6 +124,12 @@ export default {
     selectedVisitor(newVal, oldVal) {
       if (!newVal) {
         Visitor.delete(oldVal.id);
+        // deleting the last Visitor will leave this.selectedVisitor null...
+        if (!Visitor.exists()) {
+          // ...so put it back in play wo we don't fail at updateVisitor() above
+          this.selectedVisitor = { visitor: '', id: '' };
+          return;
+        }
       }
     },
   },

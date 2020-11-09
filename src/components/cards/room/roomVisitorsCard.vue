@@ -57,7 +57,7 @@
           </v-data-table>
         </v-card-text>
       </v-col>
-      <v-col cols="6">
+      <v-col>
         <v-card-text v-if="listUniqueVisitors">
           <v-subheader>Unique Visitors Today</v-subheader>
 
