@@ -39,6 +39,8 @@
           :headers="messageHeaders"
           :items="visits"
           multi-sort
+          :sort-by="['sentTime', 'message', 'visitor']"
+          :sort-desc="[true, false, false]"
           item-key="id"
           dense
           :items-per-page="5"
@@ -80,11 +82,14 @@ export default {
     },
 
     visits() {
-      let allVisits = this.messages.filter((v) => this.isBetween(v.sentTime));
+      const self = this;
+
+      let allVisits = this.messages.filter((v) => self.isBetween(v.sentTime));
       if (this.daysBack == 0) {
-        return allVisits.filter((v) => {
-          return this.roomName == v.room;
-        });
+        let roomVisits = this.messages.filter(
+          (v) => self.roomName == v.room && self.isToday(v.sentTime)
+        );
+        return roomVisits;
       }
       return allVisits;
     },
@@ -100,6 +105,8 @@ export default {
 
   data: () => ({
     daysBack: 0,
+    today: 'YYYY-MM-DD',
+    visitFormat: 'HH:mm on ddd, MMM DD',
 
     loaded: false,
     messageHeaders: [
@@ -111,6 +118,14 @@ export default {
     ],
   }),
   methods: {
+    isToday(date) {
+      let x = moment(date).format(this.today);
+      let y = moment()
+        .add(-this.daysBack, 'day')
+        .format(this.today);
+      return x == y;
+    },
+
     isBetween(date) {
       let visit = moment(date);
 

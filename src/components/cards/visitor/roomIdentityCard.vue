@@ -8,11 +8,12 @@
             :items="openRooms"
             item-text="room"
             item-value="id"
-            label="Pick your Room"
+            :label="roomSelectedLabel"
             hint="Room managers control this Room list"
             persistent-hint
             return-object
             single-line
+            autofocus
             @change="onChangingRoom"
           ></v-select>
         </v-col>
@@ -36,7 +37,11 @@ export default {
       type: Array,
     },
   },
-  computed: {},
+  computed: {
+    roomSelectedLabel() {
+      return 'Pick your Room';
+    },
+  },
   data() {
     return {
       openRooms: [],
@@ -64,6 +69,7 @@ export default {
     },
   },
   methods: {
+    // TODO Use this method in all components tha emit events to Server
     exposeEventPromise(event) {
       let self = this;
       return new Promise(function(resolve) {
@@ -85,10 +91,7 @@ export default {
     console.log('socket connected?', this.$socket.connected);
     this.log('Mounted', 'roomIdentityCard');
     this.openRooms = await this.exposeEventPromise('exposepenRooms');
-    this.log(
-      `Available Rooms: ${printJson(self.openRooms)}`,
-      'roomIdentityCard'
-    );
+    this.log(`Open Rooms: ${printJson(self.openRooms)}`, 'roomIdentityCard');
   },
 };
 </script>

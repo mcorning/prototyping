@@ -45,6 +45,9 @@
             :headers="messageHeaders"
             :items="visits"
             item-key="id"
+            multi-sort
+            :sort-by="['sentTime', 'message', 'visitor']"
+            :sort-desc="[true, false, false]"
             dense
             class="elevation-1"
           >
@@ -137,10 +140,11 @@ export default {
       }
 
       if (this.daysBack == 0) {
+        let self = this;
         // limit visits to those of the current Room (previous vues may have used different Rooms)
-        let roomVisits = this.messages.filter((v) => {
-          return this.selectedRoom.id == v.room && this.isToday(v.sentTime);
-        });
+        let roomVisits = this.messages.filter(
+          (v) => self.selectedRoom.room == v.room && self.isToday(v.sentTime)
+        );
         return roomVisits;
       }
       return this.messages;
@@ -153,6 +157,8 @@ export default {
 
   data() {
     return {
+      today: 'YYYY-MM-DD',
+
       alertHeaders: [
         { text: 'Date of Alert', value: 'sentTime' },
         { text: 'Visitor', value: 'visitor' },
@@ -172,6 +178,14 @@ export default {
   },
 
   methods: {
+    isToday(date) {
+      let x = moment(date).format(this.today);
+      let y = moment()
+        .add(-this.daysBack, 'day')
+        .format(this.today);
+      return x == y;
+    },
+
     deleteMessage(id) {
       let m = `Deleting message ${id}`;
       this.log(m);

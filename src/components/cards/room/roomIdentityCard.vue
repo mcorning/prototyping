@@ -1,19 +1,17 @@
 <template>
   <div>
-    <firstTimeCard v-if="firstTime" />
-
     <v-card>
       <v-card-text>
         <v-row align="center" justify="space-between">
           <v-col>
             <v-text-field
-              v-if="onboard"
+              v-if="onboard || firstTime"
               label="Enter the public name of your site or gathering"
               hint="This name should be uniquely recognizable to all Rooms"
               persistent-hint
               clearable
               autofocus
-              @change="updateRoom"
+              @change="onUpdateRoom"
             ></v-text-field>
 
             <v-select
@@ -22,11 +20,11 @@
               :items="rooms"
               item-text="room"
               item-value="id"
-              label="Pick your Room"
+              :label="roomSelectedLabel"
               clearable
               return-object
               single-line
-              @change="emitRoom"
+              @change="onEmitRoom"
             ></v-select>
           </v-col>
           <v-col class="col-md-4 pl-10">
@@ -47,6 +45,8 @@
         </v-row>
       </v-card-text>
     </v-card>
+
+    <firstTimeCard v-if="firstTime" />
   </div>
 </template>
 
@@ -63,6 +63,9 @@ export default {
   components: { firstTimeCard },
 
   computed: {
+    roomSelectedLabel() {
+      return 'Select your Room';
+    },
     btnType() {
       return this.closed ? 'mdi-door-open' : 'mdi-door-closed-lock';
     },
@@ -143,31 +146,45 @@ export default {
       return v;
     },
 
-    emitRoom() {
+    onEmitRoom() {
       if (this.selectedRoom) {
         State.changeRoomId(this.selectedRoom.id);
         this.$emit('room', this.selectedRoom);
       }
     },
 
-    updateRoom(newVal) {
+    onUpdateRoom(newVal) {
       this.selectedRoom.room = newVal;
       this.selectedRoom.id = base64id.generateId();
       Room.update(newVal, this.selectedRoom.id, this.nsp)
         .then((r) => console.log('New Room:', r))
         .catch((e) => console.log(e));
-      this.emitRoom();
+      this.onEmitRoom();
     },
     selectedRoomInit() {
       let id = State.find(0)?.roomId;
       let r = this.findRoomWithId(id);
-      this.selectedRoom = r;
+      if (r) {
+        this.selectedRoom = r;
+      } else {
+        this.selectedRoom = { room: '', id: '' };
+      }
     },
   },
   watch: {
     selectedRoom(newVal, oldVal) {
       if (!newVal) {
-        Room.delete(oldVal.id);
+        const self = this;
+        Room.delete(oldVal.id).then((allRooms) => {
+          console.log('self.selectedRoom :>> ', self.selectedRoom);
+          console.log('Rooms after delete:', allRooms);
+          if (allRooms.length == 0) {
+            console.log('self.selectedRoom', self.selectedRoom);
+          }
+        });
+      }
+      if (!this.selectedRoom) {
+        this.selectedRoom = { room: '', id: '' };
       }
     },
   },

@@ -2,9 +2,9 @@
   <v-card>
     <v-card-title>First Time?</v-card-title>
     <v-card-text
-      >Enter your name in the Your ID field. We enable more than one person to
-      use the same instance of the app or device. You can delete an entry with
-      the X button.</v-card-text
+      >Enter your name in the field above. We enable more than one person to use
+      the same instance of the app or device. You can delete an entry with the X
+      button.</v-card-text
     >
     <v-card-text
       >You can only visit an open Room. The Room dropdown gets its values from

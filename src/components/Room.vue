@@ -12,56 +12,7 @@
       :log="log"
     ></systemBarBottom>
     <auditTrailCard :cons="cons" />
-
-    <v-card>
-      <!-- <v-card-title>Audit Trail</v-card-title>
-      <v-card-title>
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Search"
-          single-line
-          hide-details
-        ></v-text-field>
-      </v-card-title>
-      <v-data-table
-        :search="search"
-        :headers="logHeaders"
-        :items="cons"
-        group-by="type"
-        :sort-by="['sentTime', 'type']"
-        :sort-desc="[true, false]"
-        multi-sort
-        must-sort
-        item-key="id"
-        dense
-        :items-per-page="15"
-        class="elevation-1"
-      >
-        <template v-slot:item.message="{ item }">
-          <v-card flat :class="getTextColor(item.type)">
-            {{ item.message }}
-          </v-card>
-        </template>
-        <template v-slot:item.sentTime="{ item }">
-          <v-card flat min-width="200" class="text-right">
-            {{ visitedDate(item.sentTime) }}</v-card
-          >
-        </template>
-        <template v-slot:item.type="{ item }">
-          <v-icon :color="getIconColor(item.type)">mdi-{{ item.type }}</v-icon>
-        </template>
-      </v-data-table>
-      <div class="text-center">
-        How are we doing on the Room experience?
-        <v-rating
-          v-model="rating"
-          background-color="primary lighten-3"
-          color="primary"
-          large
-        ></v-rating>
-      </div> -->
-    </v-card>
+    <v-card> </v-card>
   </div>
 </template>
 
@@ -171,7 +122,7 @@ export default {
 
   data: () => ({
     socketMessage: 'room',
-    selectedRoom: {},
+    selectedRoom: { room: '', id: '' },
     search: '',
 
     rating: 3,
@@ -498,6 +449,7 @@ export default {
       });
     },
 
+    // TODO candidate for utility code
     isToday(date) {
       let x = moment(date).format(this.today);
       let y = moment()
@@ -579,7 +531,11 @@ export default {
       let x = State.find(0);
       let id = x?.roomId;
       let r = this.findRoomWithId(id);
-      this.selectedRoom = r;
+      if (r) {
+        this.selectedRoom = r;
+      } else {
+        this.selectedRoom = { room: '', id: '' };
+      }
       this.connectToServer();
     },
     //#endregion
