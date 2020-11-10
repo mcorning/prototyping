@@ -1,24 +1,30 @@
 <template>
   <v-card class="mx-auto" max-width="344" outlined>
     <v-card-text>
-      <v-row>
+      <v-row dense>
         <v-col cols="6">
-          <v-row>
-            <v-btn
-              :color="checkedOut ? 'success' : 'warning'"
-              fab
-              dark
-              @click="onChangeRoom"
-            >
-              <v-icon>{{ btnType }}</v-icon>
-            </v-btn></v-row
+          <v-row dense>
+            <v-col>
+              <v-btn
+                :color="checkedOut ? 'success' : 'warning'"
+                fab
+                dark
+                @click="onChangeRoom"
+              >
+                <v-icon>{{ btnType }}</v-icon>
+              </v-btn>
+            </v-col></v-row
           >
-          <v-row>
-            {{ checkedOut ? 'Check-in' : 'Check-out' }}
+          <v-row dense>
+            <v-col> {{ checkedOut ? 'Check-in' : 'Check-out' }}</v-col>
           </v-row>
         </v-col>
         <v-col cols="6">
-          <v-text-field label="Occupancy" :value="occupancy"></v-text-field>
+          <v-text-field
+            label="Occupancy"
+            readonly
+            :value="occupancy"
+          ></v-text-field>
         </v-col> </v-row
     ></v-card-text>
   </v-card>
@@ -34,24 +40,15 @@ const { printJson } = helpers;
 export default {
   props: {
     log: { type: Function },
-
-    rooms: {
-      type: Array,
-    },
-
-    enabled: {
-      type: Object,
-    },
+    occupancy: { type: Number },
   },
+
   computed: {
     btnType() {
       return this.checkedOut ? 'mdi-account-plus' : 'mdi-account-minus';
     },
-
-    occupancy() {
-      return 1;
-    },
   },
+
   data() {
     return {
       openRooms: [],
@@ -59,6 +56,7 @@ export default {
       roomSelected: { room: '', id: '' },
     };
   },
+
   sockets: {
     // depracated for Open Rooms (a subset of Available Rooms)
     availableRoomsExposed(rooms) {
@@ -77,6 +75,7 @@ export default {
       );
     },
   },
+
   methods: {
     emit(payload) {
       if (!this.$socket.id) {
@@ -115,10 +114,7 @@ export default {
     console.log('socket connected?', this.$socket.connected);
     this.log('Mounted', 'roomIdentityCard');
     this.openRooms = await this.exposeEventPromise('exposepenRooms');
-    this.log(
-      `Available Rooms: ${printJson(self.openRooms)}`,
-      'roomIdentityCard'
-    );
+    this.log(`Open Rooms: ${printJson(self.openRooms)}`, 'roomIdentityCard');
   },
 };
 </script>

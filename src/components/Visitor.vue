@@ -17,7 +17,11 @@
         /></v-col>
       </v-row>
       <v-row v-if="showEntryRoomCard">
-        <roomEntryCard :log="log" @roomChanged="onAct($event)" />
+        <roomEntryCard
+          :log="log"
+          :occupancy="occupancy"
+          @roomChanged="onAct($event)"
+        />
       </v-row>
     </v-container>
 
@@ -292,14 +296,6 @@ export default {
     exposureAlert(alertMessage) {
       this.onExposureAlert(alertMessage);
     },
-
-    // TODO nobody listens yet to this event
-    updatedOccupancy(payload) {
-      if (payload.room == this.enabled.room.id) {
-        this.occupancy = payload.occupancy;
-      }
-      this.log(`${payload.room} occupancy is now ${payload.occupancy}`);
-    },
   },
 
   // Visitor emits exposureWarning to Server sending
@@ -376,8 +372,8 @@ export default {
       this.emit({
         event: event,
         message: msg,
-        ack: (ack) => {
-          this.log(ack.message);
+        ack: (ACK) => {
+          this.occupancy = ACK.occupants;
         },
       });
       this.messageColor = checkedOut ? 'dark success' : 'dark warning ';
@@ -409,6 +405,7 @@ export default {
       this.connectToServer();
     },
 
+    // TODO why is this method here? we enter room with onAct() above...
     onEnterRoom(proceed) {
       this.enabled.canEnter = -1;
       if (proceed) {
@@ -427,6 +424,7 @@ export default {
             self.messageColor = 'error darken-2';
             alert(ACK.error);
           } else {
+            self.occupancy = ACK.occupants;
             self.messageColor = 'success lighten-1';
             self.feedbackMessage = `Welcome to ${ACK.room.room.id}`;
           }
@@ -443,6 +441,10 @@ export default {
         return;
       }
       this.$socket.emit(payload.event, payload.message, payload.ack);
+      // this.$socket.emit(payload.event, payload.message, (ACK) => {
+      //   this.occupancy = ACK.occupants;
+      //   console.log(ACK);
+      // });
     },
 
     exposeEventPromise(clientSocket, event) {

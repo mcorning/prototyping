@@ -1,13 +1,15 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Home from '../views/Home.vue';
-import Visitor from '@/components/Visitor.vue';
-// import Room from '@/components/Room.vue';
+// import Visitor from '@/components/Visitor.vue';
+import Room from '@/components/Room.vue';
 // import Admin from '@/components/Admin.vue';
 // import State from '@/models/State';
 
 Vue.use(VueRouter);
 
+// TODO can you fix this now?
+//
 // this fails, and i don't know how to fix it
 // resorting to manual override
 // async function getDefaultVue() {
@@ -22,7 +24,7 @@ const routes = [
   {
     path: '/',
     name: 'Root',
-    component: Visitor,
+    component: Room,
   },
   {
     path: '/home',
