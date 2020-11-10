@@ -11,3 +11,12 @@
     </v-row>
   </v-system-bar>
 </template>
+<script>
+export default {
+  methods: {
+    refreshConnection(hard) {
+      window.location.reload(hard);
+    },
+  },
+};
+</script>
