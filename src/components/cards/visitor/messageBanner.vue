@@ -1,5 +1,5 @@
 <template>
-  <v-banner dark class="text-center white--text" :color="bgcolor">
+  <v-banner dark class="text-center black--text" :color="bgcolor">
     <slot></slot>
   </v-banner>
 </template>

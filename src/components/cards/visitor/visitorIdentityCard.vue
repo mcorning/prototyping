@@ -10,7 +10,8 @@
               hint="How do you want to be seen?"
               persistent-hint
               clearable
-              @change="updateVisitor"
+              autofocus
+              @change="onUpdateVisitor"
             ></v-text-field>
             <v-select
               v-else
@@ -19,11 +20,14 @@
               item-text="visitor"
               item-value="id"
               label="Pick your Handle"
+              hint="The X button lets you delete this handle (but do so carefully)."
+              persistent-hint
               clearable
               return-object
               single-line
-              @change="emitVisitor"
-            ></v-select>
+              @change="onEmitVisitor"
+            >
+            </v-select>
           </v-col>
         </v-row>
       </v-card-text>
@@ -85,21 +89,21 @@ export default {
       return v;
     },
 
-    emitVisitor() {
+    onEmitVisitor() {
       State.changeYourId(this.selectedVisitor.id);
       this.$emit('visitor', this.selectedVisitor);
     },
 
     // update IndexedDb and set values for selection
-    updateVisitor(newVal) {
-      console.assert(this.selectedVisitor, 'Missing selectedVisior object.');
+    onUpdateVisitor(newVal) {
+      console.assert(this.selectedVisitor, 'Missing selectedVisitor object.');
       this.selectedVisitor.visitor = newVal;
       this.selectedVisitor.id = base64id.generateId();
       // static update function on Visitor model
       Visitor.update(newVal, this.selectedVisitor.id, this.nsp).catch((e) =>
         console.log(e)
       );
-      this.emitVisitor();
+      this.onEmitVisitor();
     },
 
     selectedVisitorInit() {
@@ -126,7 +130,7 @@ export default {
         Visitor.delete(oldVal.id);
         // deleting the last Visitor will leave this.selectedVisitor null...
         if (!Visitor.exists()) {
-          // ...so put it back in play wo we don't fail at updateVisitor() above
+          // ...so put it back in play wo we don't fail at onUpdateVisitor() above
           this.selectedVisitor = { visitor: '', id: '' };
           return;
         }

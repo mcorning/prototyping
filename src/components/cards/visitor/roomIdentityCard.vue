@@ -9,10 +9,11 @@
             item-text="room"
             item-value="id"
             label="Pick your Room"
+            hint="Room managers control this Room list"
             persistent-hint
             return-object
             single-line
-            @change="changingRoom"
+            @change="onChangingRoom"
           ></v-select>
         </v-col>
       </v-row>
@@ -54,11 +55,12 @@ export default {
     },
     openRoomsExposed(rooms) {
       this.openRooms = rooms;
+      console.log('open Rooms:');
       console.table(rooms);
-      this.log(
-        `roomIdentityCard: ${printJson(this.openRooms)}`,
-        'Event: openRoomsExposed'
-      );
+      const msg = rooms
+        ? '`roomIdentityCard: ${printJson(this.openRooms)}`'
+        : 'No open Rooms yet.';
+      this.log(msg, 'Event: openRoomsExposed');
     },
   },
   methods: {
@@ -71,7 +73,7 @@ export default {
       });
     },
 
-    changingRoom() {
+    onChangingRoom() {
       // send the Room data back to Visitor so it can add the Visitor data to emit with enterRoom on the Server
       this.log(printJson(this.roomSelected));
       this.$emit('roomSelected', this.roomSelected);

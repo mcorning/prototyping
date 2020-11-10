@@ -7,7 +7,9 @@
     <diaryCard />
     <v-container>
       <v-row dense justify="space-between">
-        <v-col><visitorIdentityCard @visitor="visitorReady($event)" /> </v-col>
+        <v-col
+          ><visitorIdentityCard @visitor="OnvVsitorReady($event)" />
+        </v-col>
         <v-col v-show="$socket.connected">
           <!-- bput this back later 
                   :rooms="rooms" -->
@@ -15,17 +17,14 @@
         /></v-col>
       </v-row>
       <v-row v-if="showEntryRoomCard">
-        <roomEntryCard :log="log" @roomChanged="act($event)" />
+        <roomEntryCard :log="log" @roomChanged="onAct($event)" />
       </v-row>
     </v-container>
+
     <connectionBanner
-      v-if="disconnectedFromServer"
-      @reconnect="connectToServer"
-    />
-    <connectionDialog
-      v-if="disconnectedFromServer"
-      @reconnect="connectToServer"
-    />
+      :connectionMessage="connectionMessage"
+      @reconnect="onReconnect"
+    ></connectionBanner>
 
     <messageBanner :bgcolor="messageColor">
       {{ feedbackMessage }}</messageBanner
@@ -33,7 +32,7 @@
 
     <exposureAlert v-if="alertMessage">{{ alertMessage }}</exposureAlert>
 
-    <warnRoomCard :disabled="!messages.length" @warnRooms="warnRooms" />
+    <warnRoomCard :disabled="!messages.length" @warnRooms="onWarnRooms" />
 
     <systemBarBottom
       :socketMessage="socketMessage"
@@ -58,7 +57,6 @@ import moment from 'moment';
 import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
-import connectionDialog from '@/components/cards/Dialog';
 import systemBarTop from '@/components/cards/systemBarTop';
 import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
@@ -72,15 +70,16 @@ import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/visitor/dataTableCard';
 import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
 
+// handle previously unhandled error
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
   console.log(error.stack);
-  alert('onerror: ' + message);
+  alert('onerror: ' + message + '\n' + lineNo);
 };
+
 export default {
   name: 'LctVisitor',
   components: {
-    connectionDialog,
     systemBarTop,
     diaryCard,
     visitorIdentityCard,
@@ -104,10 +103,11 @@ export default {
       return x;
     },
 
-    enterRoomEnabled() {
-      let enableEntry = this.$socket.connected && this.enabled.canEnter;
-      return enableEntry;
-    },
+    //TODO delete, if not necessary
+    // enterRoomEnabled() {
+    //   let enableEntry = this.$socket.connected && this.enabled.canEnter;
+    //   return enableEntry;
+    // },
 
     visitorData() {
       return {
@@ -192,6 +192,7 @@ export default {
   },
 
   data: () => ({
+    connectionMessage: 'Provide a name to Connect to the Server.',
     disconnectedFromServer: true,
     showEntryRoomCard: false,
     showDetails: false,
@@ -229,14 +230,10 @@ export default {
           `Server connected using Id: ${id}, Visitor: ${visitor}, and nsp ${nsp} `,
           'Visitor.vue'
         );
-        // this.exposeEventPromise(this.$socket, 'exposeAvailableRooms').then(
-        //   (rooms) => {
-        //     this.rooms = rooms;
-        //     this.log(rooms);
-        //   }
-        // );
       }
     },
+
+    //#region Other connection events
     disconnect(reason) {
       this.disconnectedFromServer = true;
       this.log(`Disconnect: ${reason}`, 'Visitor.vue');
@@ -270,29 +267,33 @@ export default {
     message(msg) {
       this.log(msg);
     },
-
+    //#endregion
     // end socket.io reserved events
 
     availableRoomsExposed(rooms) {
-      this.log(`Visitor: ${rooms}`, 'Event: availableRoomsExposed');
-    },
-    openRoomsExposed(rooms) {
-      this.log(
-        `Visitor sees open Rooms: ${printJson(rooms)}`,
-        'Event: openRoomsExposed'
-      );
+      const msg = rooms
+        ? `Available Rooms may not be open Rooms: ${printJson(rooms)}`
+        : 'No Rooms are online at this time.';
+      this.log(msg, 'Event: availableRoomsExposed');
     },
 
     // Server fires this event when a Room opens/closes
-
-    exposureAlert(alertMessage) {
-      this.log(alertMessage, 'alert');
-      this.alert = true;
-      this.alertIcon = 'mdi-alert';
-      this.messageColor = 'error';
-      this.feedbackMessage = alertMessage;
+    openRoomsExposed(rooms) {
+      const msg = rooms
+        ? `Visitor sees open Rooms: ${printJson(rooms)}`
+        : 'No Rooms open at this time.';
+      this.log(msg, 'Event: openRoomsExposed');
+      this.connectionMessage = rooms
+        ? ''
+        : 'There are no open Rooms at this time.';
     },
 
+    // Event sent from Server to advise Visitor to self-quarantine
+    exposureAlert(alertMessage) {
+      this.onExposureAlert(alertMessage);
+    },
+
+    // TODO nobody listens yet to this event
     updatedOccupancy(payload) {
       if (payload.room == this.enabled.room.id) {
         this.occupancy = payload.occupancy;
@@ -301,34 +302,147 @@ export default {
     },
   },
 
+  // Visitor emits exposureWarning to Server sending
+  //    * the Visitor object and
+  //    * a collection of Rooms and dates visited
+
+  // Server emits exposureAlert to Visitor based on Room(s)' response to exposureWarning from Visitor
+  //exposureAlert contains a primary message to the Visitors:
+  //    * the Visitor who issued the exposureWarning sees a confirmation message,
+  //    * the other Visitor(s) receive
+  //       * a message recommending self-quarantine
+  //       * a packet of dates of possible exposure that is stored in the Visitor log
+
   methods: {
+    //#region Main Events
+    // main event (exposureWarning) sent to Server when a Visitor self-quarantines
+    onWarnRooms() {
+      const self = this;
+      const payload = {
+        array: this.messages.filter(
+          (v) => v.visitor == this.enabled.visitor.visitor
+        ),
+        prop: 'room',
+        val: 'sentTime',
+      };
+      if (payload.array.length == 0) {
+        alert('No messages for ' + this.enabled.visitor.visitor);
+        return;
+      }
+
+      const msg = {
+        sentTime: new Date().toISOString(),
+        visitor: this.enabled.visitor,
+        warnings: this.groupMessagesByRoomAndDate(payload),
+      };
+      console.log('exposureWarning', printJson(msg));
+      this.log(msg, 'exposureWarning');
+      this.emit({
+        event: 'exposureWarning',
+        message: msg,
+        ack: (ack) => {
+          this.alert = true;
+          this.alertIcon = 'mdi-alert';
+          this.messageColor = 'warning';
+          this.feedbackMessage = ack.result.flat().flat();
+          console.log('exposureWarning result:', ack.result);
+        },
+      });
+    },
+
+    // handles main incoming Visitor event from Server
+    onExposureAlert(alertMessage) {
+      this.log(alertMessage, 'alert');
+      this.alert = true;
+      this.alertIcon = 'mdi-alert';
+      this.messageColor = 'error';
+      this.feedbackMessage = alertMessage;
+    },
+    //#endregion
+
+    //#region Vue event handlers
+
+    onAct(checkedOut) {
+      let msg = {
+        visitor: this.enabled.visitor,
+        room: this.enabled.room,
+        message: checkedOut ? 'Entered' : 'Departed',
+        sentTime: new Date().toISOString(),
+      };
+      this.messages = msg;
+
+      let event = checkedOut ? 'enterRoom' : 'leaveRoom';
+
+      this.emit({
+        event: event,
+        message: msg,
+        ack: (ack) => {
+          this.log(ack.message);
+        },
+      });
+      this.messageColor = checkedOut ? 'dark success' : 'dark warning ';
+      this.feedbackMessage = checkedOut
+        ? `Welcome to ${this.enabled.room.room}`
+        : 'See you next time...';
+
+      let m = checkedOut ? 'out of' : 'into';
+      this.log(
+        `You checked ${m} ${this.enabled.room.room} {${this.enabled.room.id}}`
+      );
+    },
+
     onRoomSelected(selectedRoom) {
       this.enabled.room = selectedRoom;
       this.enabled.canEnter += 1;
       this.showEntryRoomCard = true;
+      this.connectionMessage = null;
     },
 
-    enterRoom() {
-      // disables the banner
+    onReconnect() {
+      connectToServer;
+    },
+
+    OnvVsitorReady(visitor) {
+      // enabled holds two objects: room and visitor
+      this.enabled.visitor = visitor;
+      this.enabled.canEnter += 1;
+      this.connectToServer();
+    },
+
+    onEnterRoom(proceed) {
       this.enabled.canEnter = -1;
-      let msg = {
-        visitor: this.enabled.visitor,
-        room: this.enabled.room,
-        message: this.checkedOut ? 'Entered' : 'Departed',
-        sentTime: new Date().toISOString(),
-      };
-      const self = this;
-      this.$socket.emit('enterRoom', msg, (ACK) => {
-        if (ACK.error) {
-          self.feedbackMessage = ACK.error;
-          self.messageColor = 'error darken-2';
-          alert(ACK.error);
-        } else {
-          self.messageColor = 'success lighten-1';
-          self.feedbackMessage = `Welcome to ${ACK.room.room.id}`;
-        }
-        this.log(ACK, 'ACKS');
-      });
+      if (proceed) {
+        // disables the banner
+        this.enabled.canEnter = -1;
+        let msg = {
+          visitor: this.enabled.visitor,
+          room: this.enabled.room,
+          message: this.checkedOut ? 'Entered' : 'Departed',
+          sentTime: new Date().toISOString(),
+        };
+        const self = this;
+        this.$socket.emit('enterRoom', msg, (ACK) => {
+          if (ACK.error) {
+            self.feedbackMessage = ACK.error;
+            self.messageColor = 'error darken-2';
+            alert(ACK.error);
+          } else {
+            self.messageColor = 'success lighten-1';
+            self.feedbackMessage = `Welcome to ${ACK.room.room.id}`;
+          }
+          this.log(ACK, 'ACKS');
+        });
+      }
+    },
+    //#endregion
+
+    //#region utility functions
+
+    emit(payload) {
+      if (!this.$socket.id) {
+        return;
+      }
+      this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
     exposeEventPromise(clientSocket, event) {
@@ -339,14 +453,13 @@ export default {
       });
     },
 
-    disconnectFromServer() {
-      console.log('Disconnection from Server');
-      this.$socket.disconnect(); // passing true closes underlying connnection
-      // this.$socket.disconnect(true); // passing true closes underlying connnection
+    getEnteredMessages(room, v) {
+      return v.room == room && v.message.toLowerCase() == 'entered';
     },
 
-    refreshConnection(hard) {
-      window.location.reload(hard);
+    getRandomIntBetween(min, max) {
+      // return Math.floor(Math.random() * Math.floor(max))-1;
+      return Math.random() * (max - min) + min;
     },
 
     groupBy(payload) {
@@ -355,10 +468,6 @@ export default {
         acc.set(obj[prop], (acc.get(obj[prop]) || []).concat(obj[val]));
         return acc;
       }, new Map());
-    },
-
-    addYourId(val) {
-      this.yourId = val;
     },
 
     // this is a (more?) functional way to do grouping
@@ -397,103 +506,6 @@ export default {
         }, {});
     },
 
-    warnRooms() {
-      const self = this;
-      const payload = {
-        array: this.messages.filter(
-          (v) => v.visitor == this.enabled.visitor.visitor
-        ),
-        prop: 'room',
-        val: 'sentTime',
-      };
-      if (payload.array.length == 0) {
-        alert('No messages for ' + this.enabled.visitor.visitor);
-        return;
-      }
-
-      const msg = {
-        sentTime: new Date().toISOString(),
-        visitor: this.enabled.visitor,
-        warnings: this.groupMessagesByRoomAndDate(payload),
-      };
-      console.log('exposureWarning', printJson(msg));
-      this.log(msg, 'exposureWarning');
-      this.emit({
-        event: 'exposureWarning',
-        message: msg,
-        ack: (ack) => {
-          this.alert = true;
-          this.alertIcon = 'mdi-alert';
-          this.messageColor = 'warning';
-          this.feedbackMessage = ack.result.flat().flat();
-          console.log('exposureWarning result:', ack.result);
-        },
-      });
-    },
-
-    getEnteredMessages(room, v) {
-      return v.room == room && v.message.toLowerCase() == 'entered';
-    },
-
-    // used when sending individual Room warnings to Server (not currently used)
-    // emit the exposureWarning to each Room occupied by Visitor
-    emitExposureWarning(v) {
-      this.log(
-        `Warned ${v.room} of exposure on ${moment(v.sentTime).format('llll')}`
-      );
-      this.emit({
-        event: 'exposureWarning',
-        message: {
-          room: v.room,
-          message: v.sentTime,
-          sentTime: v.sentTime,
-        },
-        ack: (ack) => {
-          this.alert = true;
-          this.alertIcon = 'mdi-alert';
-          this.messageColor = 'warning';
-          this.feedbackMessage = ack.result.flat().flat();
-          console.log('exposureWarning result:', ack.result);
-        },
-      });
-    },
-
-    emit(payload) {
-      if (!this.$socket.id) {
-        return;
-      }
-      this.$socket.emit(payload.event, payload.message, payload.ack);
-    },
-
-    act(checkedOut) {
-      let msg = {
-        visitor: this.enabled.visitor,
-        room: this.enabled.room,
-        message: checkedOut ? 'Entered' : 'Departed',
-        sentTime: new Date().toISOString(),
-      };
-      this.messages = msg;
-
-      let event = checkedOut ? 'enterRoom' : 'leaveRoom';
-
-      this.emit({
-        event: event,
-        message: msg,
-        ack: (ack) => {
-          this.log(ack.message);
-        },
-      });
-      this.messageColor = checkedOut ? 'dark success' : 'dark warning ';
-      this.feedbackMessage = checkedOut
-        ? `Welcome to ${this.enabled.room.room}`
-        : 'See you next time...';
-
-      let m = checkedOut ? 'out of' : 'into';
-      this.log(
-        `You checked ${m} ${this.enabled.room.room} {${this.enabled.room.id}}`
-      );
-    },
-
     // helper methods
     log(msg, type = 'information') {
       this.cons.push({
@@ -503,65 +515,26 @@ export default {
       });
     },
 
-    getRandomIntBetween(min, max) {
-      // return Math.floor(Math.random() * Math.floor(max))-1;
-      return Math.random() * (max - min) + min;
-    },
-
-    // handleMessage(msg) {
-    //   this.messages = msg;
-    //   if (msg.message == 'Alert') {
-    //     let alertMsg = `A fellow visitor to ${msg.room} is in quarantine at ${msg.sentTime}`;
-    //     alert(`handleMessage:`, alertMsg);
-    //   }
-    // },
-
+    // TODO implement this or remove it
     removeVisitor() {
       // the server will remove this socket
       this.emit({ event: 'removeVisitor' });
     },
+    //#endregion
 
-    deleteMessage(id) {
-      let m = `Deleting message ${id}`;
-      this.log(m);
-      Message.delete(id);
-    },
+    //#region other important emitters
+    exposeOpenRooms() {
+      let self = this;
+      this.$socket.emit('exposeOpenRooms', null, (rooms) => {
+        const msg = rooms.length
+          ? 'Choose a Room to enter'
+          : 'There are no open Rooms at this time.';
 
-    deleteAllMessages() {
-      this.log(`Deleting all messages`);
-      Message.deleteAll();
-      this.refreshConnection(true);
-    },
-
-    testSocket(event) {
-      // this.$socket.emit(event, 'data');
-      this.pingServer(event);
-    },
-
-    pingServer() {
-      // Send the "pingServer" event to the server.
-      this.log(`Using socket ${this.$socket.id}...`);
-      this.$socket.emit('pingServer', this.enabled.room.id, (ack) =>
-        this.log('...' + ack)
-      );
-      // this.log('pinging server');
-      // this.$socket.emit('ping');
-    },
-
-    changeRoom() {
-      this.changingRoom = 0;
-      if (this.oldRoomId) {
-        this.checkedOut = false;
-        // will act on roomId. which one?
-        this.act(this.oldRoomId);
-      }
-      this.checkedOut = true;
-      this.act();
-    },
-    doNotChangeRoom() {
-      // this.checkedOut = !this.checkedOut;
-      this.roomId = this.oldRoomId || this.roomId;
-      this.changingRoom = -1;
+        console.groupCollapsed('All Rooms:');
+        console.log(printJson(rooms));
+        console.groupEnd();
+        self.connectionMessage = msg;
+      });
     },
 
     connectToServer() {
@@ -579,52 +552,16 @@ export default {
       };
       this.$socket.connect();
     },
-
-    visitorReady(visitor) {
-      // enabled holds two objects: room and visitor
-      this.enabled.visitor = visitor;
-      this.enabled.canEnter += 1;
-      this.connectToServer();
-    },
-    onEnterRoom(proceed) {
-      this.enabled.canEnter = -1;
-      if (proceed) {
-        this.enterRoom();
-      }
-    },
-
-    // Visitor emits exposureWarning to Server sending
-    //    * the Visitor object and
-    //    * a collection of Rooms and dates visited
-
-    // Server emits exposureAlert to Visitor based on Room(s)' response to exposureWarning from Visitor
-    //exposureAlert contains a primary message to the Visitors:
-    //    * the Visitor who issued the exposureWarning sees a confirmation message,
-    //    * the other Visitor(s) receive
-    //       * a message recommending self-quarantine
-    //       * a packet of dates of possible exposure that is stored in the Visitor log
   },
+  //#endregion
 
-  // watch: {
-
-  //   roomId(newRoomId, oldRoomId) {
-  //     if (this.changingRoom === -1) {
-  //       this.changingRoom = 0;
-  //       return;
-  //     }
-  //     this.oldRoomId = oldRoomId;
-  //     if (newRoomId || oldRoomId) {
-  //       this.changingRoom = 1;
-  //     }
-  //   },
-  // },
   async created() {},
 
   async mounted() {
     await Room.$fetch();
     await State.$fetch();
     await Message.$fetch();
-
+    this.exposeOpenRooms();
     // log the useragent in case we can't recognize it
     // this.log(navigator.userAgent);
     console.log('Visitor.vue mounted');

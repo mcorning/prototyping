@@ -5,7 +5,7 @@
     </systemBarTop>
 
     <roomIntroCard />
-    <roomIdentityCard @room="handleRoom($event)" @act="emit($event)" />
+    <roomIdentityCard @room="onHandleRoom($event)" @act="emit($event)" />
     <roomVisitorsCard :selectedRoom="selectedRoom" :log="log" />
     <systemBarBottom
       :socketMessage="socketMessage"
@@ -67,6 +67,9 @@
 
 <script>
 import moment from 'moment';
+
+// import helpers from '@/components/js/helpers.js';
+// const { printJson } = helpers;
 
 import Message from '@/models/Message';
 import Visitor from '@/models/Visitor';
@@ -263,7 +266,7 @@ export default {
 
     // Visitor routine events
     checkIn(msg) {
-      this.messages = msg;
+      this.onCheckIn(msg);
     },
 
     checkOut(msg) {
@@ -274,18 +277,6 @@ export default {
     // sent from Server after Visitor sends exposureWarning
     notifyRoom(data, ack) {
       const { exposureDates, room, visitor } = data;
-      // console.groupCollapsed(
-      //   `[${this.getNow}] Room Client: onNotifyRoom, Server Acknowledged:`
-      // );
-      // console.log('Input data:');
-      // console.table(data);
-      // let messageDates = this.groupMessagesByDateAndVisitor({
-      //   array: this.messages,
-      //   prop: 'sentTime',
-      //   val: 'visitorId',
-      // });
-      // console.log(`Room's grouped messages:`);
-      // console.table(messageDates);
 
       // filter messages for getMessageDates
       const messageDates = this.getMessageDates(
@@ -293,7 +284,6 @@ export default {
         this.messages.filter((v) => v.message == 'Entered')
       );
       exposureDates.forEach((date) => {
-        // list all visitors on this date
         messageDates[date].forEach((other) => {
           if (other.id == visitor.id) {
             this.log(
@@ -319,15 +309,36 @@ export default {
         });
       });
       console.groupEnd();
-      // use visitor.vistor is you use object visitor in Message
-      // else visitor
       if (ack) ack(`${visitor}, ${room} alerted`);
     },
 
     // end sockets:
   },
 
+  // Emitters:   Visitor            Server        Room
+  // Handlers:   Server             Room          Serveer         Visitor
+  // Event path: exposureWarning -> notifyRoom -> alertVisitor -> exposureAlert
+
+  // Room handles notifyRoom event from Server
+  //   * based on data in exposureWarning from Visitor
+  //       * Visitor object
+  //       * collection of Room/dates
+  // exposureAlert contains a primary message to the Visitors:
+  //    * the Visitor who issued the exposureWarning sees a confirmation message,
+  //    * the other Visitor(s) receive
+  //       * a message recommending self-quarantine
+  //       * a packet of dates of possible exposure that is stored in the Visitor log
+
+  // Room emits alertVisitor to Server sending
+  //    * a Visitor object composed of data received when Visitors entered Room
+  //         * visitor:   nickname of Visitor
+  //         * visitorId: Visitor's generated ID
+
   methods: {
+    onCheckIn(msg) {
+      this.messages = msg;
+    },
+
     groupMessagesByDateAndVisitor(payload) {
       const { array, prop, val, val2 } = payload;
 
@@ -539,9 +550,22 @@ export default {
         nsp: 'enduringNet',
       };
       this.$socket.connect();
+      // this.exposeOpenRooms();
     },
 
-    handleRoom(room) {
+    // exposeOpenRooms() {
+    //   this.$socket.emit('exposeOpenRooms', null, (rooms) => {
+    //     this.connectionMessage == rooms.length
+    //       ? 'Choose a Room to enter'
+    //       : 'There are no open Rooms at this time.';
+
+    //     console.groupCollapsed('All Rooms:');
+    //     console.log(printJson(rooms));
+    //     console.groupEnd();
+    //   });
+    // },
+
+    onHandleRoom(room) {
       this.selectedRoom = room;
       this.connectToServer();
     },
@@ -559,25 +583,6 @@ export default {
       this.connectToServer();
     },
     //#endregion
-
-    // Emitters:   Visitor            Server        Room
-    // Handlers:   Server             Room          Serveer         Visitor
-    // Event path: exposureWarning -> notifyRoom -> alertVisitor -> exposureAlert
-
-    // Room handles notifyRoom event from Server
-    //   * based on data in exposureWarning from Visitor
-    //       * Visitor object
-    //       * collection of Room/dates
-    // exposureAlert contains a primary message to the Visitors:
-    //    * the Visitor who issued the exposureWarning sees a confirmation message,
-    //    * the other Visitor(s) receive
-    //       * a message recommending self-quarantine
-    //       * a packet of dates of possible exposure that is stored in the Visitor log
-
-    // Room emits alertVisitor to Server sending
-    //    * a Visitor object composed of data received when Visitors entered Room
-    //         * visitor:   nickname of Visitor
-    //         * visitorId: Visitor's generated ID
   },
 
   async created() {},
