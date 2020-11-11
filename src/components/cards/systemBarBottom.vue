@@ -39,7 +39,7 @@ export default {
       }
 
       const { id, nsp } = query;
-      this.socketInfo = `${id} ${nsp}`;
+      this.socketInfo = `${id} ${nsp ? nsp : '/'}`;
     },
     disconnect() {
       this.socketInfo = `Pick a ${this.socketMessage}`;

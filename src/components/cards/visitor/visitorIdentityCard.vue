@@ -90,6 +90,10 @@ export default {
     },
 
     onEmitVisitor() {
+      if (!this.selectedVisitor) {
+        alert('The selectedVisitor object is null.');
+        return;
+      }
       State.changeYourId(this.selectedVisitor.id);
       this.$emit('visitor', this.selectedVisitor);
     },
