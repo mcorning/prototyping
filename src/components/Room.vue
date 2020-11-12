@@ -135,7 +135,6 @@ export default {
 
     isConnected: false,
     cons: [],
-    socketId: '',
     occupancy: 0,
     socketUri: '',
     hasRoomManager: false,
@@ -177,14 +176,22 @@ export default {
   sockets: {
     // socket.io reserved events
     connect() {
+      console.group('onConnect');
+      console.log(
+        `[${this.getNow}] ${printJson(this.$socket.id)} ${
+          this.closed ? 'closed' : 'open'
+        }`
+      );
+
       if (this.$socket.io.opts?.query) {
-        const { room, id, nsp } = this.$socket.io.opts.query;
+        const { room, id, nsp, closed } = this.$socket.io.opts.query;
+        console.log(`${room} ${closed ? 'closed' : 'open'}`);
         this.log(
           `Server connected using Id: ${id}, Room: ${room}, and nsp ${nsp} `,
           'Room.vue'
         );
-        this.socketId = id;
       }
+      console.groupEnd();
     },
     disconnect(reason) {
       this.log(`Disconnect: ${reason}`, 'Room.vue');
@@ -199,7 +206,15 @@ export default {
       this.log(`Connect_timeout ${reason}`, 'Room.vue');
     },
     reconnect(reason) {
+      console.group('onReconnect');
+      console.warn(
+        `[${this.getNow}] ${printJson(
+          this.$socket.io.opts.query
+        )} Recconnect ${reason}`,
+        'Room.vue'
+      );
       this.log(`Recconnect ${reason}`, 'Room.vue');
+      console.groupEnd();
     },
     reconnect_attempt(reason) {
       this.log(`Reconnect_attempt ${reason}`, 'Room.vue');
@@ -379,6 +394,7 @@ export default {
       if (!val || this.rooms.length > 1) {
         msg = {
           room: this.selectedRoom.id,
+          // TODO why deleted?
           message: val ? 'Closed' : 'Deleted',
           sentTime: new Date().toISOString(),
         };
@@ -386,6 +402,7 @@ export default {
           event: 'closeRoom',
           message: msg,
           ack: (ack) => {
+            // TODO why length?
             this.closed = ack.error.length;
             let msg = `${ack.message}  ${ack.error}`;
             this.alertMessage = msg;
@@ -400,6 +417,7 @@ export default {
           room: this.selectedRoom.room,
           id: this.selectedRoom.id,
           message: 'Opened',
+          state: this.closed,
           sentTime: new Date().toISOString(),
         };
         this.emit({
@@ -426,6 +444,9 @@ export default {
       if (!this.$socket.id) {
         this.connectToServer();
       }
+      // open or closed
+      this.$socket.io.opts.query.state = payload.message.message;
+      this.closed = payload.message.message;
       let msg =
         `Emitting ${payload.event}` +
         (payload.message.room ? ` to server for ${payload.message.room}` : '');
@@ -498,6 +519,9 @@ export default {
       return info;
     },
 
+// this sets the query object that includes data about the state of the UI;
+// namely, is the Room open or closed? by default, it's closed.
+// but emit() updates this with the message sent by the roomIdentityCard
     connectToServer() {
       // this.log('Connecting to Server...');
       if (
@@ -510,23 +534,11 @@ export default {
       this.$socket.io.opts.query = {
         room: this.selectedRoom.room,
         id: this.selectedRoom.id,
+        closed: this.closed,
         nsp: 'enduringNet',
       };
       this.$socket.connect();
-      // this.exposeOpenRooms();
     },
-
-    // exposeOpenRooms() {
-    //   this.$socket.emit('exposeOpenRooms', null, (rooms) => {
-    //     this.connectionMessage == rooms.length
-    //       ? 'Choose a Room to enter'
-    //       : 'There are no open Rooms at this time.';
-
-    //     console.groupCollapsed('All Rooms:');
-    //     console.log(printJson(rooms));
-    //     console.groupEnd();
-    //   });
-    // },
 
     onHandleRoom(room) {
       this.selectedRoom = room;

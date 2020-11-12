@@ -3,9 +3,10 @@
     <v-row justify="center">
       <v-btn
         height="5em"
+        width="25em"
         color="error"
         dark
-        @click="$emit('warnRooms')"
+        @click="onWarnRooms"
         :disabled="disabled"
       >
         Warn
@@ -20,8 +21,16 @@ export default {
   props: {
     disabled: {
       type: Boolean,
+      default: false,
     },
   },
-  methods: { warnRooms: function() {} },
+  methods: {
+    onWarnRooms: function() {
+      if (this.$socket.disconnected) {
+        alert('disconnected');
+      }
+      this.$emit('warnRooms');
+    },
+  },
 };
 </script>

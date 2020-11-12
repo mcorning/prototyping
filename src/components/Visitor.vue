@@ -35,8 +35,7 @@
     >
 
     <exposureAlert v-if="alertMessage">{{ alertMessage }}</exposureAlert>
-
-    <warnRoomCard :disabled="!messages.length" @warnRooms="onWarnRooms" />
+    <warnRoomCard :disabled="disableWarnButton" @warnRooms="onWarnRooms" />
 
     <systemBarBottom
       :socketMessage="socketMessage"
@@ -98,6 +97,10 @@ export default {
     auditTrailCard,
   },
   computed: {
+    disableWarnButton() {
+      return false; // !this.messages.length || this.$socket.disconnected;
+    },
+
     roomName() {
       return this.enabled.room.room;
     },
@@ -234,6 +237,7 @@ export default {
           `Server connected using Id: ${id}, Visitor: ${visitor}, and nsp ${nsp} `,
           'Visitor.vue'
         );
+        alert('...connected');
       }
     },
 
@@ -322,7 +326,9 @@ export default {
         val: 'sentTime',
       };
       if (payload.array.length == 0) {
-        alert('No messages for ' + this.enabled.visitor.visitor);
+        alert(
+          'Found no room entry messages for ' + this.enabled.visitor.visitor
+        );
         return;
       }
 
@@ -553,6 +559,7 @@ export default {
         nsp: this.enabled.visitor.nsp,
       };
       this.$socket.connect();
+      alert('connecting...');
     },
   },
   //#endregion
