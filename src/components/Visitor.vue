@@ -237,7 +237,6 @@ export default {
           `Server connected using Id: ${id}, Visitor: ${visitor}, and nsp ${nsp} `,
           'Visitor.vue'
         );
-        alert('...connected');
       }
     },
 
@@ -559,7 +558,6 @@ export default {
         nsp: this.enabled.visitor.nsp,
       };
       this.$socket.connect();
-      alert('connecting...');
     },
   },
   //#endregion
