@@ -1,4 +1,4 @@
-Vue.prototype.$build = '11.12.17.10';
+Vue.prototype.$build = '11.13.10.54';
 let local = false; // as soon as local changes to true, the server will start responding
 
 import Vue from 'vue';
