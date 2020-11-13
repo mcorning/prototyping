@@ -5,12 +5,16 @@
     </systemBarTop>
 
     <roomIntroCard />
+
     <roomIdentityCard @room="onHandleRoom($event)" @act="emit($event)" />
-    <roomVisitorsCard :selectedRoom="selectedRoom" :log="log" />
+
     <systemBarBottom
       :socketMessage="socketMessage"
       :log="log"
     ></systemBarBottom>
+
+    <roomVisitorsCard :selectedRoom="selectedRoom" :log="log" />
+
     <auditTrailCard :cons="cons" />
     <v-card> </v-card>
   </div>
@@ -519,9 +523,9 @@ export default {
       return info;
     },
 
-// this sets the query object that includes data about the state of the UI;
-// namely, is the Room open or closed? by default, it's closed.
-// but emit() updates this with the message sent by the roomIdentityCard
+    // this sets the query object that includes data about the state of the UI;
+    // namely, is the Room open or closed? by default, it's closed.
+    // but emit() updates this with the message sent by the roomIdentityCard
     connectToServer() {
       // this.log('Connecting to Server...');
       if (
