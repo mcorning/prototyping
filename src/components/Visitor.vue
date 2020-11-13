@@ -5,6 +5,22 @@
     </systemBarTop>
 
     <diaryCard />
+    <v-alert
+      :value="alert"
+      dark
+      dismissible
+      heigth="10em"
+      border="left"
+      :color="alertColor"
+      elevation="5"
+      colored-border
+      :icon="alertIcon"
+      prominent
+      transition="scale-transition"
+      >{{ alertMessage }}
+      <slot></slot>
+    </v-alert>
+
     <v-container>
       <v-row dense justify="space-between">
         <v-col
@@ -25,6 +41,8 @@
       </v-row>
     </v-container>
 
+    <warnRoomCard :disabled="disableWarnButton" @warnRooms="onWarnRooms" />
+
     <connectionBanner
       :connectionMessage="connectionMessage"
       @reconnect="onReconnect"
@@ -33,9 +51,6 @@
     <messageBanner :bgcolor="messageColor">
       {{ feedbackMessage }}</messageBanner
     >
-
-    <exposureAlert v-if="alertMessage">{{ alertMessage }}</exposureAlert>
-    <warnRoomCard :disabled="disableWarnButton" @warnRooms="onWarnRooms" />
 
     <systemBarBottom
       :socketMessage="socketMessage"
@@ -67,7 +82,6 @@ import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
 import connectionBanner from '@/components/cards/visitor/connectionBanner';
 import messageBanner from '@/components/cards/visitor/messageBanner';
-import exposureAlert from '@/components/cards/visitor/exposureAlert';
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/visitor/dataTableCard';
@@ -90,7 +104,6 @@ export default {
     roomEntryCard,
     connectionBanner,
     messageBanner,
-    exposureAlert,
     warnRoomCard,
     systemBarBottom,
     dataTableCard,
@@ -343,9 +356,9 @@ export default {
         message: msg,
         ack: (ack) => {
           this.alert = true;
-          this.alertIcon = 'mdi-alert';
-          this.messageColor = 'warning';
-          this.feedbackMessage = ack.result.flat().flat();
+          this.alertIcon = 'mdi-warning';
+          this.alertColor = 'yellow';
+          this.alertMessage = ack.result.flat().flat();
           console.log('exposureWarning result:', ack.result);
         },
       });
@@ -356,8 +369,8 @@ export default {
       this.log(alertMessage, 'alert');
       this.alert = true;
       this.alertIcon = 'mdi-alert';
-      this.messageColor = 'error';
-      this.feedbackMessage = alertMessage;
+      this.alertColor = 'error';
+      this.alertMessage = alertMessage;
     },
     //#endregion
 

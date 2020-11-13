@@ -25,6 +25,7 @@
               clearable
               return-object
               single-line
+              autofocus
               @change="onEmitVisitor"
             >
             </v-select>
