@@ -615,6 +615,7 @@ export default {
         nsp: 'enduringNet',
       };
       this.$socket.connect();
+      // this.$admin.emit('message', this.$socket.id);
     },
   },
 

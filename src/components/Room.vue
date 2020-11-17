@@ -1,8 +1,6 @@
 <template>
   <div>
-    <systemBarTop>
-      <v-col class="text-center">UA: {{ userAgent }}</v-col>
-    </systemBarTop>
+    <systemBarTop> </systemBarTop>
 
     <roomIntroCard />
 
@@ -10,12 +8,14 @@
 
     <systemBarBottom
       :socketMessage="socketMessage"
+      @showDetails="showDetails = !showDetails"
       :log="log"
     ></systemBarBottom>
+    <div v-if="showDetails">
+      <roomVisitorsCard :selectedRoom="selectedRoom" :log="log" />
 
-    <roomVisitorsCard :selectedRoom="selectedRoom" :log="log" />
-
-    <auditTrailCard :cons="cons" />
+      <auditTrailCard :cons="cons" />
+    </div>
     <v-card> </v-card>
   </div>
 </template>
@@ -35,7 +35,7 @@ import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
 import roomVisitorsCard from '@/components/cards/room/roomVisitorsCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
-import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
+import auditTrailCard from '@/components/cards/auditTrailCard';
 
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
@@ -45,6 +45,12 @@ window.onerror = function(message, url, lineNo, columnNo, error) {
 
 export default {
   name: 'LctRoom',
+  watch: {
+    $socket(newValue, oldValue) {
+      alert('watching');
+      console.log(newValue, oldValue);
+    },
+  },
   components: {
     systemBarTop,
     roomIntroCard,
@@ -54,6 +60,10 @@ export default {
     auditTrailCard,
   },
   computed: {
+    stateIs() {
+      return this.$socket.connected ? 'Online' : 'Offline';
+    },
+
     getNow() {
       // const shortDateTimeFormat = 'lll';
       const timeFormat = 'HH:MM:SS';
@@ -125,6 +135,10 @@ export default {
   },
 
   data: () => ({
+    visitFormat: 'HH:mm on ddd, MMM DD',
+
+    showDetails: false,
+
     socketMessage: 'room',
     selectedRoom: { room: '', id: '' },
     search: '',

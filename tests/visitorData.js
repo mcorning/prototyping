@@ -15,7 +15,11 @@ Test cascading alerts:
 */
 
 const visitors = [
-  { visitor: 'Nurse Diesel', id: 'kWjzGUKmvWhgeRlmAAAA', nsp: 'enduringNet' },
+  {
+    visitor: 'Nurse Diesel',
+    id: 'kWjzGUKmvWhgeRlmAAAA',
+    nsp: 'enduringNet',
+  },
   { visitor: 'Nurse Jackie', id: 'FWzLl5dS9sr9FxDsAAAB', nsp: 'enduringNet' },
   { visitor: 'AirGas Inc', id: 'JgvrILSxDwXRWJUpAAAC', nsp: 'enduringNet' },
   { visitor: 'Doc Holliday', id: '4EuoyMOOsE4tflmtAAAA', nsp: 'enduringNet' },

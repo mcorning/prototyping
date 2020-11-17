@@ -46,8 +46,8 @@
             :items="visits"
             item-key="id"
             multi-sort
-            :sort-by="['sentTime', 'message', 'visitor']"
-            :sort-desc="[true, false, false]"
+            :sort-by="['sentTime', 'visitor', 'room', 'status']"
+            :sort-desc="[true, true]"
             dense
             class="elevation-1"
           >
@@ -167,10 +167,11 @@ export default {
       listUniqueVisitors: false,
       loaded: false,
       messageHeaders: [
+        { text: 'Sent  ', value: 'sentTime' },
         { text: 'Visitor', value: 'visitor' },
         { text: 'Message', value: 'message' },
-        { text: 'Sent  ', value: 'sentTime' },
         { text: 'Room', value: 'room' },
+        { text: 'Status', value: 'status' },
         { text: 'Delete', value: 'action' },
       ],
       visitFormat: 'HH:mm on ddd, MMM DD',

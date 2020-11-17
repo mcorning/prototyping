@@ -18,11 +18,11 @@
           ></v-col>
 
           <v-col>
-            <div class="text-center">
+            <!-- <div class="text-center">
               <v-btn fab color="primary" small @click="refreshConnection(false)"
                 ><v-icon>mdi-email-sync-outline</v-icon></v-btn
               >
-            </div>
+            </div> -->
           </v-col>
           <v-col>
             <div class="text-center">
@@ -39,11 +39,11 @@
           :headers="messageHeaders"
           :items="visits"
           multi-sort
-          :sort-by="['sentTime', 'message', 'visitor']"
-          :sort-desc="[true, false, false]"
+          :sort-by="['sentTime', 'room', 'visitor', 'status']"
+          :sort-desc="[true, true, true]"
           item-key="id"
           dense
-          :items-per-page="5"
+          :items-per-page="15"
           class="elevation-1"
         >
           <template v-slot:item.sentTime="{ item }">
@@ -110,10 +110,11 @@ export default {
 
     loaded: false,
     messageHeaders: [
+      { text: 'Sent  ', value: 'sentTime' },
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
-      { text: 'Sent  ', value: 'sentTime' },
+      { text: 'Status', value: 'status' },
       { text: 'Delete', value: 'action' },
     ],
   }),
@@ -148,7 +149,8 @@ export default {
     deleteAllMessages() {
       this.log(`Deleting all messages`);
       Message.deleteAll();
-      this.refreshConnection(true);
+      // TODO do we need this? if so, why?
+      //this.refreshConnection(true);
     },
 
     refreshConnection(hard) {

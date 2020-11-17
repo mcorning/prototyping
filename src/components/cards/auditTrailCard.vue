@@ -63,6 +63,8 @@ export default {
   data() {
     return {
       search: '',
+      visitFormat: 'HH:mm on ddd, MMM DD',
+
       rating: 3,
 
       logHeaders: [

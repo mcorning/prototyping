@@ -11,7 +11,7 @@ const highlight = clc.magenta;
 // const bold = clc.bold;
 
 // special helpers
-const { getNow } = require('./helpers');
+const { getNow, printJson } = require('./helpers');
 // end special helpers
 
 // constants
@@ -20,7 +20,7 @@ const { getNow } = require('./helpers');
 const admin = {
   id: 'Am4uagdjIODx0XL1AAAA',
   admin: 'michael@secours.io',
-  nsp: 'soteria',
+  nsp: 'admin',
 };
 
 // helpers
@@ -50,11 +50,11 @@ const onOccupiedRoomsExposed = (message) => {
 // these are the sockets options in the Room.vue
 // called by state machine
 // room is an object {name, id, nsp}
-function OpenConnection(admin) {
+async function OpenConnection(admin) {
   const id = admin.id || base64id.generateId();
   const nsp = admin.nsp || '/';
   const query = { admin: admin.admin, id: id, nsp: nsp };
-  const clientSocket = io('http://localhost:3003', {
+  const clientSocket = io(`http://localhost:3003/${nsp}`, {
     query: query,
   });
 
@@ -63,6 +63,7 @@ function OpenConnection(admin) {
     console.log(highlight(getNow(), '-', 'Admin Socket.io connection made:'));
     console.table(clientSocket.query);
     console.log(' ');
+    clientSocket.emit('message', 'successful test');
   });
 
   clientSocket.once('connect_error', (message) => {
@@ -97,4 +98,10 @@ function OpenConnection(admin) {
 }
 console.log(info('Admin query:'));
 console.table(admin);
-OpenConnection(admin);
+
+OpenConnection(admin)
+  .then((socket) => socket.connect())
+  .then((result) => {
+    console.log(success('Result:'));
+    console.log(success(printJson(result.query)));
+  });

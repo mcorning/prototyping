@@ -1,7 +1,7 @@
 <template>
   <v-system-bar color="secondary">
-    <v-row align="center">
-      <v-col>{{ socketInfo }}</v-col>
+    <v-row align="center" dense>
+      <v-col> {{ socketInfo }}</v-col>
 
       <v-col cols="2" class="text-right">
         <!-- <v-btn @click="disconnectFromServer" text>

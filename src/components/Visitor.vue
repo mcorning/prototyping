@@ -85,7 +85,7 @@ import messageBanner from '@/components/cards/visitor/messageBanner';
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/visitor/dataTableCard';
-import auditTrailCard from '@/components/cards/visitor/auditTrailCard';
+import auditTrailCard from '@/components/cards/auditTrailCard';
 
 // handle previously unhandled error
 window.onerror = function(message, url, lineNo, columnNo, error) {
