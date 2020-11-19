@@ -272,13 +272,15 @@ export default {
 
         exposureDates.forEach((date) => {
           if (messageDates[date]) {
+            let msg;
             console.log(`${room} has other visitors on ${date}. Alerting now.`);
             messageDates[date].forEach((other) => {
               if (other.id == visitor.id) {
                 this.log(
-                  `${visitor.val2}, we sent an exposure alert to another occupant in ${room} on ${date}`,
+                  `On behalf of ${visitor.val2}, we sent an exposure alert to another occupant in ${room} on ${date}`,
                   'EVENT: notifyRoom'
                 );
+                msg = 'Room notified';
               } else {
                 this.log(
                   `Alerting ${other.val2} that they were in ${room} on ${date}`,
@@ -287,7 +289,8 @@ export default {
                 const warning = {
                   visitor: other.val2,
                   visitorId: other.id,
-                  message: `${other.val2}, to stop the spread, self-quarantine for 14 days.`,
+                  message:
+                    msg || `To stop the spread, self-quarantine for 14 days.`,
                   sentTime: new Date().toISOString(),
                 };
 

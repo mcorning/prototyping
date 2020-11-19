@@ -27,7 +27,7 @@
           ><visitorIdentityCard @visitor="OnvVsitorReady($event)" />
         </v-col>
         <v-col v-show="$socket.connected">
-          <!-- bput this back later 
+          <!-- put this back later 
                   :rooms="rooms" -->
           <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
         /></v-col>
@@ -41,7 +41,13 @@
       </v-row>
     </v-container>
 
-    <warnRoomCard :disabled="disableWarnButton" @warnRooms="onWarnRooms" />
+    <warnRoomCard
+      :disabled="disableWarnButton"
+      :visitorCheckins="visitorCheckins"
+      :visitor="enabled.visitor.visitor"
+      :log="log"
+      @warned="onWarned($event)"
+    />
 
     <connectionBanner
       :connectionMessage="connectionMessage"
@@ -110,6 +116,14 @@ export default {
     auditTrailCard,
   },
   computed: {
+    // fetch Messages for enabled visitor, if any
+    visitorCheckins() {
+      return this.messages.filter(
+        (v) =>
+          v.visitor == this.enabled.visitor.visitor && v.message == 'Entered'
+      );
+    },
+
     disableWarnButton() {
       return false; // !this.messages.length || this.$socket.disconnected;
     },
@@ -298,6 +312,7 @@ export default {
     },
 
     // Server fires this event when a Room opens/closes
+    // If the opened Room has a cached warning, send it now.
     openRoomsExposed(rooms) {
       const msg = rooms
         ? `Visitor sees open Rooms: ${printJson(rooms)}`
@@ -326,43 +341,71 @@ export default {
   //       * a packet of dates of possible exposure that is stored in the Visitor log
 
   methods: {
-    //#region Main Events
-    // main event (exposureWarning) sent to Server when a Visitor self-quarantines
-    onWarnRooms() {
-      const self = this;
-      const payload = {
-        array: this.messages.filter(
-          (v) => v.visitor == this.enabled.visitor.visitor
-        ),
-        prop: 'room',
-        val: 'sentTime',
-      };
-      if (payload.array.length == 0) {
-        alert(
-          'Found no room entry messages for ' + this.enabled.visitor.visitor
-        );
-        return;
-      }
-
-      const msg = {
-        sentTime: new Date().toISOString(),
-        visitor: this.enabled.visitor,
-        warnings: this.groupMessagesByRoomAndDate(payload),
-      };
-      console.log('exposureWarning', printJson(msg));
-      this.log(msg, 'exposureWarning');
-      this.emit({
-        event: 'exposureWarning',
-        message: msg,
-        ack: (ack) => {
-          this.alert = true;
-          this.alertIcon = 'mdi-warning';
-          this.alertColor = 'yellow';
-          this.alertMessage = ack.result.flat().flat();
-          console.log('exposureWarning result:', ack.result);
-        },
+    onWarned(rooms) {
+      rooms.forEach((room) => {
+        let msg = {
+          visitor: this.enabled.visitor,
+          room: room,
+          message: 'Warned',
+          sentTime: new Date().toISOString(),
+        };
+        this.messages = msg;
       });
     },
+
+    intersection(setA, setB) {
+      let _intersection = new Set();
+      for (let elem of setB) {
+        if (setA.has(elem)) {
+          _intersection.add(elem);
+        }
+      }
+      return _intersection;
+    },
+
+    difference(setA, setB) {
+      let _difference = new Set(setA);
+      for (let elem of setB) {
+        _difference.delete(elem);
+      }
+      return _difference;
+    },
+
+    //#region Main Events
+    // main event (exposureWarning) sent to Server when a Visitor self-quarantines
+    // of a Room is offline, cache the warning and send it to the Room when it returns online
+
+    /*
+
+A) There are two options for handling pending warnings:
+  1) mark messages in Visitor's message entity in one of four ways
+      a) sent (when Visitor warns an open Room)
+      b) pending (when Visitor warns Rooms but one or more Rooms are closed and unable to process the warning in real time)
+      c) alerted (when the Visitor receives an alert from one or more Rooms)
+      d> blank (when the visit happens)
+
+  2) delegate handling to Server
+      a) no markup on message entries
+      b) pending Rooms stay in server memory until pending Room opens
+
+B) There are two ways to identify a pending Room:
+  1) locally using a call to exposeOpenRooms on the server
+  2) sending a warning to the Server and retrieving the warning in the ACK if the Server finds the Room is not open
+
+
+
+Option A has the advantage of explicitly maintaining state on messages. but this value accrues as the Visitor processes more alerts and warnings.
+Also, since a Visitor will likely warn only once the value of Option A derives from being able to rewarn closed Rooms.
+But the downside to this advantage is that the Visitor is responsible for resending the warning when the Visitor processes an openRoomExposed event.
+Specifically, If the Visitor is down and the Room is open, the Room won't see the warning.
+Ironically, this problem is likely if the Visitor goes into quarantine or treatment and no longer uses LCT.
+
+If the responsiblity goes to the Server, this temporal implication is minimal (and problematic only if the pending Rooms are stored in volatile memory).
+
+See similar comments in the Room.vue notifyRoom event handler as it tries to deal with alerts and Visitors who are not online.
+(NOTE: a Visitor, unlike a Room, should be able to recieve an alert as soon as the Visitor connects to the server (i.e., a Visitor cannot be closed))
+
+*/
 
     // handles main incoming Visitor event from Server
     onExposureAlert(alertMessage) {
