@@ -260,13 +260,15 @@ export default {
 
     // sent from Server after Visitor sends exposureWarning
     notifyRoom(data, ack) {
-      const { exposureDates, room, visitor } = data;
+      const { exposureDates, room, visitor, reason } = data;
       try {
         // filter messages for getMessageDates
         const messageDates = this.getMessageDates(
           data,
+          // TODO make this computed
           this.messages.filter((v) => v.message == 'Entered')
         );
+        console.log('Reason for warning:', reason);
         console.log(`Visitor's exposure dates:`);
         console.log(printJson(exposureDates));
 
@@ -277,20 +279,21 @@ export default {
             messageDates[date].forEach((other) => {
               if (other.id == visitor.id) {
                 this.log(
-                  `On behalf of ${visitor.val2}, we sent an exposure alert to another occupant in ${room} on ${date}`,
+                  `On behalf of ${visitor.val2} and based on ${reason}, we sent an exposure alert to another occupant in ${room} on ${date}`,
                   'EVENT: notifyRoom'
                 );
-                msg = 'Room notified';
+                msg = `Room notified (based on ${reason})`;
               } else {
                 this.log(
-                  `Alerting ${other.val2} that they were in ${room} on ${date}`,
+                  `Alerting ${other.val2} that they were in ${room} on ${date}. Reason for warning: ${reason}`,
                   'EVENT: notifyRoom'
                 );
                 const warning = {
                   visitor: other.val2,
                   visitorId: other.id,
                   message:
-                    msg || `To stop the spread, self-quarantine for 14 days.`,
+                    msg ||
+                    `Based on this reason for this alert, ${reason}), play it safe, and self-quarantine for 14 days.`,
                   sentTime: new Date().toISOString(),
                 };
 

@@ -1,8 +1,8 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Home from '../views/Home.vue';
-// import Visitor from '@/components/Visitor.vue';
-import Room from '@/components/Room.vue';
+import Visitor from '@/components/Visitor.vue';
+// import Room from '@/components/Room.vue';
 // import Admin from '@/components/Admin.vue';
 // import State from '@/models/State';
 
@@ -24,7 +24,7 @@ const routes = [
   {
     path: '/',
     name: 'Root',
-    component: Room,
+    component: Visitor,
   },
   {
     path: '/home',

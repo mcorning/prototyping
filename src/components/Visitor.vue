@@ -125,7 +125,8 @@ export default {
     },
 
     disableWarnButton() {
-      return false; // !this.messages.length || this.$socket.disconnected;
+      let disable = !(this.visitorCheckins.length && this.$socket.connected);
+      return disable;
     },
 
     roomName() {
@@ -341,7 +342,8 @@ export default {
   //       * a packet of dates of possible exposure that is stored in the Visitor log
 
   methods: {
-    onWarned(rooms) {
+    onWarned(data) {
+      const { rooms, reason } = data;
       rooms.forEach((room) => {
         let msg = {
           visitor: this.enabled.visitor,

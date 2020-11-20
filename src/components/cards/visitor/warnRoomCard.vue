@@ -1,9 +1,11 @@
 <template>
   <v-container>
+    {{ disabled }}
     <!-- <v-row v-if="dialog" justify="center"> -->
     <v-dialog v-model="dialog" persistent dark max-width="350">
       <template v-slot:activator="{ on, attrs }">
         <v-btn
+          :disabled="disabled"
           block
           height="5em"
           width="25em"
@@ -19,8 +21,15 @@
       <v-card>
         <v-card-title class="headline">Exposure Warnings</v-card-title>
         <v-card-subtitle>Dated: {{ dated }}</v-card-subtitle>
-        <v-treeview open-all dense hoverable rounded :items="items">
-        </v-treeview>
+        <v-card-text>
+          <v-select
+            :v-model="reason"
+            :items="warningTypes"
+            label="Select your reason to warn Rooms:"
+          ></v-select>
+          <v-treeview open-all dense hoverable rounded :items="items">
+          </v-treeview
+        ></v-card-text>
         <v-divider class="mx-4"></v-divider>
         <v-card-title class="justify-end">Send warning?</v-card-title>
         <v-card-actions>
@@ -86,6 +95,7 @@ export default {
       const msg = {
         sentTime: new Date().toISOString(),
         visitor: this.visitor,
+        reason: this.reason,
         warningsMap: [...this.warningsMap], // apparently it's up to us to serialize a Map before sending it across the wire
       };
       console.log('exposureWarning', this.printJson(msg));
@@ -95,7 +105,14 @@ export default {
   },
   data() {
     return {
-      dialog: this.disabled,
+      reason: '',
+      warningTypes: [
+        'I tested tested Positive for COVID',
+        'I was close to a Positive subject',
+        'I present COVID symptoms',
+        'LCT warned me of possible exposure',
+      ],
+      dialog: !this.disabled,
     };
   },
   methods: {
@@ -130,7 +147,7 @@ export default {
       this.alertMessage = ack;
       console.log('Results of exposureWarning:', this.printJson(ack));
       // Visitor will update messages so we don't warn twice
-      this.$emit('warned', this.rooms);
+      this.$emit('warned', { rooms: this.rooms, reason: this.reason });
       return;
     },
 
