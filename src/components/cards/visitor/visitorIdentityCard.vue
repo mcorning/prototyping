@@ -6,7 +6,7 @@
           <v-col>
             <v-text-field
               v-if="onboard"
-              label="Enter your handle or nickname"
+              label="Enter your (nick)name"
               hint="How do you want to be seen?"
               persistent-hint
               clearable
@@ -20,7 +20,7 @@
               item-text="visitor"
               item-value="id"
               label="Pick your Handle"
-              hint="The X button lets you delete this handle (but do so carefully)."
+              hint="The X button lets you delete this (nick)name (but do so carefully)."
               persistent-hint
               clearable
               return-object
@@ -91,10 +91,11 @@ export default {
     },
 
     onEmitVisitor() {
-      if (!this.selectedVisitor) {
-        alert('The selectedVisitor object is null.');
+      // if we delete a nickname, no need to process selectedVisitor
+      if (!this.selectedVisitor?.id) {
         return;
       }
+      // ia this call necessary given we have a watcher on this variable?
       State.changeYourId(this.selectedVisitor.id);
       this.$emit('visitor', this.selectedVisitor);
     },
@@ -133,9 +134,9 @@ export default {
     selectedVisitor(newVal, oldVal) {
       if (!newVal) {
         Visitor.delete(oldVal.id);
-        // deleting the last Visitor will leave this.selectedVisitor null...
+        // deleting the last Visitor will leave Visitor entity null...
         if (!Visitor.exists()) {
-          // ...so put it back in play wo we don't fail at onUpdateVisitor() above
+          // ...so reinitialize it back in play wo we don't fail at onUpdateVisitor() above
           this.selectedVisitor = { visitor: '', id: '' };
           return;
         }

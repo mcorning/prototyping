@@ -9,16 +9,13 @@
       :value="alert"
       dark
       dismissible
-      heigth="10em"
       border="left"
-      :color="alertColor"
-      elevation="5"
+      type="error"
+      elevation="10"
       colored-border
-      :icon="alertIcon"
       prominent
       transition="scale-transition"
       >{{ alertMessage }}
-      <slot></slot>
     </v-alert>
 
     <v-container>
@@ -42,9 +39,7 @@
     </v-container>
 
     <warnRoomCard
-      :disabled="disableWarnButton"
-      :visitorCheckins="visitorCheckins"
-      :visitor="enabled.visitor.visitor"
+      :visitor="enabled.visitor"
       :log="log"
       @warned="onWarned($event)"
     />
@@ -73,6 +68,8 @@
 <script type="application/javascript" src="@/components/js/helpers.js"></script>
 
 <script>
+import base64id from 'base64id';
+
 import helpers from '@/components/js/helpers.js';
 const { printJson } = helpers;
 
@@ -117,16 +114,13 @@ export default {
   },
   computed: {
     // fetch Messages for enabled visitor, if any
+    // TODO Push this into Message.js as a static method
     visitorCheckins() {
-      return this.messages.filter(
+      let x = this.messages.filter(
         (v) =>
           v.visitor == this.enabled.visitor.visitor && v.message == 'Entered'
       );
-    },
-
-    disableWarnButton() {
-      let disable = !(this.visitorCheckins.length && this.$socket.connected);
-      return disable;
+      return x;
     },
 
     roomName() {
@@ -137,12 +131,6 @@ export default {
       const x = this.$socket.disconnected;
       return x;
     },
-
-    //TODO delete, if not necessary
-    // enterRoomEnabled() {
-    //   let enableEntry = this.$socket.connected && this.enabled.canEnter;
-    //   return enableEntry;
-    // },
 
     visitorData() {
       return {
@@ -173,6 +161,7 @@ export default {
       set(newVal) {
         // flatten newVal
         const msg = {
+          id: base64id.generateId(),
           room: newVal.room.room,
           visitor: newVal.visitor.visitor,
           roomId: newVal.room.id,
@@ -342,9 +331,19 @@ export default {
   //       * a packet of dates of possible exposure that is stored in the Visitor log
 
   methods: {
+    getNow() {
+      return moment().format('HH:mm:ss');
+    },
+
     onWarned(data) {
       const { rooms, reason } = data;
+      console.group(
+        `[${this.getNow()}] EVENT: onWarned (Visitor.vue) - updating messages for ${
+          this.enabled.visitor.visitor
+        }'s visited Rooms:`
+      );
       rooms.forEach((room) => {
+        console.log(room.room);
         let msg = {
           visitor: this.enabled.visitor,
           room: room,
@@ -353,6 +352,9 @@ export default {
         };
         this.messages = msg;
       });
+      console.groupEnd();
+      console.warn(`End of Visitor's responsibility.`);
+      console.log(' ');
     },
 
     intersection(setA, setB) {
@@ -414,7 +416,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       this.log(alertMessage, 'alert');
       this.alert = true;
       this.alertIcon = 'mdi-alert';
-      this.alertColor = 'error';
+      this.alertColor = 'red darken-4';
       this.alertMessage = alertMessage;
     },
     //#endregion
@@ -452,7 +454,6 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
 
     onRoomSelected(selectedRoom) {
       this.enabled.room = selectedRoom;
-      this.enabled.canEnter += 1;
       this.showEntryRoomCard = true;
       this.connectionMessage = null;
     },
@@ -464,16 +465,14 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     OnvVsitorReady(visitor) {
       // enabled holds two objects: room and visitor
       this.enabled.visitor = visitor;
-      this.enabled.canEnter += 1;
+
       this.connectToServer();
     },
 
     // TODO why is this method here? we enter room with onAct() above...
     onEnterRoom(proceed) {
-      this.enabled.canEnter = -1;
       if (proceed) {
         // disables the banner
-        this.enabled.canEnter = -1;
         let msg = {
           visitor: this.enabled.visitor,
           room: this.enabled.room,

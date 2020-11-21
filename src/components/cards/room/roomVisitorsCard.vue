@@ -163,7 +163,7 @@ export default {
         { text: 'Date of Alert', value: 'sentTime' },
         { text: 'Visitor', value: 'visitor' },
       ],
-      daysBack: 0,
+      daysBack: 14,
       listUniqueVisitors: false,
       loaded: false,
       messageHeaders: [

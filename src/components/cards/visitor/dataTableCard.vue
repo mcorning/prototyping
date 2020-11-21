@@ -11,19 +11,13 @@
           <v-col>
             <div class="text-center">
               <v-checkbox
-                :value="allVisits"
-                label="See all visits"
+                :value="!allVisits"
+                label="See today's visits"
                 @change="toggleVisits"
               ></v-checkbox></div
           ></v-col>
 
-          <v-col>
-            <!-- <div class="text-center">
-              <v-btn fab color="primary" small @click="refreshConnection(false)"
-                ><v-icon>mdi-email-sync-outline</v-icon></v-btn
-              >
-            </div> -->
-          </v-col>
+          <v-col> </v-col>
           <v-col>
             <div class="text-center">
               <v-btn
@@ -35,11 +29,22 @@
             </div></v-col
           >
         </v-row>
+        <v-card-title>
+          <v-text-field
+            v-model="search"
+            append-icon="mdi-magnify"
+            label="Search Messages"
+            single-line
+            hide-details
+            @click="daysBack = 14"
+          ></v-text-field>
+        </v-card-title>
         <v-data-table
+          :search="search"
           :headers="messageHeaders"
           :items="visits"
           multi-sort
-          :sort-by="['sentTime', 'room', 'visitor', 'status']"
+          :sort-by="['sentTime', 'room', 'visitor']"
           :sort-desc="[true, true, true]"
           item-key="id"
           dense
@@ -49,6 +54,18 @@
           <template v-slot:item.sentTime="{ item }">
             {{ visitedDate(item.sentTime) }}
           </template>
+
+          <template v-slot:item.message="{ item }">
+            <div class="text-center">
+              <v-chip class="ma-2" :color="getColor(item.message)" dark>
+                <v-avatar left>
+                  <v-icon>{{ getIcon(item.message) }}</v-icon>
+                </v-avatar>
+                {{ item.message }}
+              </v-chip>
+            </div>
+          </template>
+
           <template v-slot:item.action="{ item }">
             <v-icon @click="deleteMessage(item.id)">
               mdi-delete
@@ -86,10 +103,17 @@ export default {
 
       let allVisits = this.messages.filter((v) => self.isBetween(v.sentTime));
       if (this.daysBack == 0) {
-        let roomVisits = this.messages.filter(
-          (v) => self.roomName == v.room && self.isToday(v.sentTime)
-        );
-        return roomVisits;
+        if (self.roomName) {
+          let roomVisits = this.messages.filter(
+            (v) => self.roomName == v.room && self.isToday(v.sentTime)
+          );
+          return roomVisits;
+        } else {
+          let roomVisits = this.messages.filter((v) =>
+            self.isToday(v.sentTime)
+          );
+          return roomVisits;
+        }
       }
       return allVisits;
     },
@@ -104,7 +128,8 @@ export default {
   },
 
   data: () => ({
-    daysBack: 0,
+    search: '',
+    daysBack: 14,
     today: 'YYYY-MM-DD',
     visitFormat: 'HH:mm on ddd, MMM DD',
 
@@ -114,11 +139,22 @@ export default {
       { text: 'Room', value: 'room' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
-      { text: 'Status', value: 'status' },
       { text: 'Delete', value: 'action' },
     ],
   }),
   methods: {
+    getIcon(message) {
+      if (message.toLowerCase() == 'warned') return 'mdi-alert';
+      else if (message.toLowerCase() == 'entered') return 'mdi-door-open';
+      else return 'mdi-door-closed';
+    },
+
+    getColor(message) {
+      if (message.toLowerCase() == 'warned') return 'red';
+      else if (message.toLowerCase() == 'entered') return 'primary';
+      else return 'secondary';
+    },
+
     isToday(date) {
       let x = moment(date).format(this.today);
       let y = moment()
@@ -158,7 +194,7 @@ export default {
     },
 
     toggleVisits() {
-      this.daysBack = !this.daysBack ? 14 : 0;
+      this.daysBack = this.daysBack ? 0 : 14;
     },
 
     visitedDate(date) {

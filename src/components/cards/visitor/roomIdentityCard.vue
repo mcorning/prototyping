@@ -60,12 +60,13 @@ export default {
     },
     openRoomsExposed(rooms) {
       this.openRooms = rooms;
-      console.log('open Rooms:');
-      console.table(rooms);
+      console.groupCollapsed('EVENT: openRoomsExposed - Open Rooms:');
+      console.log(this.printJson(rooms));
       const msg = rooms
-        ? '`roomIdentityCard: ${printJson(this.openRooms)}`'
+        ? `roomIdentityCard: ${printJson(this.openRooms)}`
         : 'No open Rooms yet.';
       this.log(msg, 'Event: openRoomsExposed');
+      console.groupEnd();
     },
   },
   methods: {
@@ -83,6 +84,10 @@ export default {
       // send the Room data back to Visitor so it can add the Visitor data to emit with enterRoom on the Server
       this.log(printJson(this.roomSelected));
       this.$emit('roomSelected', this.roomSelected);
+    },
+
+    printJson(json) {
+      return JSON.stringify(json, null, 3);
     },
   },
 

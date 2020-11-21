@@ -18,9 +18,19 @@ export default class Message extends Model {
 
   // val must be an object
   static async update(val) {
-    const { visitor, room, visitorId, roomId, nsp, message, sentTime } = val;
+    const {
+      id,
+      visitor,
+      room,
+      visitorId,
+      roomId,
+      nsp,
+      message,
+      sentTime,
+    } = val;
     let p = await this.$create({
       data: {
+        id: id,
         room: room,
         roomId: roomId,
         visitor: visitor,
@@ -32,12 +42,30 @@ export default class Message extends Model {
     });
     return p;
   }
+
   static async delete(val) {
     let p = await this.$delete(val);
     return p;
   }
+
   static async deleteAll() {
     let p = await this.$deleteAll();
     return p;
+  }
+
+  //   visitorCheckins() {
+  //   return this.messages.filter(
+  //     (v) =>
+  //       v.visitor == this.enabled.visitor.visitor && v.message == 'Entered'
+  //   );
+  // },
+  static visitorCheckins(visitor) {
+    console.log(visitor);
+    const visitorCheckins = this.query()
+      .where((visitor) => {
+        return this.visitor === visitor;
+      })
+      .get();
+    return visitorCheckins;
   }
 }

@@ -21,6 +21,8 @@
 </template>
 
 <script>
+import base64id from 'base64id';
+
 import moment from 'moment';
 
 import helpers from '@/components/js/helpers.js';
@@ -120,6 +122,7 @@ export default {
       set(newVal) {
         // flatten newVal
         const msg = {
+          id: base64id.generateId(),
           room: newVal.room.room,
           visitor: newVal.visitor.visitor,
           roomId: newVal.room.id,
@@ -131,6 +134,9 @@ export default {
         // static update function on Message model
         Message.update(msg);
       },
+    },
+    visits() {
+      return this.messages.filter((v) => v.message == 'Entered');
     },
   },
 
@@ -260,54 +266,82 @@ export default {
 
     // sent from Server after Visitor sends exposureWarning
     notifyRoom(data, ack) {
+      // visitor is an ID
       const { exposureDates, room, visitor, reason } = data;
       try {
-        // filter messages for getMessageDates
-        const messageDates = this.getMessageDates(
-          data,
-          // TODO make this computed
-          this.messages.filter((v) => v.message == 'Entered')
+        console.groupCollapsed(
+          `[${this.getNow}] EVENT: notifyRoom from [${visitor} to ${room} because ${reason}]`
         );
-        console.log('Reason for warning:', reason);
-        console.log(`Visitor's exposure dates:`);
+        // filter messages for getMessageDates
+        const visitors = this.getMessageDates(data, this.visits);
+        console.group(`[${this.getNow}] Step 1) Gather the data.`);
+        console.log(`Room's exposure dates:`);
         console.log(printJson(exposureDates));
+        console.log(`Room's Visitor dates:`);
+        console.log(printJson(visitors));
 
-        exposureDates.forEach((date) => {
-          if (messageDates[date]) {
-            let msg;
-            console.log(`${room} has other visitors on ${date}. Alerting now.`);
-            messageDates[date].forEach((other) => {
-              if (other.id == visitor.id) {
+        console.groupEnd();
+
+        // iterate the dates a risky Visitor visited this Room
+        exposureDates.forEach((visitedOn) => {
+          console.log(`Processing ${visitedOn}`);
+
+          // see who else was in the Room on this date
+          if (visitors[visitedOn]) {
+            // visitors has this structure:
+
+            // each Visitor in this list occupied the Room on the same day
+            visitors[visitedOn].forEach((other) => {
+              let msg1;
+              console.group(
+                `[${this.getNow}] Step 2) EVENT: notifyRoom from processing alerts for ${other.id}]`
+              );
+              // this is the Visitor warning of exposure...
+              if (other.id == visitor) {
                 this.log(
-                  `On behalf of ${visitor.val2} and based on ${reason}, we sent an exposure alert to another occupant in ${room} on ${date}`,
+                  `Based on another Visitor's reason, [${reason}], we sent an exposure alert to another occupant in ${room} on ${visitedOn}`,
                   'EVENT: notifyRoom'
                 );
-                msg = `Room notified (based on ${reason})`;
-              } else {
-                this.log(
-                  `Alerting ${other.val2} that they were in ${room} on ${date}. Reason for warning: ${reason}`,
-                  'EVENT: notifyRoom'
-                );
-                const warning = {
-                  visitor: other.val2,
-                  visitorId: other.id,
-                  message:
-                    msg ||
-                    `Based on this reason for this alert, ${reason}), play it safe, and self-quarantine for 14 days.`,
-                  sentTime: new Date().toISOString(),
-                };
-
-                this.$socket.emit('alertVisitor', warning, (result) => {
-                  this.log(result, 'ACK: alertVisitor');
-                });
+                msg1 = `Confirming: because you assert [ ${reason} ], we are notifying Room ${room} of your visit on ${visitedOn}.`;
               }
+              // ...else build up the warning for the other occupant
+              else {
+                this.log(
+                  `Alerting ${other.val2} that they were in ${room} on ${visitedOn}. Reason for warning: ${reason}`,
+                  'EVENT: notifyRoom'
+                );
+                msg1 = `On ${visitedOn}, you occupied ${room} with another visitor who reports: [ ${reason ||
+                  'being in quarantine'} ]. If you haven't been tested, do so, and self-quarantine for 14 days.`;
+              }
+              const warning = {
+                visitor: other.val2,
+                visitorId: other.id,
+                message: msg1,
+                sentTime: new Date().toISOString(),
+              };
+              console.log('Sending the warning:');
+              console.log(printJson(warning));
+              this.messages = {
+                sentTime: new Date().toISOString(),
+                room: { room: room, id: room },
+                visitor: { visitor: visitor, id: visitor },
+                message: 'WARNED',
+              };
+              this.$socket.emit('alertVisitor', warning, (result) => {
+                this.log(result, 'ACK: alertVisitor');
+              });
+
+              console.groupEnd();
             });
           }
         });
+        console.log('Leaving notifyRoom');
+
         if (ack) ack(`${visitor}, ${room} alerted`);
       } catch (error) {
-        // firewall: if, for any reason, exposureDates is not an array or messageDates have no entries...
+        // firewall: if, for any reason, exposureDates is not an array or visitors have no entries...
         this.log(error, 'ERROR: notifyRoom');
+        alert(error);
       } finally {
         console.groupEnd();
       }
@@ -359,15 +393,15 @@ export default {
       );
       console.log('Input data:');
       console.log(printJson(data));
-      let messageDates = this.groupMessagesByDateAndVisitor({
+      let visitors = this.groupMessagesByDateAndVisitor({
         array: messages,
         prop: 'sentTime',
         val: 'visitorId',
         val2: 'visitor',
       });
       console.log('Room Entered message dates:');
-      console.log(printJson(messageDates));
-      return messageDates;
+      console.log(printJson(visitors));
+      return visitors;
     },
 
     //#region - other methods
