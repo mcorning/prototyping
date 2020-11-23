@@ -129,7 +129,7 @@ export default {
     warnings() {
       const msg = {
         sentTime: new Date().toISOString(),
-        visitor: this.visitor.id,
+        visitor: this.visitor,
         reason: this.reason,
         warningsMap: [...this.warningsMap], // apparently it's up to us to serialize a Map before sending it across the wire
       };

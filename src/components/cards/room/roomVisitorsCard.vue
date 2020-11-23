@@ -15,8 +15,8 @@
               </v-col>
               <v-col>
                 <v-checkbox
-                  :value="seeAllVisits"
-                  label="See all visits"
+                  :value="!allVisits"
+                  label="See today's visits"
                   @change="toggleVisits"
                 ></v-checkbox>
               </v-col>
@@ -76,29 +76,6 @@
         </v-card-text>
       </v-col>
     </v-row>
-    <!-- start refactor
-      <v-card-text v-if="alerts.length">
-        <v-data-table
-          :headers="alertHeaders"
-          :items="alerts"
-          item-key="id"
-          dense
-          class="elevation-1"
-        >
-          <template v-slot:item.sentTime="{ item }">{{
-            visitedDate(item.sentTime)
-          }}</template>
-        </v-data-table>
-      </v-card-text>
- end refactor -->
-
-    <!-- <v-card-actions>
-        
-        <span class="pr-3">Alert Room's Visitors </span>
-        <v-btn color="error" fab dark>
-          <v-icon x-large>mdi-alert</v-icon>
-        </v-btn>
-      </v-card-actions>-->
   </v-card>
 </template>
 
@@ -171,10 +148,9 @@ export default {
         { text: 'Visitor', value: 'visitor' },
         { text: 'Message', value: 'message' },
         { text: 'Room', value: 'room' },
-        { text: 'Status', value: 'status' },
         { text: 'Delete', value: 'action' },
       ],
-      visitFormat: 'HH:mm on ddd, MMM DD',
+      visitFormat: 'HH:mm:ss on ddd, MMM DD',
     };
   },
 

@@ -463,7 +463,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     },
 
     OnvVsitorReady(visitor) {
-      // enabled holds two objects: room and visitor
+      // this.enabled holds two objects: room and visitor
       this.enabled.visitor = visitor;
 
       this.connectToServer();
@@ -625,6 +625,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     await Room.$fetch();
     await State.$fetch();
     await Message.$fetch();
+    this.connectToServer();
     this.exposeOpenRooms();
     // log the useragent in case we can't recognize it
     // this.log(navigator.userAgent);

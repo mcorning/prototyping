@@ -12,7 +12,7 @@
       :log="log"
     ></systemBarBottom>
     <div v-if="showDetails">
-      <roomVisitorsCard :selectedRoom="selectedRoom" :log="log" />
+      <dataTableCard :roomName="selectedRoom.room" :log="log" />
 
       <auditTrailCard :cons="cons" />
     </div>
@@ -35,7 +35,8 @@ import State from '@/models/State';
 import systemBarTop from '@/components/cards/systemBarTop';
 import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
-import roomVisitorsCard from '@/components/cards/room/roomVisitorsCard';
+// import roomVisitorsCard from '@/components/cards/room/roomVisitorsCard';
+import dataTableCard from '@/components/cards/visitor/dataTableCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 
@@ -57,7 +58,8 @@ export default {
     systemBarTop,
     roomIntroCard,
     roomIdentityCard,
-    roomVisitorsCard,
+    // roomVisitorsCard,
+    dataTableCard,
     systemBarBottom,
     auditTrailCard,
   },
@@ -267,23 +269,23 @@ export default {
     // sent from Server after Visitor sends exposureWarning
     notifyRoom(data, ack) {
       // visitor is an ID
-      const { exposureDates, room, visitor, reason } = data;
+      const { message, roomName, visitor, reason } = data;
       try {
         console.groupCollapsed(
-          `[${this.getNow}] EVENT: notifyRoom from [${visitor} to ${room} because ${reason}]`
+          `[${this.getNow}] EVENT: notifyRoom from [${visitor.visitor} to ${roomName} because ${reason}]`
         );
         // filter messages for getMessageDates
         const visitors = this.getMessageDates(data, this.visits);
         console.group(`[${this.getNow}] Step 1) Gather the data.`);
         console.log(`Room's exposure dates:`);
-        console.log(printJson(exposureDates));
+        console.log(printJson(message));
         console.log(`Room's Visitor dates:`);
         console.log(printJson(visitors));
 
         console.groupEnd();
 
         // iterate the dates a risky Visitor visited this Room
-        exposureDates.forEach((visitedOn) => {
+        message.forEach((visitedOn) => {
           console.log(`Processing ${visitedOn}`);
 
           // see who else was in the Room on this date
@@ -297,33 +299,33 @@ export default {
                 `[${this.getNow}] Step 2) EVENT: notifyRoom from processing alerts for ${other.id}]`
               );
               // this is the Visitor warning of exposure...
-              if (other.id == visitor) {
+              if (other.id == visitor.id) {
                 this.log(
-                  `Based on another Visitor's reason, [${reason}], we sent an exposure alert to another occupant in ${room} on ${visitedOn}`,
+                  `Based on another Visitor's reason, [${reason}], we sent an exposure alert to another occupant in ${roomName} on ${visitedOn}`,
                   'EVENT: notifyRoom'
                 );
-                msg1 = `Confirming: because you assert [ ${reason} ], we are notifying Room ${room} of your visit on ${visitedOn}.`;
+                msg1 = `Confirming: because you assert [ ${reason} ], we are notifying Room ${roomName} of your visit on ${visitedOn}.`;
               }
               // ...else build up the warning for the other occupant
               else {
                 this.log(
-                  `Alerting ${other.val2} that they were in ${room} on ${visitedOn}. Reason for warning: ${reason}`,
+                  `Alerting ${other.val2} that they were in ${roomName} on ${visitedOn}. Reason for warning: ${reason}`,
                   'EVENT: notifyRoom'
                 );
-                msg1 = `On ${visitedOn}, you occupied ${room} with another visitor who reports: [ ${reason ||
+                msg1 = `On ${visitedOn}, you occupied ${roomName} with another visitor who reports: [ ${reason ||
                   'being in quarantine'} ]. If you haven't been tested, do so, and self-quarantine for 14 days.`;
               }
               const warning = {
-                visitor: other.val2,
-                visitorId: other.id,
+                visitor: { visitor: other.val2, id: other.id },
                 message: msg1,
+                room: { room: roomName, id: roomName },
                 sentTime: new Date().toISOString(),
               };
               console.log('Sending the warning:');
               console.log(printJson(warning));
               this.messages = {
                 sentTime: new Date().toISOString(),
-                room: { room: room, id: room },
+                room: { room: roomName, id: roomName },
                 visitor: { visitor: visitor, id: visitor },
                 message: 'WARNED',
               };
@@ -337,7 +339,7 @@ export default {
         });
         console.log('Leaving notifyRoom');
 
-        if (ack) ack(`${visitor}, ${room} alerted`);
+        if (ack) ack(`${visitor.visitor}, ${roomName} alerted`);
       } catch (error) {
         // firewall: if, for any reason, exposureDates is not an array or visitors have no entries...
         this.log(error, 'ERROR: notifyRoom');

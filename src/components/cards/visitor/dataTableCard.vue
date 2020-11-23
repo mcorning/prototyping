@@ -131,7 +131,7 @@ export default {
     search: '',
     daysBack: 14,
     today: 'YYYY-MM-DD',
-    visitFormat: 'HH:mm on ddd, MMM DD',
+    visitFormat: 'HH:mm:ss on ddd, MMM DD',
 
     loaded: false,
     messageHeaders: [
