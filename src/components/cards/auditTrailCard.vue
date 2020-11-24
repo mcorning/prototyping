@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import moment from 'moment';
+import helpers from '@/components/js/helpers.js';
 
 export default {
   props: {
@@ -82,8 +82,7 @@ export default {
       return type == 'alert' ? 'red' : 'gray';
     },
     visitedDate(date) {
-      let x = moment(new Date(date)).format(this.visitFormat);
-      return x;
+      return helpers.visitedDate(date);
     },
   },
   mounted() {},

@@ -1,5 +1,6 @@
-Vue.prototype.$build = '11.24.00.49';
-let local = true; // as soon as local changes to true, the server will start responding
+// update the next two lines whenever you rebuild the app and deploy it on Azure Static Website
+Vue.prototype.$build = '11.23.11.32';
+let local = false; // as soon as local changes to true, the server will start responding
 
 import Vue from 'vue';
 import App from './App.vue';

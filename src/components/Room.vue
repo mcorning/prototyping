@@ -26,7 +26,7 @@ import base64id from 'base64id';
 import moment from 'moment';
 
 import helpers from '@/components/js/helpers.js';
-const { printJson } = helpers;
+const { printJson, getNow } = helpers;
 
 import Message from '@/models/Message';
 import Visitor from '@/models/Visitor';
@@ -35,8 +35,7 @@ import State from '@/models/State';
 import systemBarTop from '@/components/cards/systemBarTop';
 import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
-// import roomVisitorsCard from '@/components/cards/room/roomVisitorsCard';
-import dataTableCard from '@/components/cards/visitor/dataTableCard';
+import dataTableCard from '@/components/cards/dataTableCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 
@@ -58,7 +57,6 @@ export default {
     systemBarTop,
     roomIntroCard,
     roomIdentityCard,
-    // roomVisitorsCard,
     dataTableCard,
     systemBarBottom,
     auditTrailCard,
@@ -66,12 +64,6 @@ export default {
   computed: {
     stateIs() {
       return this.$socket.connected ? 'Online' : 'Offline';
-    },
-
-    getNow() {
-      // const shortDateTimeFormat = 'lll';
-      const timeFormat = 'HH:MM:SS';
-      return moment().format(timeFormat);
     },
 
     userAgent() {
@@ -138,6 +130,9 @@ export default {
       },
     },
     visits() {
+      console.group('All parties affected by warning and alerts:');
+      console.log(this.messages);
+      console.groupEnd();
       return this.messages.filter((v) => v.message == 'Entered');
     },
   },
@@ -200,11 +195,11 @@ export default {
   }),
 
   sockets: {
-    // socket.io reserved events
+    //#region socket.io reserved events
     connect() {
       console.group('onConnect');
       console.log(
-        `[${this.getNow}] ${printJson(this.$socket.id)} ${
+        `[${getNow()}] ${printJson(this.$socket.id)} ${
           this.closed ? 'closed' : 'open'
         }`
       );
@@ -234,7 +229,7 @@ export default {
     reconnect(reason) {
       console.group('onReconnect');
       console.warn(
-        `[${this.getNow}] ${printJson(
+        `[${getNow()}] ${printJson(
           this.$socket.io.opts.query
         )} Recconnect ${reason}`,
         'Room.vue'
@@ -254,7 +249,7 @@ export default {
     reconnect_failed(reason) {
       this.log(`Reconnect_failed ${reason}`, 'Room.vue');
     },
-    // end socket.io reserved events
+    //#endregion end socket.io reserved events
 
     // Visitor routine events
     checkIn(msg) {
@@ -264,82 +259,54 @@ export default {
     checkOut(msg) {
       this.messages = msg;
     },
-    // end socket.io reserved events
 
     // sent from Server after Visitor sends exposureWarning
     notifyRoom(data, ack) {
-      // visitor is an ID
-      const { message, roomName, visitor, reason } = data;
+      // visitor is an object
+      // message contains Visitor's exposureDates
+      const { message, room, visitor, reason } = data;
       try {
         console.groupCollapsed(
-          `[${this.getNow}] EVENT: notifyRoom from [${visitor.visitor} to ${roomName} because ${reason}]`
+          `[${getNow()}] EVENT: notifyRoom from [${visitor.visitor} to ${
+            room.room
+          } because ${reason}]`
         );
         // filter messages for getMessageDates
         const visitors = this.getMessageDates(data, this.visits);
-        console.group(`[${this.getNow}] Step 1) Gather the data.`);
+        console.group(`[${getNow()}] Step 1) Gather the data.`);
         console.log(`Room's exposure dates:`);
         console.log(printJson(message));
         console.log(`Room's Visitor dates:`);
         console.log(printJson(visitors));
-
         console.groupEnd();
-
         // iterate the dates a risky Visitor visited this Room
         message.forEach((visitedOn) => {
           console.log(`Processing ${visitedOn}`);
 
           // see who else was in the Room on this date
           if (visitors[visitedOn]) {
-            // visitors has this structure:
-
             // each Visitor in this list occupied the Room on the same day
             visitors[visitedOn].forEach((other) => {
-              let msg1;
               console.group(
-                `[${this.getNow}] Step 2) EVENT: notifyRoom from processing alerts for ${other.id}]`
+                `[${getNow()}] Step 2) EVENT: notifyRoom from processing alerts for ${
+                  other.id
+                }]`
               );
               // this is the Visitor warning of exposure...
               if (other.id == visitor.id) {
-                this.log(
-                  `Based on another Visitor's reason, [${reason}], we sent an exposure alert to another occupant in ${roomName} on ${visitedOn}`,
-                  'EVENT: notifyRoom'
-                );
-                msg1 = `Confirming: because you assert [ ${reason} ], we are notifying Room ${roomName} of your visit on ${visitedOn}.`;
+                this.handleWarningVisitor(reason, room, visitor, visitedOn);
               }
               // ...else build up the warning for the other occupant
               else {
-                this.log(
-                  `Alerting ${other.val2} that they were in ${roomName} on ${visitedOn}. Reason for warning: ${reason}`,
-                  'EVENT: notifyRoom'
-                );
-                msg1 = `On ${visitedOn}, you occupied ${roomName} with another visitor who reports: [ ${reason ||
-                  'being in quarantine'} ]. If you haven't been tested, do so, and self-quarantine for 14 days.`;
+                this.handleOtherVisitors(room, visitedOn, reason, other);
               }
-              const warning = {
-                visitor: { visitor: other.val2, id: other.id },
-                message: msg1,
-                room: { room: roomName, id: roomName },
-                sentTime: new Date().toISOString(),
-              };
-              console.log('Sending the warning:');
-              console.log(printJson(warning));
-              this.messages = {
-                sentTime: new Date().toISOString(),
-                room: { room: roomName, id: roomName },
-                visitor: { visitor: visitor, id: visitor },
-                message: 'WARNED',
-              };
-              this.$socket.emit('alertVisitor', warning, (result) => {
-                this.log(result, 'ACK: alertVisitor');
-              });
-
               console.groupEnd();
             });
           }
         });
         console.log('Leaving notifyRoom');
 
-        if (ack) ack(`${visitor.visitor}, ${roomName} alerted`);
+        if (ack) ack(`${visitor.visitor}, ${room.room} alerted`);
       } catch (error) {
         // firewall: if, for any reason, exposureDates is not an array or visitors have no entries...
         this.log(error, 'ERROR: notifyRoom');
@@ -372,37 +339,71 @@ export default {
   //         * visitorId: Visitor's generated ID
 
   methods: {
+    handleWarningVisitor(reason, room, visitor, visitedOn) {
+      const msg = `WARNING CONFIRMATION: because you assert [ ${reason} ], we are warning Room ${room.room} of your visit on ${visitedOn}.`;
+      const warning = {
+        visitor: visitor,
+        message: msg,
+        room: room,
+        sentTime: new Date().toISOString(),
+      };
+
+      this.$socket.emit('alertVisitor', warning, (result) => {
+        this.log(result, 'ACK: alertVisitor');
+      });
+    },
+
+    handleOtherVisitors(room, visitedOn, reason, other) {
+      const msg = `On ${visitedOn}, you occupied ${
+        room.room
+      } with another visitor who reports: [ ${reason ||
+        'being in quarantine'} ]. If you haven't been tested, do so, and self-quarantine for 14 days.`;
+
+      const warning = {
+        visitor: { visitor: other.visitor, id: other.id },
+        message: msg,
+        room: room,
+        sentTime: new Date().toISOString(),
+      };
+
+      this.$socket.emit('alertVisitor', warning, (result) => {
+        this.log(result, 'ACK: alertVisitor');
+      });
+    },
+
     onCheckIn(msg) {
       this.messages = msg;
     },
 
     groupMessagesByDateAndVisitor(payload) {
-      const { array, prop, val, val2 } = payload;
-
+      const { array, prop, val, visitor } = payload;
+      console.log('groupMessagesByDateAndVisitor - payload:');
+      console.log(printJson(payload));
       return array.reduce(function(a, c) {
         let key = moment(c[prop]).format('YYYY-MM-DD');
         if (!a[key]) {
           a[key] = [];
         }
-        a[key].push({ id: c[val], val2: c[val2] });
+        a[key].push({ id: c[val], visitor: c[visitor] });
         return a;
       }, {});
     },
 
     getMessageDates(data, messages) {
       console.groupCollapsed(
-        `[${this.getNow}] Room Client: onNotifyRoom, Server Acknowledged:`
+        `[${getNow()}] Room Client: handling onNotifyRoom: Input data:`
       );
-      console.log('Input data:');
       console.log(printJson(data));
       let visitors = this.groupMessagesByDateAndVisitor({
         array: messages,
         prop: 'sentTime',
         val: 'visitorId',
-        val2: 'visitor',
+        visitor: 'visitor',
       });
       console.log('Room Entered message dates:');
       console.log(printJson(visitors));
+      console.groupEnd();
+
       return visitors;
     },
 
@@ -418,36 +419,6 @@ export default {
     getIconColor(type) {
       return type == 'alert' ? 'red' : 'gray';
     },
-
-    groupBy(payload) {
-      const { array, prop, val } = payload;
-
-      return array
-        .filter((v) => v[val]) // ignore Room Opened/Closed messages
-        .reduce(function(a, c) {
-          let key = moment(c[prop]).format('YYYY-MM-DD');
-          if (!a[key]) {
-            a[key] = [];
-          }
-          a[key].push(c[val]);
-          return a;
-        }, {});
-    },
-    // main methods
-    // openMyRoom(roomId) {
-    //   let payload = {
-    //     event: 'openMyRoom',
-    //     message: roomId,
-    //     ack: (ack) => {
-    //       this.log(ack);
-    //       this.alertColor = 'success';
-    //       this.alertMessage = ack;
-    //       this.alertIcon = 'mdi-email-open';
-    //       this.alert = true;
-    //     },
-    //   };
-    //   this.$socket.emit(payload.event, payload.message, payload.ack);
-    // },
 
     changeRoom(val) {
       let msg;
@@ -530,37 +501,6 @@ export default {
         type: type,
         message: msg,
       });
-    },
-
-    pingServer() {
-      this.log(`Using socket ${this.$socket.id}...`);
-      this.emit({
-        event: 'pingServer',
-        message: this.selectedRoom.id,
-        ack: (ack) => '...' + this.log(ack),
-      });
-    },
-
-    // TODO candidate for utility code
-    isToday(date) {
-      let x = moment(date).format(this.today);
-      let y = moment()
-        .add(-this.daysBack, 'day')
-        .format(this.today);
-      return x == y;
-    },
-
-    isBetween(date) {
-      let visit = moment(date);
-
-      let past = moment()
-        .add(-this.daysBack, 'day')
-        .format('YYYY-MM-DD');
-      let tomorrow = moment()
-        .add(1, 'day')
-        .format('YYYY-MM-DD');
-      let test = visit.isBetween(past, tomorrow);
-      return test;
     },
 
     // end helper methods

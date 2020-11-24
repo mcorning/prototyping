@@ -247,6 +247,8 @@ import moment from 'moment';
 import mtz from 'moment-timezone';
 import Clock from 'vue-clock2';
 
+import helpers from '@/components/js/helpers.js';
+
 import State from '@/models/State';
 
 window.onerror = function(message, url, lineNo, columnNo, error) {
@@ -558,8 +560,7 @@ export default {
     },
 
     visitedDate(date) {
-      let x = moment(new Date(date)).format(this.visitFormat);
-      return x;
+      return helpers.visitedDate(date);
     },
 
     getSistersTime() {

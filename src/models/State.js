@@ -1,4 +1,5 @@
 import { Model } from '@vuex-orm/core';
+import helpers from '@/components/js/helpers.js';
 
 export default class State extends Model {
   static entity = 'state';
@@ -14,6 +15,9 @@ export default class State extends Model {
       visitorId: this.string(''),
       zipcode: this.string(''),
       namespace: this.string('/'),
+      warningDate: this.string(''),
+      warningReason: this.string(''),
+      warningRoom: this.string(''),
     };
   }
   static async changeNamespace(val) {
@@ -49,10 +53,24 @@ export default class State extends Model {
     });
     return p;
   }
+
   static async changeYourId(val) {
     console.log('STATE: visitorId now:', val);
     let p = await this.$update({
       data: { id: 0, visitorId: val },
+    });
+    return p;
+  }
+
+  static async handleAlert(val) {
+    console.log('STATE: warning now:', helpers.pringJson(val));
+    let p = await this.$update({
+      data: {
+        id: 0,
+        warningDate: val.warningDate,
+        warningReason: val.warningReason,
+        warningRoom: val.warningRoom,
+      },
     });
     return p;
   }

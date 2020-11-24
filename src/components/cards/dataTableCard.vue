@@ -78,7 +78,10 @@
 </template>
 
 <script>
-import moment from 'moment';
+// import moment from 'moment';
+
+import helpers from '@/components/js/helpers.js';
+
 import Message from '@/models/Message';
 
 export default {
@@ -101,16 +104,18 @@ export default {
     visits() {
       const self = this;
 
-      let allVisits = this.messages.filter((v) => self.isBetween(v.sentTime));
+      let allVisits = this.messages.filter((v) =>
+        helpers.isBetween(v.sentTime)
+      );
       if (this.daysBack == 0) {
         if (self.roomName) {
           let roomVisits = this.messages.filter(
-            (v) => self.roomName == v.room && self.isToday(v.sentTime)
+            (v) => self.roomName == v.room && helpers.isToday(v.sentTime)
           );
           return roomVisits;
         } else {
           let roomVisits = this.messages.filter((v) =>
-            self.isToday(v.sentTime)
+            helpers.isToday(v.sentTime)
           );
           return roomVisits;
         }
@@ -144,37 +149,51 @@ export default {
   }),
   methods: {
     getIcon(message) {
-      if (message.toLowerCase() == 'warned') return 'mdi-alert';
-      else if (message.toLowerCase() == 'entered') return 'mdi-door-open';
-      else return 'mdi-door-closed';
+      switch (message.toLowerCase()) {
+        case 'alerted':
+          return 'mdi-alert';
+        case 'warned by':
+          return 'mdi-account-alert';
+        case 'opened':
+        case 'entered':
+          return 'mdi-door-open';
+        default:
+          return 'mdi-door-closed';
+      }
     },
-
     getColor(message) {
-      if (message.toLowerCase() == 'warned') return 'red';
-      else if (message.toLowerCase() == 'entered') return 'primary';
-      else return 'secondary';
+      switch (message.toLowerCase()) {
+        case 'alerted':
+          return 'error';
+        case 'warned by':
+          return 'warning';
+        case 'entered':
+          return 'primary';
+        default:
+          return 'secondary';
+      }
     },
 
-    isToday(date) {
-      let x = moment(date).format(this.today);
-      let y = moment()
-        .add(-this.daysBack, 'day')
-        .format(this.today);
-      return x == y;
-    },
+    // isToday(date) {
+    //   let x = moment(date).format(this.today);
+    //   let y = moment()
+    //     .add(-this.daysBack, 'day')
+    //     .format(this.today);
+    //   return x == y;
+    // },
 
-    isBetween(date) {
-      let visit = moment(date);
+    // isBetween(date) {
+    //   let visit = moment(date);
 
-      let past = moment()
-        .add(-this.daysBack, 'day')
-        .format('YYYY-MM-DD');
-      let tomorrow = moment()
-        .add(1, 'day')
-        .format('YYYY-MM-DD');
-      let test = visit.isBetween(past, tomorrow);
-      return test;
-    },
+    //   let past = moment()
+    //     .add(-this.daysBack, 'day')
+    //     .format('YYYY-MM-DD');
+    //   let tomorrow = moment()
+    //     .add(1, 'day')
+    //     .format('YYYY-MM-DD');
+    //   let test = visit.isBetween(past, tomorrow);
+    //   return test;
+    // },
 
     deleteMessage(id) {
       let m = `Deleting message ${id}`;
@@ -198,8 +217,7 @@ export default {
     },
 
     visitedDate(date) {
-      let x = moment(new Date(date)).format(this.visitFormat);
-      return x;
+      return helpers.visitedDate(date);
     },
   },
   async mounted() {

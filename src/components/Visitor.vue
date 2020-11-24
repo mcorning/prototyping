@@ -71,7 +71,7 @@
 import base64id from 'base64id';
 
 import helpers from '@/components/js/helpers.js';
-const { printJson } = helpers;
+const { printJson, getNow } = helpers;
 
 import moment from 'moment';
 
@@ -87,7 +87,7 @@ import connectionBanner from '@/components/cards/visitor/connectionBanner';
 import messageBanner from '@/components/cards/visitor/messageBanner';
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
-import dataTableCard from '@/components/cards/visitor/dataTableCard';
+import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 
 // handle previously unhandled error
@@ -331,14 +331,10 @@ export default {
   //       * a packet of dates of possible exposure that is stored in the Visitor log
 
   methods: {
-    getNow() {
-      return moment().format('HH:mm:ss');
-    },
-
     onWarned(data) {
       const { rooms, reason } = data;
       console.group(
-        `[${this.getNow()}] EVENT: onWarned (Visitor.vue) - updating messages for ${
+        `[${getNow()}] EVENT: onWarned (Visitor.vue) - updating messages for ${
           this.enabled.visitor.visitor
         }'s visited Rooms:`
       );
@@ -412,12 +408,29 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
 */
 
     // handles main incoming Visitor event from Server
-    onExposureAlert(alertMessage) {
-      this.log(alertMessage, 'alert');
+    onExposureAlert(data) {
+      const { event, message, visitor, room } = data;
+
+      // prepare the Alert card content
       this.alert = true;
       this.alertIcon = 'mdi-alert';
       this.alertColor = 'red darken-4';
-      this.alertMessage = alertMessage;
+      this.alertMessage = message;
+
+      // memorialize the wARNING
+      let entry = printJson(
+        (this.messages = {
+          room: room.room,
+          roomId: room.id,
+          visitor: visitor.visitor,
+          visitorId: visitor.id,
+          nsp: '',
+          sentTime: new Date().toISOString(),
+          message: 'ALERTED',
+        })
+      );
+      // log the warning/alert in the Admin View
+      this.log(entry, 'Alert Message');
     },
     //#endregion
 
