@@ -420,10 +420,8 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       // memorialize the wARNING
       let entry = printJson(
         (this.messages = {
-          room: room.room,
-          roomId: room.id,
-          visitor: visitor.visitor,
-          visitorId: visitor.id,
+          room: room,
+          visitor: visitor,
           nsp: '',
           sentTime: new Date().toISOString(),
           message: 'ALERTED',

@@ -300,6 +300,13 @@ export default {
               else {
                 this.handleOtherVisitors(room, visitedOn, reason, other);
               }
+              this.messages = {
+                room: room,
+                visitor: visitor,
+                nsp: '',
+                sentTime: new Date().toISOString(),
+                message: 'ALERTED',
+              };
               console.groupEnd();
             });
           }
