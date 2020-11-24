@@ -4,6 +4,8 @@
 import moment from 'moment';
 
 export default {
+  daysBack: 14,
+  today: 'YYYY-MM-DD',
   visitFormat: 'HH:mm:ss on ddd, MMM DD',
 
   openMyRoom: function(yourID) {
@@ -42,19 +44,19 @@ export default {
   },
 
   // TODO candidate for utility code
-  isToday(date) {
+  isToday(date, daysBack) {
     let x = moment(date).format(this.today);
     let y = moment()
-      .add(-this.daysBack, 'day')
+      .add(-daysBack, 'day')
       .format(this.today);
     return x == y;
   },
 
-  isBetween(date) {
+  isBetween(date, daysBack) {
     let visit = moment(date);
 
     let past = moment()
-      .add(-this.daysBack, 'day')
+      .add(-daysBack, 'day')
       .format('YYYY-MM-DD');
     let tomorrow = moment()
       .add(1, 'day')

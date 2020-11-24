@@ -58,6 +58,7 @@
       @showDetails="showDetails = !showDetails"
       :log="log"
     ></systemBarBottom>
+
     <div v-if="showDetails">
       <dataTableCard :roomName="roomName" :log="log" />
 
@@ -219,7 +220,7 @@ export default {
     connectionMessage: 'Provide a name to Connect to the Server.',
     disconnectedFromServer: true,
     showEntryRoomCard: false,
-    showDetails: false,
+    showDetails: true,
     feedbackMessage:
       'Thanks for making us safer together using Local Contact Tracing...',
     messageColor: 'secondary lighten-1',

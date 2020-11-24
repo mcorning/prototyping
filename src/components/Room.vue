@@ -140,7 +140,7 @@ export default {
   data: () => ({
     visitFormat: 'HH:mm on ddd, MMM DD',
 
-    showDetails: false,
+    showDetails: true,
 
     socketMessage: 'room',
     selectedRoom: { room: '', id: '' },
