@@ -55,6 +55,10 @@
 
 <script>
 import moment from 'moment';
+
+import helpers from '@/components/js/helpers.js';
+const { printJson, getNow } = helpers;
+
 import Message from '@/models/Message';
 
 export default {
@@ -114,6 +118,8 @@ export default {
 
     warningsMap() {
       if (this.visitor) {
+        console.log('this.visitorCheckins:');
+        console.log(printJson(this.visitorCheckins));
         // group the messages
         const warningsMap = this.mapMessagesByRoomAndDate({
           array: this.visitorCheckins,
@@ -144,10 +150,7 @@ export default {
     };
   },
   methods: {
-    getNow() {
-      return moment().format('HH:mm:ss');
-    },
-
+    // emits events to server
     emit(payload) {
       if (!this.$socket.id) {
         window.location.reload(true);
@@ -159,21 +162,25 @@ export default {
     onWarnRooms() {
       this.dialog = false;
       console.groupCollapsed(
-        `[${this.getNow()}] EVENT: onWarnRooms (warmRoomCard.vue) Warnings sent to Server:`
+        `[${getNow()}] EVENT: onWarnRooms (warmRoomCard.vue) Warnings sent to Server:`
       );
-      console.log(this.printJson(this.warnings));
+      console.log(printJson(this.warnings));
       this.log(this.warnings, 'EVENT: exposureWarning');
+
+      // send all visited Rooms and dates to server
       this.emit({
         event: 'exposureWarning',
         message: this.warnings,
         ack: this.onWarnRoomsAck,
       });
+
       console.groupEnd();
     },
 
+    // recieved from server
     onWarnRoomsAck(ack) {
       console.groupCollapsed(
-        `[${this.getNow()}] ACK: onWarnRooms (warmRoomCard.vue) result: [${
+        `[${getNow()}] ACK: onWarnRooms (warmRoomCard.vue) result: [${
           ack.result
         }]`
       );
@@ -184,34 +191,14 @@ export default {
       this.alertMessage = ack;
       const msg = { rooms: this.rooms, reason: this.reason };
       this.log(
-        `Result of exposureWarning: ${this.printJson(ack)}`,
+        `Result of exposureWarning: ${printJson(ack)}`,
         'ACK: exposureWarning'
       );
-      console.log('Emitting to Visitor.vue:', this.printJson(msg));
+      console.log('Emitting to Visitor.vue:', printJson(msg));
       // Visitor will update messages so we don't warn twice
       this.$emit('warned', msg);
       console.groupEnd();
       return;
-    },
-
-    mapMessagesByRoomAndDate(payload) {
-      if (this.visitor) {
-        // array constains filtered messages
-        //       array: this.messages.filter(
-        //   (v) => v.visitor == this.enabled.visitor.visitor
-        // ),
-        // prop is 'room' and val is 'sentTime'
-        const { array, prop, val } = payload;
-        let visitDates = [];
-        return array.reduce(function(a, c) {
-          // c[val] should not be blank
-          visitDates.push(moment(c[val]).format('YYYY-MM-DD'));
-          a.set(c[prop], visitDates);
-          return a;
-        }, new Map());
-      } else {
-        return null;
-      }
     },
 
     /*
@@ -256,6 +243,27 @@ export default {
       ]
 
    */
+
+    mapMessagesByRoomAndDate(payload) {
+      if (this.visitor) {
+        // array constains filtered messages
+        //       array: this.messages.filter(
+        //   (v) => v.visitor == this.enabled.visitor.visitor
+        // ),
+        // prop is 'room' and val is 'sentTime'
+        const { array, prop, val } = payload;
+        let visitDates = [];
+        return array.reduce(function(a, c) {
+          // c[val] should not be blank
+          visitDates.push(moment(c[val]).format('YYYY-MM-DD'));
+          a.set(c[prop], visitDates);
+          return a;
+        }, new Map());
+      } else {
+        return null;
+      }
+    },
+
     groupMessagesByRoomAndDate() {
       if (this.visitor) {
         const warningsMapAsArray = [...this.warningsMap];
@@ -275,9 +283,9 @@ export default {
       }
     },
 
-    printJson(json) {
-      return JSON.stringify(json, null, 3);
-    },
+    // printJson(json) {
+    //   return JSON.stringify(json, null, 3);
+    // },
   },
   async mounted() {
     await Message.$fetch();

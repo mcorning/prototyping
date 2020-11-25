@@ -163,9 +163,9 @@ export default {
         // flatten newVal
         const msg = {
           id: base64id.generateId(),
-          room: newVal.room.room,
+          room: newVal.room,
           visitor: newVal.visitor.visitor,
-          roomId: newVal.room.id,
+          roomId: newVal.room,
           visitorId: newVal.visitor.id,
           nsp: newVal.nsp,
           sentTime: newVal.sentTime,
@@ -332,6 +332,7 @@ export default {
   //       * a packet of dates of possible exposure that is stored in the Visitor log
 
   methods: {
+    // handles @warned event from warnRoomCard which responds to the ACK from the server upon reciept of warning
     onWarned(data) {
       const { rooms, reason } = data;
       console.group(
@@ -341,10 +342,11 @@ export default {
       );
       rooms.forEach((room) => {
         console.log(room.room);
+        // memorialize the warnings
         let msg = {
           visitor: this.enabled.visitor,
           room: room,
-          message: 'Warned',
+          message: 'WARNED BY',
           sentTime: new Date().toISOString(),
         };
         this.messages = msg;
@@ -352,24 +354,6 @@ export default {
       console.groupEnd();
       console.warn(`End of Visitor's responsibility.`);
       console.log(' ');
-    },
-
-    intersection(setA, setB) {
-      let _intersection = new Set();
-      for (let elem of setB) {
-        if (setA.has(elem)) {
-          _intersection.add(elem);
-        }
-      }
-      return _intersection;
-    },
-
-    difference(setA, setB) {
-      let _difference = new Set(setA);
-      for (let elem of setB) {
-        _difference.delete(elem);
-      }
-      return _difference;
     },
 
     //#region Main Events
@@ -438,7 +422,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     onAct(checkedOut) {
       let msg = {
         visitor: this.enabled.visitor,
-        room: this.enabled.room,
+        room: this.enabled.room.room,
         message: checkedOut ? 'Entered' : 'Departed',
         sentTime: new Date().toISOString(),
       };
