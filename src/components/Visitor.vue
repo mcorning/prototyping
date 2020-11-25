@@ -341,18 +341,21 @@ export default {
         }'s visited Rooms:`
       );
       rooms.forEach((room) => {
-        console.log(room.room);
         // memorialize the warnings
         let msg = {
           visitor: this.enabled.visitor,
-          room: room,
+          room: room.room,
           message: 'WARNED BY',
           sentTime: new Date().toISOString(),
         };
         this.messages = msg;
+        console.log('New message:');
+        console.log(printJson(msg));
       });
       console.groupEnd();
-      console.warn(`End of Visitor's responsibility.`);
+      console.warn(
+        `End of Visitor's responsibility. Room(s) take over from here...`
+      );
       console.log(' ');
     },
 

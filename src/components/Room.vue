@@ -117,9 +117,9 @@ export default {
         // flatten newVal
         const msg = {
           id: base64id.generateId(),
-          room: newVal.room.room,
+          room: newVal.room,
           visitor: newVal.visitor.visitor,
-          roomId: newVal.room.id,
+          roomId: newVal.room,
           visitorId: newVal.visitor.id,
           nsp: newVal.nsp,
           sentTime: newVal.sentTime,

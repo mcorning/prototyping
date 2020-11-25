@@ -118,14 +118,13 @@ export default {
 
     warningsMap() {
       if (this.visitor) {
-        console.log('this.visitorCheckins:');
-        console.log(printJson(this.visitorCheckins));
         // group the messages
         const warningsMap = this.mapMessagesByRoomAndDate({
           array: this.visitorCheckins,
           prop: 'room',
           val: 'sentTime',
         });
+
         return warningsMap;
       } else {
         return null;
@@ -244,6 +243,15 @@ export default {
 
    */
 
+    // used by warningMaps to serialze to server that looks like this:
+    // [
+    //    [
+    //       "DS301",
+    //       [
+    //          "2020-11-24"
+    //       ]
+    //    ]
+    // ]
     mapMessagesByRoomAndDate(payload) {
       if (this.visitor) {
         // array constains filtered messages
@@ -264,6 +272,19 @@ export default {
       }
     },
 
+    // used by items() to group messages to look like this:
+    // [
+    //    {
+    //       "id": 0,
+    //       "name": "DS301",
+    //       "children": [
+    //          {
+    //             "id": 0,
+    //             "name": "2020-11-24"
+    //          }
+    //       ]
+    //    }
+    // ]
     groupMessagesByRoomAndDate() {
       if (this.visitor) {
         const warningsMapAsArray = [...this.warningsMap];
@@ -277,6 +298,7 @@ export default {
           a.push(o);
           return a;
         }, []);
+
         return items;
       } else {
         return null;
