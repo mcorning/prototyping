@@ -1,12 +1,3 @@
-// const clc = require('cli-color');
-// const success = clc.green.bold;
-// const error = clc.red.bold;
-// const warn = clc.yellow;
-// const info = clc.cyan;
-// const notice = clc.blue;
-// const highlight = clc.magenta;
-// const bold = clc.bold;
-
 const socketIoServerUrl = 'http://localhost:3003';
 
 const moment = require('moment');

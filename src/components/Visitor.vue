@@ -91,6 +91,15 @@ import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 
+import clc from 'cli-color';
+// const success = clc.green.bold;
+// const error = clc.red.bold;
+// const warn = clc.yellow;
+// const info = clc.cyan;
+// const notice = clc.blue;
+const highlight = clc.magenta;
+const bold = clc.bold;
+
 // handle previously unhandled error
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
@@ -340,6 +349,7 @@ export default {
           this.enabled.visitor.visitor
         }'s visited Rooms:`
       );
+      let roomNames = [];
       rooms.forEach((room) => {
         // memorialize the warnings
         let msg = {
@@ -351,7 +361,12 @@ export default {
         this.messages = msg;
         console.log('New message:');
         console.log(printJson(msg));
+        roomNames.push(room.room);
       });
+      this.messageColor = 'success lighten-1';
+      this.feedbackMessage = `Server acknowledges warning for Room(s)
+        ${roomNames.join(', ')}.`;
+
       console.groupEnd();
       console.warn(
         `End of Visitor's responsibility. Room(s) take over from here...`
@@ -489,6 +504,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
             self.messageColor = 'success lighten-1';
             self.feedbackMessage = `Welcome to ${ACK.room.room.id}`;
           }
+          this.trace({ caption: 'ACK: enterRoom', msg: ACK });
           this.log(ACK, 'ACKS');
         });
       }
@@ -577,6 +593,11 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
         message: msg,
       });
     },
+    trace(trace) {
+      const { caption, msg } = trace;
+      console.log(bold(highlight(caption)));
+      console.log(bold(highlight(printJson(msg))));
+    },
 
     // TODO implement this or remove it
     removeVisitor() {
@@ -597,6 +618,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
         console.log(printJson(rooms));
         console.groupEnd();
         self.connectionMessage = msg;
+        this.trace({ caption: 'ACK: exposeOpenRooms', msg: rooms });
       });
     },
 

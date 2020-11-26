@@ -38,7 +38,14 @@ import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
 import dataTableCard from '@/components/cards/dataTableCard';
 import systemBarBottom from '@/components/cards/systemBarBottom';
 import auditTrailCard from '@/components/cards/auditTrailCard';
-
+import clc from 'cli-color';
+// const success = clc.green.bold;
+// const error = clc.red.bold;
+// const warn = clc.yellow;
+// const info = clc.cyan;
+// const notice = clc.blue;
+const highlight = clc.magenta;
+const bold = clc.bold;
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
   console.log(error.stack);
@@ -266,6 +273,7 @@ export default {
     notifyRoom(data, ack) {
       // visitor is an ID
       const { exposureDates, room, visitor, reason } = data;
+      console.assert(exposureDates, 'No exposure dates!');
       try {
         //#region notifyRoom
         console.groupCollapsed(
@@ -300,24 +308,25 @@ export default {
               let msg;
               // this is the Visitor warning of exposure...
               if (other.id == visitor) {
-                this.handleWarningVisitor(reason, room, visitor, visitedOn);
-                party = visitor;
-                msg = 'CONFIRMED';
+                console.log(
+                  `${visitor} warns they are in quarantine and may have exposed others.`
+                );
+                msg = 'WARNED BY';
+                party = { visitor: visitor, id: visitor };
+
+                this.messages = {
+                  room: room,
+                  visitor: party,
+                  nsp: '',
+                  sentTime: new Date().toISOString(),
+                  message: msg,
+                };
               }
               // ...else build up the warning for the other occupant
               else {
                 this.handleOtherVisitors(room, visitedOn, reason, other);
-                party = other;
-                msg = 'ALERTED';
               }
 
-              this.messages = {
-                room: room,
-                visitor: party,
-                nsp: '',
-                sentTime: new Date().toISOString(),
-                message: msg,
-              };
               console.groupEnd();
               //#endregion
             });
@@ -360,35 +369,31 @@ export default {
   //         * visitorId: Visitor's generated ID
 
   methods: {
-    handleWarningVisitor(reason, room, visitor, visitedOn) {
-      const msg = `WARNING CONFIRMATION: because you assert [ ${reason} ], we are warning Room ${room.room} of your visit on ${visitedOn}.`;
-      const warning = {
-        visitor: visitor,
-        message: msg,
-        room: room,
-        sentTime: new Date().toISOString(),
-      };
-
-      this.$socket.emit('alertVisitor', warning, (result) => {
-        this.log(result, 'ACK: alertVisitor');
-      });
-    },
-
     handleOtherVisitors(room, visitedOn, reason, other) {
-      const msg = `EXPOSURE ALERT: On ${visitedOn}, you occupied ${
-        room.room
-      } with another visitor who reports: [ ${reason ||
+      const msg = `EXPOSURE ALERT: On ${visitedOn}, you occupied ${room} with another visitor who reports: [ ${reason ||
         'being in quarantine'} ]. If you haven't been tested, do so, and self-quarantine for 14 days.`;
 
-      const warning = {
+      const alert = {
+        // visitor: { visitor: other.visitor, id: other.id },
         visitor: { visitor: other.visitor, id: other.id },
         message: msg,
-        room: room,
+        room: other.id,
         sentTime: new Date().toISOString(),
       };
+      console.log('Alerting other(s) with:');
+      console.log(alert);
 
-      this.$socket.emit('alertVisitor', warning, (result) => {
+      this.$socket.emit('alertVisitor', alert, (result) => {
+        this.trace({ caption: `ACK: alertVisitor (other):`, msg: result });
+
         this.log(result, 'ACK: alertVisitor');
+        this.messages = {
+          room: room,
+          visitor: { visitor: other.visitor, id: other.id },
+          nsp: '',
+          sentTime: new Date().toISOString(),
+          message: result,
+        };
       });
     },
 
@@ -504,6 +509,7 @@ export default {
         (payload.message.room ? ` to server for ${payload.message.room}` : '');
       this.log(msg);
       this.$socket.emit(payload.event, payload.message, (ack) => {
+        this.trace({ caption: `ACK: ${payload.event}:`, msg: ack });
         this.log(ack, 'ACKS');
       });
     },
@@ -522,6 +528,12 @@ export default {
         type: type,
         message: msg,
       });
+    },
+
+    trace(trace) {
+      const { caption, msg } = trace;
+      console.log(bold(highlight(caption)));
+      console.log(bold(highlight(printJson(msg))));
     },
 
     // end helper methods

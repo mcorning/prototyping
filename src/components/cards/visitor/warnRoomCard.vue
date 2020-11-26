@@ -184,10 +184,6 @@ export default {
         }]`
       );
 
-      this.alert = true;
-      this.alertIcon = 'mdi-warning';
-      this.alertColor = 'yellow';
-      this.alertMessage = ack;
       const msg = { rooms: this.rooms, reason: this.reason };
       this.log(
         `Result of exposureWarning: ${printJson(ack)}`,
