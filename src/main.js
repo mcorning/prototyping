@@ -1,6 +1,6 @@
 // update the next two lines whenever you rebuild the app and deploy it to soteriaLct on Azure Static Website
 Vue.prototype.$build = '11.27.11.07';
-let local = true; // as soon as local changes to true, the server will start responding
+let local = false; // as soon as local changes to true, the server will start responding
 
 import Vue from 'vue';
 import App from './App.vue';
