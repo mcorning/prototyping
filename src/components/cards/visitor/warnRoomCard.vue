@@ -19,7 +19,8 @@
         <v-card-title class="headline">Disconnected</v-card-title>
         <v-card-subtitle>You cannot warn Rooms at the moment</v-card-subtitle>
         <v-card-text
-          >You are not connected to the messaging server. </v-card-text
+          >You are not connected to the messaging server. We can cannect you,
+          then you can click the Warn Rooms button. </v-card-text
         ><v-card-text> Do you want to connect now? </v-card-text>
 
         <v-card-actions>
@@ -80,10 +81,6 @@ export default {
     log: { type: Function },
   },
   computed: {
-    disconnected() {
-      return this.$socket.disconnected;
-    },
-
     warningTypes() {
       return [
         'LCT warned me of possible exposure',
@@ -163,8 +160,18 @@ export default {
     return {
       reason: 'LCT warned me of possible exposure',
       dialog: false,
+      disconnected: true,
     };
   },
+  sockets: {
+    connect() {
+      this.disconnected = false;
+    },
+    disconnect() {
+      this.disconnected = true;
+    },
+  },
+
   methods: {
     connect() {
       this.dialog = false;
