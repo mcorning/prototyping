@@ -42,6 +42,7 @@
       :visitor="enabled.visitor"
       :log="log"
       @warned="onWarned($event)"
+      @connect="connectToServer()"
     />
 
     <connectionBanner

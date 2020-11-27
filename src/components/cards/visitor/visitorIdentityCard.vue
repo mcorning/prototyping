@@ -26,6 +26,7 @@
               return-object
               single-line
               autofocus
+              :prepend-icon="statusIcon"
               @change="onEmitVisitor"
             >
             </v-select>
@@ -81,7 +82,16 @@ export default {
     return {
       nsp: 'enduringNet',
       selectedVisitor: {},
+      statusIcon: 'mdi-lan-disconnect',
     };
+  },
+  sockets: {
+    connect() {
+      this.statusIcon = 'mdi-lan-connect';
+    },
+    disconnect() {
+      this.statusIcon = 'mdi-lan-disconnect';
+    },
   },
 
   methods: {

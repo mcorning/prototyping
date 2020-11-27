@@ -223,6 +223,8 @@ export default {
     },
     disconnect(reason) {
       this.log(`Disconnect: ${reason}`, 'Room.vue');
+      this.$socket.connect();
+      this.log('Staying connected', 'Room.vue');
     },
     error(reason) {
       this.log(`Error ${reason}`, 'Room.vue');

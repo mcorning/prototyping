@@ -15,7 +15,19 @@
           <v-icon>mdi-home-alert</v-icon> Rooms
         </v-btn>
       </template>
-      <v-card v-if="items && items.length">
+      <v-card v-if="disconnected">
+        <v-card-title class="headline">Disconnected</v-card-title>
+        <v-card-subtitle>You cannot warn Rooms at the moment</v-card-subtitle>
+        <v-card-text
+          >You are not connected to the messaging server. </v-card-text
+        ><v-card-text> Do you want to connect now? </v-card-text>
+
+        <v-card-actions>
+          <v-btn color="green darken-1" text @click="connect()">Yes</v-btn>
+          <v-btn color="green darken-1" text @click="dialog = false">No</v-btn>
+        </v-card-actions>
+      </v-card>
+      <v-card v-else-if="items && items.length">
         <v-card-title class="headline">Exposure Warnings</v-card-title>
         <v-card-subtitle>Dated: {{ dated }}</v-card-subtitle>
         <v-card-text>
@@ -34,6 +46,7 @@
           <v-btn color="green darken-1" text @click="dialog = false">No</v-btn>
         </v-card-actions>
       </v-card>
+
       <v-card v-else>
         <v-card-title class="headline">Exposure Warnings</v-card-title>
         <v-card-subtitle> There is nobody to warn.</v-card-subtitle>
@@ -67,6 +80,10 @@ export default {
     log: { type: Function },
   },
   computed: {
+    disconnected() {
+      return this.$socket.disconnected;
+    },
+
     warningTypes() {
       return [
         'LCT warned me of possible exposure',
@@ -149,6 +166,11 @@ export default {
     };
   },
   methods: {
+    connect() {
+      this.dialog = false;
+      this.$emit('connect');
+    },
+
     // emits events to server
     emit(payload) {
       if (!this.$socket.id) {
