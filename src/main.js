@@ -1,6 +1,6 @@
-// update the next two lines whenever you rebuild the app and deploy it to soteriaLct on Azure Static Website
+// update the build number whenever you rebuild the app and deploy it to soteriaLct on Azure Static Website
 Vue.prototype.$build = '11.27.11.07';
-let local = false; // as soon as local changes to true, the server will start responding
+let local = process.env.NODE_ENV == 'development'; // as soon as local changes to true, the server will start responding
 
 import Vue from 'vue';
 import App from './App.vue';
@@ -19,7 +19,8 @@ Vue.config.productionTip = false;
 
 let url = local ? config.ioServerUrl : config.ngrokUrlUbuntu;
 console.log('url:', url);
-
+console.log(process.env.NODE_ENV);
+console.log(' ');
 Vue.use(
   new VueSocketIO({
     debug: false,

@@ -30,6 +30,18 @@
     </v-app-bar>
     <v-main>
       <router-view></router-view>
+      <v-snackbar
+        bottom
+        right
+        :value="updateExists"
+        :timeout="0"
+        color="primary"
+      >
+        An update is available
+        <v-btn text @click="refreshApp">
+          Update
+        </v-btn>
+      </v-snackbar>
     </v-main>
     <v-footer color="primary lighten-1" padless>
       <v-layout justify-center wrap align-center>
@@ -85,6 +97,8 @@
 
 <script>
 import moment from 'moment';
+import update from '@/mixins/update.js';
+
 export default {
   name: 'App',
 
@@ -111,5 +125,6 @@ export default {
       },
     ],
   }),
+  mixins: [update],
 };
 </script>
