@@ -1,5 +1,5 @@
 // update the build number whenever you rebuild the app and deploy it to soteriaLct on Azure Static Website
-Vue.prototype.$build = '11.27.11.07';
+Vue.prototype.$build = '11.29.16.00';
 let local = process.env.NODE_ENV == 'development'; // as soon as local changes to true, the server will start responding
 
 import Vue from 'vue';

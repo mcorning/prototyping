@@ -65,12 +65,28 @@
 
       <auditTrailCard :cons="cons" />
     </div>
+    <v-snackbar
+      bottom
+      right
+      :value="updateExists"
+      :timeout="-1"
+      color="primary"
+    >
+      An update is available
+      <v-btn text @click="refreshApp">
+        Update
+      </v-btn>
+    </v-snackbar>
   </div>
 </template>
 <script type="application/javascript" src="@/components/js/helpers.js"></script>
 
 <script>
 import base64id from 'base64id';
+
+// PWA Support
+// see mixins: below
+import update from '@/mixins/update.js';
 
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
@@ -227,6 +243,11 @@ export default {
   },
 
   data: () => ({
+    // PWA support
+    // refreshing: false,
+    // registration: null,
+    // updateExists: false,
+
     connectionMessage: 'Provide a name to Connect to the Server.',
     disconnectedFromServer: true,
     showEntryRoomCard: false,
@@ -342,6 +363,25 @@ export default {
   //       * a packet of dates of possible exposure that is stored in the Visitor log
 
   methods: {
+    //#region pwa support
+    // Store the SW registration so we can send it a message
+    // We use `updateExists` to control whatever alert, toast, dialog, etc we want to use
+    // To alert the user there is an update they need to refresh for
+    // updateAvailable(event) {
+    //   this.registration = event.detail;
+    //   this.updateExists = true;
+    // },
+
+    // // Called when the user accepts the update
+    // refreshApp() {
+    //   this.updateExists = false;
+    //   // Make sure we only send a 'skip waiting' message if the SW is waiting
+    //   if (!this.registration || !this.registration.waiting) return;
+    //   // send message to SW to skip the waiting and activate the new SW
+    //   this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    // },
+    //#endregion
+
     // handles @warned event from warnRoomCard which responds to the ACK from the server upon reciept of warning
     onWarned(data) {
       const { rooms, reason } = data;
@@ -639,6 +679,8 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       this.$socket.connect();
     },
   },
+  mixins: [update],
+
   //#endregion
 
   async created() {},
