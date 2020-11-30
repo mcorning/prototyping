@@ -4,18 +4,7 @@
       <v-card-text>
         <v-row align="center" justify="space-between">
           <v-col>
-            <v-text-field
-              v-if="onboard || firstTime"
-              label="Enter the public name of your site or gathering"
-              hint="This name should be uniquely recognizable to all Rooms"
-              persistent-hint
-              clearable
-              autofocus
-              @change="onUpdateRoom"
-            ></v-text-field>
-
             <v-select
-              v-else
               v-model="selectedRoom"
               :items="rooms"
               item-text="room"
@@ -24,6 +13,7 @@
               clearable
               return-object
               single-line
+              :prepend-icon="statusIcon"
               @change="onEmitRoom"
             ></v-select>
           </v-col>
@@ -51,14 +41,11 @@
 </template>
 
 <script>
-import base64id from 'base64id';
-
 import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
 import firstTimeCard from '@/components/cards/room/firstTimeCard';
 
-const ONBOARD = 'Onboard my Room...';
 export default {
   components: { firstTimeCard },
 
@@ -71,22 +58,14 @@ export default {
     },
 
     firstTime() {
-      // rooms[0]==ONBOARD
       return this.rooms.length < 2;
-    },
-
-    onboard() {
-      // we might ber deleting the selectedRoom
-      return this.selectedRoom?.room === ONBOARD;
     },
 
     // source for selectedRoom dropdown
     // merges
     rooms() {
-      let rooms = [{ room: ONBOARD, id: '' }];
       let allRooms = Room.all();
-      let x = [...allRooms, ...rooms];
-      return x;
+      return allRooms;
     },
 
     lastRoom() {
@@ -111,9 +90,18 @@ export default {
       closed: true,
 
       newRoom: '',
-      nsp: 'enduringNet',
       selectedRoom: {},
+      statusIcon: 'mdi-lan-disconnect',
     };
+  },
+
+  sockets: {
+    connect() {
+      this.statusIcon = 'mdi-lan-connect';
+    },
+    disconnect() {
+      this.statusIcon = 'mdi-lan-disconnect';
+    },
   },
 
   methods: {
@@ -153,14 +141,6 @@ export default {
       }
     },
 
-    onUpdateRoom(newVal) {
-      this.selectedRoom.room = newVal;
-      this.selectedRoom.id = base64id.generateId();
-      Room.update(newVal, this.selectedRoom.id, this.nsp)
-        .then((r) => console.log('New Room:', r))
-        .catch((e) => console.log(e));
-      this.onEmitRoom();
-    },
     selectedRoomInit() {
       let id = State.find(0)?.roomId;
       let r = this.findRoomWithId(id);

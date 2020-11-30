@@ -13,6 +13,53 @@
       </v-row>
     </v-system-bar>
 
+    <!-- PWA support -->
+    <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
+      An update is available
+      <v-btn text @click="refreshApp">
+        Update
+      </v-btn>
+    </v-snackbar>
+    <v-card>
+      <v-card-title>Room Management</v-card-title>
+      <v-card-subtitle>Only Admins can add or delete Rooms.</v-card-subtitle>
+      <v-card-text
+        >Only Admins can optionally manage namespaces (also known as
+        Communities).</v-card-text
+      >
+      <v-select
+        v-model="selectedRoom"
+        :items="rooms"
+        item-text="room"
+        item-value="id"
+        label="Select your Room"
+        clearable
+        return-object
+        single-line
+        :prepend-icon="statusIcon"
+      ></v-select>
+      <v-card-text>
+        <v-text-field
+          v-model="nsp"
+          label="Enter the name of your Room's Community"
+          hint="All Rooms in this Community will be uniquely named"
+          persistent-hint
+          clearable
+        ></v-text-field>
+        <v-text-field
+          label="Enter the public name of your site or gathering"
+          hint="This name should be uniquely recognizable to all Rooms"
+          persistent-hint
+          clearable
+          autofocus
+          @change="onUpdateRoom"
+        ></v-text-field>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn @click="addRoom">Add Room</v-btn>
+      </v-card-actions>
+    </v-card>
+
     <v-card>
       <v-card-title>Socket.io Server Monitor</v-card-title>
       <v-card-text>
@@ -247,8 +294,16 @@ import moment from 'moment';
 import mtz from 'moment-timezone';
 import Clock from 'vue-clock2';
 
+import base64id from 'base64id';
+
 import helpers from '@/components/js/helpers.js';
 
+// PWA Support
+// see mixins: below
+import update from '@/mixins/update.js';
+
+import Message from '@/models/Message';
+import Room from '@/models/Room';
 import State from '@/models/State';
 
 window.onerror = function(message, url, lineNo, columnNo, error) {
@@ -262,6 +317,20 @@ export default {
   components: { Clock },
 
   computed: {
+    rooms() {
+      let allRooms = Room.all();
+      return allRooms;
+    },
+    messages: {
+      get() {
+        return Message.all();
+      },
+      set(newVal) {
+        // static update function on Message model
+        Message.update(newVal);
+      },
+    },
+
     userAgent() {
       let ua = navigator.userAgent;
       let userAgent;
@@ -292,11 +361,17 @@ export default {
   },
   data() {
     return {
+      selectedRoom: {},
+
+      newRoom: {},
+      nsp: '',
+      statusIcon: 'mdi-lan-disconnect',
+
       visitorSocket: {},
       visitor: {
         visitor: 'Me',
         id: 'UniquelyMe',
-        nsp: 'enduringNet',
+        nsp: '',
       },
 
       pendingVisitors: new Map(),
@@ -363,10 +438,16 @@ export default {
         );
         this.socketId = id;
       }
+      this.statusIcon = 'mdi-lan-connect';
+    },
+
+    disconnect() {
+      this.statusIcon = 'mdi-lan-disconnect';
     },
 
     reconnect() {
       this.socketId = this.$socket.id;
+      this.statusIcon = 'mdi-lan-connect';
 
       this.log(`Server re-connected on socket ${this.socketId}`);
     },
@@ -443,6 +524,17 @@ export default {
   },
 
   methods: {
+    addRoom() {
+      Room.update(this.newRoom.room, this.newRoom.id, this.nsp)
+        .then((r) => console.log('New Room:', r))
+        .catch((e) => console.log(e));
+    },
+
+    onUpdateRoom(newVal) {
+      this.newRoom.room = newVal;
+      this.newRoom.id = base64id.generateId();
+    },
+
     exposeEventPromise(clientSocket, event) {
       return new Promise(function(resolve) {
         clientSocket.emit(event, null, (results) => {
@@ -613,15 +705,37 @@ export default {
       this.$socket.io.opts.query = {
         admin: 'Tao',
         id: id,
-        nsp: 'enduringNet',
+        nsp: '',
       };
       this.$socket.connect();
       // this.$admin.emit('message', this.$socket.id);
     },
   },
+  // PWA support (see import above)
+  mixins: [update],
+
+  watch: {
+    selectedRoom(newVal, oldVal) {
+      if (!newVal) {
+        const self = this;
+        Room.delete(oldVal.id).then((allRooms) => {
+          console.log('self.selectedRoom :>> ', self.selectedRoom);
+          console.log('Rooms after delete:', allRooms);
+          if (allRooms.length == 0) {
+            console.log('self.selectedRoom', self.selectedRoom);
+          }
+        });
+      }
+      if (!this.selectedRoom) {
+        this.selectedRoom = { room: '', id: '' };
+      }
+    },
+  },
 
   async created() {
     await State.$fetch();
+    await Room.$fetch();
+    await Message.$fetch();
   },
 
   async mounted() {

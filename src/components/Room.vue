@@ -2,6 +2,14 @@
   <div>
     <systemBarTop> </systemBarTop>
 
+    <!-- PWA support -->
+    <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
+      An update is available
+      <v-btn text @click="refreshApp">
+        Update
+      </v-btn>
+    </v-snackbar>
+
     <roomIntroCard />
 
     <roomIdentityCard @room="onHandleRoom($event)" @act="emit($event)" />
@@ -27,6 +35,10 @@ import moment from 'moment';
 
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
+
+// PWA Support
+// see mixins: below
+import update from '@/mixins/update.js';
 
 import Message from '@/models/Message';
 import Visitor from '@/models/Visitor';
@@ -570,7 +582,7 @@ export default {
         room: this.selectedRoom.room,
         id: this.selectedRoom.id,
         closed: this.closed,
-        nsp: 'enduringNet',
+        nsp: '',
       };
       this.$socket.connect();
     },
@@ -598,6 +610,9 @@ export default {
     },
     //#endregion
   },
+
+  // PWA support (see import above)
+  mixins: [update],
 
   async created() {},
 

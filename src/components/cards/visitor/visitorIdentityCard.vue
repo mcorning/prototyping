@@ -80,7 +80,10 @@ export default {
 
   data() {
     return {
-      nsp: 'enduringNet',
+      // used by onUpdateVisitor() below
+      // but what does nsp mean for a Visitor
+      // if a Visitor can visit Rooms in any available nsp?
+      nsp: '',
       selectedVisitor: {},
       statusIcon: 'mdi-lan-disconnect',
     };

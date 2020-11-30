@@ -65,6 +65,8 @@
 
       <auditTrailCard :cons="cons" />
     </div>
+
+    <!-- PWA support -->
     <v-snackbar
       bottom
       right
@@ -679,6 +681,8 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       this.$socket.connect();
     },
   },
+
+  // PWA support (see import above)
   mixins: [update],
 
   //#endregion
