@@ -1,5 +1,5 @@
 <template>
-  <v-card dark color="primary">
+  <v-card dark color="secondary">
     <v-list-item color="rgba(0, 0, 0, .4)" dark>
       <v-list-item-content>
         <v-list-item-title class="title">

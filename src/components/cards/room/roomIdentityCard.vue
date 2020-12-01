@@ -58,7 +58,7 @@ export default {
     },
 
     firstTime() {
-      return this.rooms.length < 2;
+      return this.rooms.length < 1;
     },
 
     // source for selectedRoom dropdown

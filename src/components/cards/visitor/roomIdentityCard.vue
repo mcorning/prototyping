@@ -1,23 +1,27 @@
 <template>
   <v-card>
+    <v-card-title>See Open Rooms</v-card-title>
+    <v-card-subtitle
+      >Currently, there are {{ openRooms.length }} open Rooms</v-card-subtitle
+    >
     <v-card-text>
-      <v-row>
-        <v-col>
-          <v-select
-            v-model="roomSelected"
-            :items="openRooms"
-            item-text="room"
-            item-value="id"
-            :label="roomSelectedLabel"
-            hint="Room managers control this Room list"
-            persistent-hint
-            return-object
-            single-line
-            autofocus
-            @change="onChangingRoom"
-          ></v-select>
-        </v-col>
-      </v-row>
+      <!-- <v-row>
+        <v-col> -->
+      <v-select
+        v-model="roomSelected"
+        :items="openRooms"
+        item-text="room"
+        item-value="id"
+        :label="roomSelectedLabel"
+        hint="Room managers control this Room list"
+        persistent-hint
+        return-object
+        single-line
+        autofocus
+        @change="onChangingRoom"
+      ></v-select>
+      <!-- </v-col>
+      </v-row> -->
     </v-card-text>
   </v-card>
 </template>

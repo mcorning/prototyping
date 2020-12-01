@@ -3,12 +3,12 @@
     <v-card-text v-if="loaded">
       <v-list dense>
         <v-row align="center" justify="space-between" dense>
-          <v-col>
+          <v-col cols="6">
             <span
               >{{ daysBack == 0 ? 'Today' : 'All' }} {{ entered }} visits
             </span></v-col
           >
-          <v-col>
+          <v-col cols="6">
             <div class="text-center">
               <v-checkbox
                 :value="!allVisits"
@@ -16,14 +16,9 @@
                 @change="toggleVisits"
               ></v-checkbox></div
           ></v-col>
-
-          <v-col> </v-col>
-          <v-col>
+          <v-col cols="12" v-if="allVisits && messages.length">
             <div class="text-center">
-              <v-btn
-                color="warning"
-                :disabled="!allVisits || !messages.length"
-                @click="deleteAllMessages"
+              <v-btn color="warning" block @click="deleteAllMessages"
                 >Delete all visits</v-btn
               >
             </div></v-col

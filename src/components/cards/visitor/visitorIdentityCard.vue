@@ -1,11 +1,17 @@
 <template>
-  <div>
+  <div d-flex>
     <v-card>
+      <v-card-title>Connect to the Server</v-card-title>
+      <v-card-subtitle
+        >Currently, you're
+        {{
+          $socket.connected ? 'connected. Pick a Room below.' : 'disconnected'
+        }}</v-card-subtitle
+      >
       <v-card-text>
-        <v-row>
-          <v-col>
+        <v-row class="child-flex" align="center" justify="space-between">
+          <v-col v-if="onboard" cols="12" sm="6" md="4">
             <v-text-field
-              v-if="onboard"
               label="Enter your (nick)name"
               hint="How do you want to be seen?"
               persistent-hint
@@ -13,8 +19,9 @@
               autofocus
               @change="onUpdateVisitor"
             ></v-text-field>
+          </v-col>
+          <v-col v-else cols="8" sm="6" md="4">
             <v-select
-              v-else
               v-model="selectedVisitor"
               :items="visitors"
               item-text="visitor"
@@ -31,11 +38,24 @@
             >
             </v-select>
           </v-col>
+          <v-col cols="4" sm="6" md="4" class="text-right">
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <span v-bind="attrs" v-on="on" class="text-center">
+                  <warnRoomCard
+                    :visitor="selectedVisitor"
+                    @warned="onWarned($event)"
+                    @connect="connectToServer()"
+                  />
+                </span>
+              </template>
+              <span>Warn Rooms</span>
+            </v-tooltip>
+          </v-col>
         </v-row>
       </v-card-text>
+      <v-card-text v-if="firstTime"><firstTimeCard /></v-card-text>
     </v-card>
-
-    <v-col v-if="firstTime"><firstTimeCard /></v-col>
   </div>
 </template>
 
@@ -44,11 +64,15 @@ import Visitor from '@/models/Visitor';
 import State from '@/models/State';
 import base64id from 'base64id';
 import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
+import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
+
+import helpers from '@/components/js/helpers.js';
+const { printJson, getNow } = helpers;
 
 const ONBOARD = 'Onboard me...';
 
 export default {
-  components: { firstTimeCard },
+  components: { firstTimeCard, warnRoomCard },
   computed: {
     firstTime() {
       // visitors[0]==ONBOARD
@@ -80,6 +104,7 @@ export default {
 
   data() {
     return {
+      dialog: false,
       // used by onUpdateVisitor() below
       // but what does nsp mean for a Visitor
       // if a Visitor can visit Rooms in any available nsp?
@@ -98,6 +123,53 @@ export default {
   },
 
   methods: {
+    connectToServer() {
+      if (
+        this.$socket.connected &&
+        this.$socket.io.opts &&
+        this.$socket.io.opts.query.id != this.enabled.visitor?.id
+      ) {
+        this.$socket.disconnect();
+      }
+      this.$socket.io.opts.query = {
+        visitor: this.enabled.visitor.visitor,
+        id: this.enabled.visitor.id,
+        nsp: this.enabled.visitor.nsp,
+      };
+      this.$socket.connect();
+    },
+    onWarned(data) {
+      const { rooms } = data;
+      console.group(
+        `[${getNow()}] EVENT: onWarned (Visitor.vue) - updating messages for ${
+          this.enabled.visitor.visitor
+        }'s visited Rooms:`
+      );
+      let roomNames = [];
+      rooms.forEach((room) => {
+        // memorialize the warnings
+        let msg = {
+          visitor: this.enabled.visitor,
+          room: room.room,
+          message: 'WARNED BY',
+          sentTime: new Date().toISOString(),
+        };
+        this.messages = msg;
+        console.log('New message:');
+        console.log(printJson(msg));
+        roomNames.push(room.room);
+      });
+      this.messageColor = 'success lighten-1';
+      this.feedbackMessage = `Server acknowledges warning for Room(s)
+        ${roomNames.join(', ')}.`;
+
+      console.groupEnd();
+      console.warn(
+        `End of Visitor's responsibility. Room(s) take over from here...`
+      );
+      console.log(' ');
+    },
+
     findVisitorWithId(id = this.selectedVisitor?.id) {
       let v = Visitor.find(id) || '';
       return v;

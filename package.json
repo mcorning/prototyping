@@ -20,6 +20,7 @@
     "vue-clock2": "^1.1.5",
     "vue-router": "^3.2.0",
     "vue-socket.io": "^3.0.10",
+    "vue-sweetalert2": "^4.1.1",
     "vue-toastification": "^1.7.6",
     "vuetify": "^2.2.11",
     "vuex": "^3.4.0",

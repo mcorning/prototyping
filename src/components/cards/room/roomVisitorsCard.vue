@@ -4,8 +4,8 @@
       <v-col cols="12">
         <v-card-text class="pb-0">
           <v-subheader>
-            <v-row align="center" justify="space-between">
-              <v-col>
+            <v-row align="center">
+              <v-col cols="6">
                 <span>
                   Today's Visitor Log - {{ entered }} visits [{{
                     uniqueVisitorNames.length
@@ -13,7 +13,7 @@
                   unique visitor(s)]
                 </span>
               </v-col>
-              <v-col>
+              <v-col cols="6">
                 <v-checkbox
                   :value="!allVisits"
                   label="See today's visits"
@@ -29,12 +29,9 @@
                   ><v-icon>mdi-email-sync-outline</v-icon></v-btn
                 >
               </div>
-              <v-col>
+              <v-col cols="12" v-if="seeAllVisits" && messages.length>
                 <div class="text-center">
-                  <v-btn
-                    color="warning"
-                    :disabled="!seeAllVisits || !messages.length"
-                    @click="deleteAllMessages"
+                  <v-btn color="warning" @click="deleteAllMessages"
                     >Delete all visits</v-btn
                   >
                 </div></v-col

@@ -1,8 +1,8 @@
 <template>
   <div>
-    <systemBarTop>
-      <!-- <v-col class="text-center">UA: {{ userAgent }}</v-col> -->
-    </systemBarTop>
+    <!-- <systemBarTop> -->
+    <!-- <v-col class="text-center">UA: {{ userAgent }}</v-col> -->
+    <!-- </systemBarTop> -->
 
     <diaryCard />
     <v-alert
@@ -17,20 +17,21 @@
       transition="scale-transition"
       >{{ alertMessage }}
     </v-alert>
-
-    <v-container>
-      <v-row dense justify="space-between">
+    <v-container fluid>
+      <v-row dense justify="space-between" class="child-flex">
         <v-col
           ><visitorIdentityCard @visitor="OnvVsitorReady($event)" />
         </v-col>
-        <v-col v-show="$socket.connected">
-          <!-- put this back later 
-                  :rooms="rooms" -->
+      </v-row>
+
+      <v-row v-show="$socket.connected">
+        <v-col>
           <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
         /></v-col>
       </v-row>
       <v-row v-if="showEntryRoomCard">
         <roomEntryCard
+          :roomName="roomName"
           :log="log"
           :occupancy="occupancy"
           @roomChanged="onAct($event)"
@@ -38,12 +39,12 @@
       </v-row>
     </v-container>
 
-    <warnRoomCard
+    <!-- <warnRoomCard
       :visitor="enabled.visitor"
       :log="log"
       @warned="onWarned($event)"
       @connect="connectToServer()"
-    />
+    /> -->
 
     <connectionBanner
       :connectionMessage="connectionMessage"
@@ -54,17 +55,17 @@
       {{ feedbackMessage }}</messageBanner
     >
 
-    <systemBarBottom
-      :socketMessage="socketMessage"
-      @showDetails="showDetails = !showDetails"
-      :log="log"
-    ></systemBarBottom>
-
     <div v-if="showDetails">
       <dataTableCard :roomName="roomName" :log="log" />
 
       <auditTrailCard :cons="cons" />
     </div>
+
+    <!-- <systemBarBottom
+      :socketMessage="socketMessage"
+      @showDetails="showDetails = !showDetails"
+      :log="log"
+    ></systemBarBottom> -->
 
     <!-- PWA support -->
     <v-snackbar
@@ -98,15 +99,15 @@ import moment from 'moment';
 import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
-import systemBarTop from '@/components/cards/systemBarTop';
+// import systemBarTop from '@/components/cards/systemBarTop';
 import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
 import connectionBanner from '@/components/cards/visitor/connectionBanner';
 import messageBanner from '@/components/cards/visitor/messageBanner';
-import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
-import systemBarBottom from '@/components/cards/systemBarBottom';
+// import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
+// import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 
@@ -129,15 +130,15 @@ window.onerror = function(message, url, lineNo, columnNo, error) {
 export default {
   name: 'LctVisitor',
   components: {
-    systemBarTop,
+    // systemBarTop,
     diaryCard,
     visitorIdentityCard,
     roomIdentityCard,
     roomEntryCard,
     connectionBanner,
     messageBanner,
-    warnRoomCard,
-    systemBarBottom,
+    // warnRoomCard,
+    // systemBarBottom,
     dataTableCard,
     auditTrailCard,
   },

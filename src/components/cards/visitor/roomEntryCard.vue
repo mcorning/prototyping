@@ -1,5 +1,11 @@
 <template>
-  <v-card class="mx-auto" max-width="344" outlined>
+  <v-card>
+    <v-card-title>Log into (out of) a Room</v-card-title>
+    <v-card-subtitle
+      >Currently, you are
+      {{ checkedOut ? 'checked out of' : 'checked into' }} Room
+      {{ roomName }}</v-card-subtitle
+    >
     <v-card-text>
       <v-row dense>
         <v-col cols="6">
@@ -39,6 +45,7 @@ const { printJson } = helpers;
 // This version listens for openRoomsExposed event to populate the rooms property.
 export default {
   props: {
+    roomName: { type: String },
     log: { type: Function },
     occupancy: { type: Number },
   },

@@ -1,11 +1,26 @@
 <template>
   <v-app>
-    <v-app-bar app color="primary" dark>
+    <v-app-bar app color="primary" dense dark>
+      <v-row align="center" justify="end" dense>
+        <v-col cols="auto">
+          <v-img
+            alt="Enduring Net Logo"
+            class="shrink "
+            contain
+            src="@/assets/Enduring-Net-Logo-Portrait-Purple-RGB-BG.png"
+            max-height="36"
+            max-width="75"
+        /></v-col>
+        <v-spacer></v-spacer>
+        <v-col class="text-right"
+          ><small>{{ $socket.io.uri }}</small></v-col
+        >
+      </v-row>
       <!-- src="@/assets/soteriaLogoCovidRed.jpg" 
                               width="40"
 -->
 
-      <div class="d-flex align-left">
+      <!-- <div class="d-flex align-left">
         <v-btn class="pl-0" text to="/home">
           <v-img
             alt="Enduring Net Logo"
@@ -14,18 +29,16 @@
             src="@/assets/Enduring-Net-Logo-Portrait-Purple-RGB-BG.png"
             max-height="36"
             max-width="75"
-        /></v-btn>
-        <!-- <soteria-icon /> -->
-      </div>
-
-      <v-spacer></v-spacer>
+        /></v-btn> -->
+      <!-- <soteria-icon /> -->
+      <!-- </div> -->
     </v-app-bar>
 
     <v-main>
       <router-view></router-view>
     </v-main>
 
-    <v-footer color="primary lighten-1" padless>
+    <v-footer v-if="false" color="primary lighten-1" padless>
       <v-layout justify-center wrap align-center>
         <v-btn
           v-for="link in links"
@@ -65,6 +78,17 @@
         </v-flex>
       </v-layout>
     </v-footer>
+
+    <v-app-bar bottom dense app color="primary" dark>
+      <v-row align="center" dense>
+        <v-col cols="auto">
+          <small> {{ socketInfo }}</small></v-col
+        >
+        <v-col class="text-right">
+          <small>V {{ $build }} </small>
+        </v-col>
+      </v-row>
+    </v-app-bar>
   </v-app>
 </template>
 
@@ -77,6 +101,8 @@ export default {
   components: {},
   computed: {},
   data: () => ({
+    socketInfo: '',
+
     rating: 3,
     links: [
       {
@@ -93,6 +119,19 @@ export default {
       },
     ],
   }),
+  sockets: {
+    // socket.io reserved events
+    connect() {
+      // wait until a real Room connection or Visitor connection shows up
+      if (this.$socket.io.opts.query) {
+        const { id, nsp } = this.$socket.io.opts.query;
+        this.socketInfo = `${nsp ? nsp : '/'}#${id}`;
+      }
+    },
+    disconnect() {
+      this.socketInfo = `Disconnected`;
+    },
+  },
   mixins: [update],
 };
 </script>

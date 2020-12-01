@@ -2,17 +2,8 @@
   <v-container>
     <v-dialog v-model="dialog" persistent dark max-width="350">
       <template v-slot:activator="{ on, attrs }">
-        <v-btn
-          block
-          height="5em"
-          width="25em"
-          color="error"
-          dark
-          v-bind="attrs"
-          v-on="on"
-        >
-          Warn
-          <v-icon>mdi-home-alert</v-icon> Rooms
+        <v-btn color="error" dark v-bind="attrs" v-on="on" fab>
+          <v-icon>mdi-home-alert</v-icon>
         </v-btn>
       </template>
       <v-card v-if="disconnected">
@@ -329,10 +320,6 @@ export default {
         return null;
       }
     },
-
-    // printJson(json) {
-    //   return JSON.stringify(json, null, 3);
-    // },
   },
   async mounted() {
     await Message.$fetch();

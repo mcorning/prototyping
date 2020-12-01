@@ -36,6 +36,8 @@ import moment from 'moment';
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
 
+import ErrorService from '@/Services/ErrorService';
+
 // PWA Support
 // see mixins: below
 import update from '@/mixins/update.js';
@@ -63,6 +65,8 @@ window.onerror = function(message, url, lineNo, columnNo, error) {
   console.log(error.stack);
   alert('onerror: ' + error.stack);
 };
+
+const local = process.env.NODE_ENV == 'development';
 
 export default {
   name: 'LctRoom',
@@ -159,8 +163,7 @@ export default {
   data: () => ({
     visitFormat: 'HH:mm on ddd, MMM DD',
 
-    showDetails: true,
-
+    showDetails: local,
     socketMessage: 'room',
     selectedRoom: { room: '', id: '' },
     search: '',
@@ -352,8 +355,9 @@ export default {
         if (ack) ack(`${visitor.visitor}, ${room.room} alerted`);
       } catch (error) {
         // firewall: if, for any reason, exposureDates is not an array or visitors have no entries...
+        console.groupEnd();
         this.log(error, 'ERROR: notifyRoom');
-        alert(error);
+        ErrorService.onError(error);
       } finally {
         console.groupEnd();
         // ends notifyRoom region above
