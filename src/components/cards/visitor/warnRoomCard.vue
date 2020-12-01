@@ -1,12 +1,14 @@
 <template>
   <v-container>
     <v-dialog v-model="dialog" persistent dark max-width="350">
-      <template v-slot:activator="{ on, attrs }">
-        <v-btn color="error" dark v-bind="attrs" v-on="on" fab>
-          <v-icon>mdi-home-alert</v-icon>
-        </v-btn>
+      <template v-slot:activator="{ on, attrs }" v-slot:extension>
+        <v-fab-transition>
+          <v-btn color="error" dark v-bind="attrs" v-on="on" fab>
+            <v-icon>mdi-home-alert</v-icon>
+          </v-btn></v-fab-transition
+        >
       </template>
-      <v-card v-if="disconnected">
+      <v-card v-if="$socket.disconnected">
         <v-card-title class="headline">Disconnected</v-card-title>
         <v-card-subtitle>You cannot warn Rooms at the moment</v-card-subtitle>
         <v-card-text

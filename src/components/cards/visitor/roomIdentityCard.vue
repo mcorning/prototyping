@@ -1,9 +1,7 @@
 <template>
   <v-card>
     <v-card-title>See Open Rooms</v-card-title>
-    <v-card-subtitle
-      >Currently, there are {{ openRooms.length }} open Rooms</v-card-subtitle
-    >
+    <v-card-subtitle>{{ subTitle }}</v-card-subtitle>
     <v-card-text>
       <!-- <v-row>
         <v-col> -->
@@ -13,7 +11,7 @@
         item-text="room"
         item-value="id"
         :label="roomSelectedLabel"
-        hint="Room managers control this Room list"
+        hint="Admins control this Room list"
         persistent-hint
         return-object
         single-line
@@ -28,7 +26,6 @@
 
 <script>
 import helpers from '@/components/js/helpers.js';
-
 const { printJson } = helpers;
 
 // This Visitor's version of roomIdentityCard.vue does not use the Room entity.
@@ -42,6 +39,23 @@ export default {
     },
   },
   computed: {
+    subTitle() {
+      let text = 'Currently, there ';
+      const ct = this.openRooms.length;
+      switch (ct) {
+        case 0:
+          text += 'are 0';
+          break;
+        case 1:
+          text += 'is 1';
+          break;
+        default:
+          text += `are ${ct}`;
+          break;
+      }
+      return (text += ` open Room${ct == 1 ? '' : 's'}`);
+    },
+
     roomSelectedLabel() {
       return 'Pick your Room';
     },

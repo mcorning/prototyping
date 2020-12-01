@@ -5,37 +5,42 @@
     <!-- </systemBarTop> -->
 
     <diaryCard />
-    <v-alert
-      :value="alert"
-      dark
-      dismissible
-      border="left"
-      type="error"
-      elevation="10"
-      colored-border
-      prominent
-      transition="scale-transition"
-      >{{ alertMessage }}
-    </v-alert>
+
     <v-container fluid>
       <v-row dense justify="space-between" class="child-flex">
         <v-col
-          ><visitorIdentityCard @visitor="OnvVsitorReady($event)" />
+          ><visitorIdentityCard
+            :log="log"
+            @visitor="onVisitorReady($event)"
+            @warned="onWarned($event)"
+          />
         </v-col>
       </v-row>
-
+      <v-alert
+        :value="alert"
+        dark
+        dismissible
+        border="left"
+        type="error"
+        elevation="10"
+        colored-border
+        prominent
+        transition="scale-transition"
+        >{{ alertMessage }}
+      </v-alert>
       <v-row v-show="$socket.connected">
         <v-col>
           <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
         /></v-col>
       </v-row>
       <v-row v-if="showEntryRoomCard">
-        <roomEntryCard
-          :roomName="roomName"
-          :log="log"
-          :occupancy="occupancy"
-          @roomChanged="onAct($event)"
-        />
+        <v-col>
+          <roomEntryCard
+            :roomName="roomName"
+            :log="log"
+            :occupancy="occupancy"
+            @roomChanged="onAct($event)"
+        /></v-col>
       </v-row>
     </v-container>
 
@@ -45,7 +50,7 @@
       @warned="onWarned($event)"
       @connect="connectToServer()"
     /> -->
-
+    <!-- 
     <connectionBanner
       :connectionMessage="connectionMessage"
       @reconnect="onReconnect"
@@ -53,7 +58,7 @@
 
     <messageBanner :bgcolor="messageColor">
       {{ feedbackMessage }}</messageBanner
-    >
+    > -->
 
     <div v-if="showDetails">
       <dataTableCard :roomName="roomName" :log="log" />
@@ -104,8 +109,8 @@ import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
-import connectionBanner from '@/components/cards/visitor/connectionBanner';
-import messageBanner from '@/components/cards/visitor/messageBanner';
+// import connectionBanner from '@/components/cards/visitor/connectionBanner';
+// import messageBanner from '@/components/cards/visitor/messageBanner';
 // import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 // import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/dataTableCard';
@@ -135,8 +140,8 @@ export default {
     visitorIdentityCard,
     roomIdentityCard,
     roomEntryCard,
-    connectionBanner,
-    messageBanner,
+    // connectionBanner,
+    // messageBanner,
     // warnRoomCard,
     // systemBarBottom,
     dataTableCard,
@@ -520,7 +525,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       connectToServer;
     },
 
-    OnvVsitorReady(visitor) {
+    onVisitorReady(visitor) {
       // this.enabled holds two objects: room and visitor
       this.enabled.visitor = visitor;
 

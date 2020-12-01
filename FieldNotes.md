@@ -6,6 +6,53 @@ Incorporate these field notes into ReadMe.md
 
 1. Enter confirmation dialog appears when the Room dropdown is empty.
 2. Warning dialog has extraneous dates
+3. Firefox doesn't connect with a refresh because:
+
+ ```XHRPOSThttp://localhost:3003/socket.io/?EIO=3&transport=polling&t=NOVq5g6&sid=-BXeQNWLjLl9t-tpAAAB
+[HTTP/1.1 400 Bad Request 1ms]
+
+POST
+  http://localhost:3003/socket.io/?EIO=3&transport=polling&t=NOVq5g6&sid=-BXeQNWLjLl9t-tpAAAB
+Status 400   
+  Bad Request
+
+VersionHTTP/1.1
+Transferred282 B (41 B size)
+    Access-Control-Allow-Credentials
+      true
+    Access-Control-Allow-Origin
+      http://localhost:8080
+    Connection
+      keep-alive
+    Content-Type
+      application/json
+    Date
+      Tue, 01 Dec 2020 19:38:37 GMT
+    Transfer-Encoding
+      chunked
+
+    Accept
+      */*
+    Accept-Encoding
+      gzip, deflate
+    Accept-Language
+      en-US,en;q=0.5
+    Connection
+      keep-alive
+    Content-Length
+      30
+    Content-type
+      text/plain;charset=UTF-8
+    Cookie
+      io=-BXeQNWLjLl9t-tpAAAB
+    Host
+      localhost:3003
+    Origin
+      http://localhost:8080
+    Referer
+      http://localhost:8080/visitor
+    User-Agent
+      Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0```
 
 ## Local Debugging
 
