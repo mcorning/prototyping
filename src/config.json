@@ -1,11 +1,11 @@
 {
+    "ver": "12.01.17.00",
     "socketUrl": "https://cb4feb04fa32.ngrok.io",
     "ngrokUrlUbuntu": "https://cb4feb04fa32.ngrok.io",
     "ioServerUrl": "http://localhost:3003/",
     "ioServerAzureUrl": "http://soterialct.westus2.cloudapp.azure.com:3000/",
     "ngrokUrlLocal": "https://b579976476ed.ngrok.io",
     "defaultVue": "visitor",
-    "ver": "09.15.15.00",
     "query": {
         "query": {
             "visitor": "Me",

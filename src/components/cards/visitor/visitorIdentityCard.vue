@@ -17,17 +17,7 @@
     </v-card-subtitle>
     <v-card-text>
       <v-row class="child-flex" align="center" justify="space-between">
-        <v-col v-if="onboard" cols="12" sm="6" md="4">
-          <v-text-field
-            label="Enter your (nick)name"
-            hint="How do you want to be seen?"
-            persistent-hint
-            clearable
-            autofocus
-            @change="onUpdateVisitor"
-          ></v-text-field>
-        </v-col>
-        <v-col v-else cols="8" sm="6" md="4">
+        <v-col cols="8" sm="6" md="4">
           <v-select
             v-model="selectedVisitor"
             :items="visitors"
@@ -68,7 +58,6 @@
         </v-col>
       </v-row>
     </v-card-text>
-    <v-card-text v-if="firstTime"><firstTimeCard /></v-card-text>
   </v-card>
 </template>
 
@@ -76,7 +65,6 @@
 import Visitor from '@/models/Visitor';
 import State from '@/models/State';
 import base64id from 'base64id';
-import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 
 const ONBOARD = 'Onboard me...';
@@ -88,18 +76,8 @@ export default {
       default: null,
     },
   },
-  components: { firstTimeCard, warnRoomCard },
+  components: { warnRoomCard },
   computed: {
-    firstTime() {
-      // visitors[0]==ONBOARD
-      let x = Visitor.all();
-      return x.length === 0;
-    },
-
-    onboard() {
-      // we might ber deleting the selectedVisitor
-      return this.firstTime || this.selectedVisitor?.visitor === ONBOARD;
-    },
     // source for Visitor dropdown
     visitors() {
       let allvisitors = Visitor.all();

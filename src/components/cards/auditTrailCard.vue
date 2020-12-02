@@ -1,6 +1,5 @@
 <template>
   <v-card>
-    <v-card-title>Admin View</v-card-title>
     <v-card-title>
       <v-text-field
         v-model="search"

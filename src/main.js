@@ -1,6 +1,3 @@
-Vue.prototype.$build = moment().format('MM.DD.HH.mm');
-let local = process.env.NODE_ENV == 'development';
-import moment from 'moment';
 import Vue from 'vue';
 import App from './App.vue';
 import './registerServiceWorker';
@@ -17,7 +14,10 @@ Vue.component('soteria-icon', SoteriaIcon);
 
 Vue.config.productionTip = false;
 
-let url = local ? config.ioServerUrl : config.ngrokUrlUbuntu;
+let url =
+  process.env.NODE_ENV == 'development'
+    ? config.ioServerUrl
+    : config.ngrokUrlUbuntu;
 console.log('url:', url);
 console.log(process.env.NODE_ENV);
 console.log(' ');
@@ -31,7 +31,7 @@ Vue.use(
 );
 
 // Vue.config.errorHandler = (error) => ErrorService.onError(error);
-
+Vue.prototype.$showDetails = false;
 new Vue({
   router,
   store,

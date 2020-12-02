@@ -1,6 +1,6 @@
 <template>
   <div>
-    <systemBarTop> </systemBarTop>
+    <!-- <systemBarTop> </systemBarTop> -->
 
     <!-- PWA support -->
     <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
@@ -14,17 +14,30 @@
 
     <roomIdentityCard @room="onHandleRoom($event)" @act="emit($event)" />
 
-    <systemBarBottom
+    <!-- <systemBarBottom
       :socketMessage="socketMessage"
       @showDetails="showDetails = !showDetails"
       :log="log"
-    ></systemBarBottom>
-    <div v-if="showDetails">
-      <dataTableCard :roomName="selectedRoom.room" :log="log" />
+    ></systemBarBottom> -->
 
-      <auditTrailCard :cons="cons" />
-    </div>
-    <v-card> </v-card>
+    <v-expansion-panels v-if="messages.length">
+      <v-expansion-panel>
+        <v-expansion-panel-header color="secondary lighten-3">
+          Visits
+        </v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <dataTableCard :roomName="selectedRoom.room" :log="log" />
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+      <v-expansion-panel>
+        <v-expansion-panel-header color="secondary lighten-3">
+          Audit Trail
+        </v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <auditTrailCard :cons="cons" />
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+    </v-expansion-panels>
   </div>
 </template>
 
@@ -46,11 +59,11 @@ import Message from '@/models/Message';
 import Visitor from '@/models/Visitor';
 import Room from '@/models/Room';
 import State from '@/models/State';
-import systemBarTop from '@/components/cards/systemBarTop';
+// import systemBarTop from '@/components/cards/systemBarTop';
 import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
 import dataTableCard from '@/components/cards/dataTableCard';
-import systemBarBottom from '@/components/cards/systemBarBottom';
+// import systemBarBottom from '@/components/cards/systemBarBottom';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 import clc from 'cli-color';
 // const success = clc.green.bold;
@@ -77,11 +90,11 @@ export default {
     },
   },
   components: {
-    systemBarTop,
+    // systemBarTop,
     roomIntroCard,
     roomIdentityCard,
     dataTableCard,
-    systemBarBottom,
+    // systemBarBottom,
     auditTrailCard,
   },
   computed: {
@@ -158,12 +171,16 @@ export default {
       console.groupEnd();
       return this.messages.filter((v) => v.message == 'Entered');
     },
+    showDetails() {
+      console.log(local);
+      let x = this.$showDetails;
+      return x;
+    },
   },
 
   data: () => ({
     visitFormat: 'HH:mm on ddd, MMM DD',
-
-    showDetails: local,
+    // showDetails: local,
     socketMessage: 'room',
     selectedRoom: { room: '', id: '' },
     search: '',

@@ -1,21 +1,21 @@
 <template>
   <v-container>
-    <v-system-bar color="secondary">
+    <!-- <v-system-bar color="secondary">
       <v-row align="center" justify="space-between">
         <v-col>IO:{{ $socket.io.uri }}</v-col>
         <v-col class="text-center">UA: {{ userAgent }}</v-col>
 
         <v-col class="text-right">
           <v-btn text @click="refreshConnection(true)"
-            ><v-icon>mdi-block-helper</v-icon>{{ $build }}</v-btn
+            ><v-icon>mdi-block-helper</v-icon>{{ build }}</v-btn
           ></v-col
         >
       </v-row>
-    </v-system-bar>
+    </v-system-bar> -->
 
     <!-- PWA support -->
     <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
-      An update is available
+      An update is available.
       <v-btn text @click="refreshApp">
         Update
       </v-btn>

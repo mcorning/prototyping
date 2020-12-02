@@ -5,8 +5,8 @@
     <!-- </systemBarTop> -->
 
     <diaryCard />
-
-    <v-container fluid>
+    <firstTimeCard v-if="firstTime" />
+    <v-container v-else fluid>
       <v-row dense justify="space-between" class="child-flex">
         <v-col
           ><visitorIdentityCard
@@ -42,6 +42,25 @@
             @roomChanged="onAct($event)"
         /></v-col>
       </v-row>
+
+      <v-expansion-panels>
+        <v-expansion-panel>
+          <v-expansion-panel-header color="secondary lighten-3">
+            Visits
+          </v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <dataTableCard :roomName="roomName" :log="log" />
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+        <v-expansion-panel>
+          <v-expansion-panel-header color="secondary lighten-3">
+            Audit Trail
+          </v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <auditTrailCard :cons="cons" />
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+      </v-expansion-panels>
     </v-container>
 
     <!-- <warnRoomCard
@@ -59,12 +78,6 @@
     <messageBanner :bgcolor="messageColor">
       {{ feedbackMessage }}</messageBanner
     > -->
-
-    <div v-if="showDetails">
-      <dataTableCard :roomName="roomName" :log="log" />
-
-      <auditTrailCard :cons="cons" />
-    </div>
 
     <!-- <systemBarBottom
       :socketMessage="socketMessage"
@@ -104,6 +117,8 @@ import moment from 'moment';
 import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
+import Visitor from '@/models/Visitor';
+
 // import systemBarTop from '@/components/cards/systemBarTop';
 import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
@@ -115,6 +130,7 @@ import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
 // import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
+import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
 
 import clc from 'cli-color';
 // const success = clc.green.bold;
@@ -137,6 +153,7 @@ export default {
   components: {
     // systemBarTop,
     diaryCard,
+    firstTimeCard,
     visitorIdentityCard,
     roomIdentityCard,
     roomEntryCard,
@@ -148,6 +165,15 @@ export default {
     auditTrailCard,
   },
   computed: {
+    showDetails() {
+      return this.messages.length;
+    },
+
+    firstTime() {
+      let x = Visitor.all();
+      return x.length === 0;
+    },
+
     // fetch Messages for enabled visitor, if any
     // TODO Push this into Message.js as a static method
     visitorCheckins() {
@@ -259,7 +285,6 @@ export default {
     connectionMessage: 'Provide a name to Connect to the Server.',
     disconnectedFromServer: true,
     showEntryRoomCard: false,
-    showDetails: true,
     feedbackMessage:
       'Thanks for making us safer together using Local Contact Tracing...',
     messageColor: 'secondary lighten-1',
@@ -699,6 +724,8 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     await Room.$fetch();
     await State.$fetch();
     await Message.$fetch();
+    await Visitor.$fetch();
+
     this.connectToServer();
     this.exposeOpenRooms();
     // log the useragent in case we can't recognize it

@@ -65,7 +65,7 @@
               <small> Patron: <strong>Secours.io</strong></small>
             </v-col>
             <v-col>
-              <small>Build {{ $build }}</small>
+              <small>Build {{ build }}</small>
             </v-col>
 
             <v-col>
@@ -80,12 +80,17 @@
     </v-footer>
 
     <v-app-bar bottom dense app color="primary" dark>
-      <v-row align="center" dense>
-        <v-col cols="auto">
+      <v-row align="center" dense justify="space-between">
+        <v-col>
           <small> {{ socketInfo }}</small></v-col
         >
+        <!-- <v-col cols="2" class="text-center">
+          <v-btn @click="toggleDetails()" text>
+            <v-icon>mdi-glasses</v-icon>
+          </v-btn></v-col
+        > -->
         <v-col class="text-right">
-          <small>V {{ $build }} </small>
+          <small>V {{ build }} </small>
         </v-col>
       </v-row>
     </v-app-bar>
@@ -99,7 +104,11 @@ export default {
   name: 'App',
 
   components: {},
-  computed: {},
+  computed: {
+    build() {
+      return this.$store.getters.appVersion;
+    },
+  },
   data: () => ({
     socketInfo: '',
 
@@ -130,6 +139,12 @@ export default {
     },
     disconnect() {
       this.socketInfo = `Disconnected`;
+    },
+  },
+  methods: {
+    toggleDetails() {
+      this.$showDetails = !this.$showDetails;
+      console.log(this.$showDetails);
     },
   },
   mixins: [update],
