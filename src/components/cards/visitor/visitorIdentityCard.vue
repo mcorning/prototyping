@@ -4,7 +4,9 @@
     <v-card-subtitle
       >Currently, you're
       {{
-        $socket.connected ? 'connected. Pick a Room below.' : 'disconnected. '
+        $socket.connected
+          ? 'connected. Pick an open Room below.'
+          : 'disconnected. '
       }}
       <v-btn
         v-if="$socket.disconnected"
@@ -23,8 +25,8 @@
             :items="visitors"
             item-text="visitor"
             item-value="id"
-            label="Pick your Handle"
-            hint="The X button lets you delete this (nick)name (but do so carefully)."
+            label="Pick your nickname"
+            hint="The X button deletes nickname (disabling alerts for it)."
             persistent-hint
             clearable
             return-object

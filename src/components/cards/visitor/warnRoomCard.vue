@@ -1,5 +1,8 @@
 <template>
   <v-container>
+    <v-overlay :value="overlay">
+      <v-progress-circular indeterminate size="64"></v-progress-circular>
+    </v-overlay>
     <v-dialog v-model="dialog" persistent dark max-width="350">
       <template v-slot:activator="{ on, attrs }" v-slot:extension>
         <v-fab-transition>
@@ -151,6 +154,7 @@ export default {
   },
   data() {
     return {
+      overlay: false,
       reason: 'LCT warned me of possible exposure',
       dialog: false,
       disconnected: true,
@@ -181,6 +185,7 @@ export default {
     },
 
     onWarnRooms() {
+      this.overlay = true;
       this.dialog = false;
       console.groupCollapsed(
         `[${getNow()}] EVENT: onWarnRooms (warmRoomCard.vue) Warnings sent to Server:`
@@ -215,6 +220,7 @@ export default {
       // Visitor will update messages so we don't warn twice
       this.$emit('warned', msg);
       console.groupEnd();
+      this.overlay = false;
       return;
     },
 

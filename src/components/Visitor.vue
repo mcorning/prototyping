@@ -1,11 +1,34 @@
 <template>
   <div>
-    <!-- <systemBarTop> -->
-    <!-- <v-col class="text-center">UA: {{ userAgent }}</v-col> -->
-    <!-- </systemBarTop> -->
+    <v-overlay :value="overlay">
+      <v-progress-circular indeterminate size="64"></v-progress-circular>
+    </v-overlay>
 
     <diaryCard />
+    <!-- PWA support 
+        see update mixin 
+     note use of :value instead of v-model (because updateExists gets it value from the mixin -->
+    <v-snackbar top right :value="updateExists" :timeout="-1" color="primary">
+      An update is available
+      <v-btn text @click="refreshApp">
+        Update
+      </v-btn>
+    </v-snackbar>
+
+    <!-- note use of v-model (because this snackbar will come and go, as necessary) -->
+    <v-snackbar
+      centered
+      v-model="openSnackbar"
+      :timeout="7000"
+      color="primary"
+      multi-line
+      vertical
+    >
+      {{ feedbackMessage }}
+    </v-snackbar>
+
     <firstTimeCard v-if="firstTime" />
+
     <v-container v-else fluid>
       <v-row dense justify="space-between" class="child-flex">
         <v-col
@@ -43,7 +66,7 @@
         /></v-col>
       </v-row>
 
-      <v-expansion-panels>
+      <v-expansion-panels v-if="messages.length">
         <v-expansion-panel>
           <v-expansion-panel-header color="secondary lighten-3">
             Visits
@@ -62,42 +85,6 @@
         </v-expansion-panel>
       </v-expansion-panels>
     </v-container>
-
-    <!-- <warnRoomCard
-      :visitor="enabled.visitor"
-      :log="log"
-      @warned="onWarned($event)"
-      @connect="connectToServer()"
-    /> -->
-    <!-- 
-    <connectionBanner
-      :connectionMessage="connectionMessage"
-      @reconnect="onReconnect"
-    ></connectionBanner>
-
-    <messageBanner :bgcolor="messageColor">
-      {{ feedbackMessage }}</messageBanner
-    > -->
-
-    <!-- <systemBarBottom
-      :socketMessage="socketMessage"
-      @showDetails="showDetails = !showDetails"
-      :log="log"
-    ></systemBarBottom> -->
-
-    <!-- PWA support -->
-    <v-snackbar
-      bottom
-      right
-      :value="updateExists"
-      :timeout="-1"
-      color="primary"
-    >
-      An update is available
-      <v-btn text @click="refreshApp">
-        Update
-      </v-btn>
-    </v-snackbar>
   </div>
 </template>
 <script type="application/javascript" src="@/components/js/helpers.js"></script>
@@ -119,15 +106,10 @@ import Room from '@/models/Room';
 import State from '@/models/State';
 import Visitor from '@/models/Visitor';
 
-// import systemBarTop from '@/components/cards/systemBarTop';
 import diaryCard from '@/components/cards/visitor/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
-// import connectionBanner from '@/components/cards/visitor/connectionBanner';
-// import messageBanner from '@/components/cards/visitor/messageBanner';
-// import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
-// import systemBarBottom from '@/components/cards/systemBarBottom';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
@@ -151,16 +133,11 @@ window.onerror = function(message, url, lineNo, columnNo, error) {
 export default {
   name: 'LctVisitor',
   components: {
-    // systemBarTop,
     diaryCard,
     firstTimeCard,
     visitorIdentityCard,
     roomIdentityCard,
     roomEntryCard,
-    // connectionBanner,
-    // messageBanner,
-    // warnRoomCard,
-    // systemBarBottom,
     dataTableCard,
     auditTrailCard,
   },
@@ -277,11 +254,8 @@ export default {
   },
 
   data: () => ({
-    // PWA support
-    // refreshing: false,
-    // registration: null,
-    // updateExists: false,
-
+    overlay: true,
+    openSnackbar: true,
     connectionMessage: 'Provide a name to Connect to the Server.',
     disconnectedFromServer: true,
     showEntryRoomCard: false,
@@ -396,25 +370,6 @@ export default {
   //       * a packet of dates of possible exposure that is stored in the Visitor log
 
   methods: {
-    //#region pwa support
-    // Store the SW registration so we can send it a message
-    // We use `updateExists` to control whatever alert, toast, dialog, etc we want to use
-    // To alert the user there is an update they need to refresh for
-    // updateAvailable(event) {
-    //   this.registration = event.detail;
-    //   this.updateExists = true;
-    // },
-
-    // // Called when the user accepts the update
-    // refreshApp() {
-    //   this.updateExists = false;
-    //   // Make sure we only send a 'skip waiting' message if the SW is waiting
-    //   if (!this.registration || !this.registration.waiting) return;
-    //   // send message to SW to skip the waiting and activate the new SW
-    //   this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    // },
-    //#endregion
-
     // handles @warned event from warnRoomCard which responds to the ACK from the server upon reciept of warning
     onWarned(data) {
       const { rooms, reason } = data;
@@ -437,10 +392,15 @@ export default {
         console.log(printJson(msg));
         roomNames.push(room.room);
       });
+
+      // for snackbar
       this.messageColor = 'success lighten-1';
       this.feedbackMessage = `Server acknowledges warning for Room(s)
         ${roomNames.join(', ')}.`;
 
+      this.overlay = false;
+
+      this.openSnackbar = true;
       console.groupEnd();
       console.warn(
         `End of Visitor's responsibility. Room(s) take over from here...`
@@ -717,6 +677,15 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
   mixins: [update],
 
   //#endregion
+  watch: {
+    // in case we timeout on an async function
+    overlay(val) {
+      val &&
+        setTimeout(() => {
+          this.overlay = false;
+        }, 10000);
+    },
+  },
 
   async created() {},
 
@@ -730,6 +699,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     this.exposeOpenRooms();
     // log the useragent in case we can't recognize it
     // this.log(navigator.userAgent);
+    this.overlay = false;
     console.log('Visitor.vue mounted');
   },
 };

@@ -1,8 +1,7 @@
 <template>
   <div>
-    <!-- <systemBarTop> </systemBarTop> -->
-
-    <!-- PWA support -->
+    <!-- PWA support 
+    see update mixin for details-->
     <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
       An update is available
       <v-btn text @click="refreshApp">
@@ -13,12 +12,6 @@
     <roomIntroCard />
 
     <roomIdentityCard @room="onHandleRoom($event)" @act="emit($event)" />
-
-    <!-- <systemBarBottom
-      :socketMessage="socketMessage"
-      @showDetails="showDetails = !showDetails"
-      :log="log"
-    ></systemBarBottom> -->
 
     <v-expansion-panels v-if="messages.length">
       <v-expansion-panel>
@@ -59,11 +52,9 @@ import Message from '@/models/Message';
 import Visitor from '@/models/Visitor';
 import Room from '@/models/Room';
 import State from '@/models/State';
-// import systemBarTop from '@/components/cards/systemBarTop';
 import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
 import dataTableCard from '@/components/cards/dataTableCard';
-// import systemBarBottom from '@/components/cards/systemBarBottom';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 import clc from 'cli-color';
 // const success = clc.green.bold;

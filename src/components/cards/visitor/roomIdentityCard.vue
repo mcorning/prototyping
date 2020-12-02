@@ -11,7 +11,7 @@
         item-text="room"
         item-value="id"
         :label="roomSelectedLabel"
-        hint="Admins control this Room list"
+        hint="Admins control this Room list. Room owners open and close."
         persistent-hint
         return-object
         single-line
