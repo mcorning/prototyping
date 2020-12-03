@@ -227,27 +227,27 @@ export default {
   sockets: {
     //#region socket.io reserved events
     connect() {
-      console.group('onConnect');
-      console.log(
-        `[${getNow()}] ${printJson(this.$socket.id)} ${
-          this.closed ? 'closed' : 'open'
-        }`
-      );
-
       if (this.$socket.io.opts?.query) {
         const { room, id, nsp, closed } = this.$socket.io.opts.query;
+        console.group('onConnect');
+        console.log(
+          `[${getNow()}] ${printJson(this.$socket.id)} ${
+            this.closed ? 'closed' : 'open'
+          }`
+        );
+
         console.log(`${room} ${closed ? 'closed' : 'open'}`);
         this.log(
           `Server connected using Id: ${id}, Room: ${room}, and nsp ${nsp} `,
           'Room.vue'
         );
+        // } else {
+        //   this.$socket.disconnect(true);
       }
       console.groupEnd();
     },
     disconnect(reason) {
       this.log(`Disconnect: ${reason}`, 'Room.vue');
-      this.$socket.connect();
-      this.log('Staying connected', 'Room.vue');
     },
     error(reason) {
       this.log(`Error ${reason}`, 'Room.vue');
@@ -582,7 +582,7 @@ export default {
     // namely, is the Room open or closed? by default, it's closed.
     // but emit() updates this with the message sent by the roomIdentityCard
     connectToServer() {
-      // this.log('Connecting to Server...');
+      this.log('Connecting to Server...');
       if (
         this.$socket.connected &&
         this.$socket.io.opts &&
@@ -615,10 +615,10 @@ export default {
       let r = this.findRoomWithId(id);
       if (r) {
         this.selectedRoom = r;
+        this.connectToServer();
       } else {
         this.selectedRoom = { room: '', id: '' };
       }
-      this.connectToServer();
     },
     //#endregion
   },

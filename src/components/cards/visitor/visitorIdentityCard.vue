@@ -1,6 +1,6 @@
 <template>
   <v-card>
-    <v-card-title>Connect to the Server</v-card-title>
+    <h3>Connect to Local Contact Tracing</h3>
     <v-card-subtitle
       >Currently, you're
       {{
@@ -19,16 +19,24 @@
     </v-card-subtitle>
     <v-card-text>
       <v-row class="child-flex" align="center" justify="space-between">
-        <v-col cols="8" sm="6" md="4">
+        <v-col cols="auto" sm="6" md="4">
+          <v-text-field
+            v-if="newVisitor"
+            label="Enter your nickname:"
+            hint="How do you want to be seen?"
+            persistent-hint
+            clearable
+            @change="onUpdateVisitor"
+          />
           <v-select
+            v-else
             v-model="selectedVisitor"
             :items="visitors"
             item-text="visitor"
             item-value="id"
             label="Pick your nickname"
-            hint="The X button deletes nickname (disabling alerts for it)."
+            :hint="hint()"
             persistent-hint
-            clearable
             return-object
             single-line
             autofocus
@@ -37,6 +45,23 @@
           >
           </v-select>
         </v-col>
+        <v-col cols="1" class="text-center">
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <span v-bind="attrs" v-on="on">
+                <speedDial
+                  :room="false"
+                  :mainIcon="mainIcon"
+                  @added="onAddVisitor()"
+                  @deleted="onDeleteVisitor()"
+                />
+              </span>
+            </template>
+            <span>Visitor Tasks</span>
+          </v-tooltip>
+        </v-col>
+        <v-spacer></v-spacer>
+
         <v-col
           v-if="$socket.connected"
           cols="4"
@@ -64,12 +89,13 @@
 </template>
 
 <script>
+import base64id from 'base64id';
+
 import Visitor from '@/models/Visitor';
 import State from '@/models/State';
-import base64id from 'base64id';
-import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 
-const ONBOARD = 'Onboard me...';
+import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
+import speedDial from '@/components/cards/SpeedDial';
 
 export default {
   props: {
@@ -78,12 +104,12 @@ export default {
       default: null,
     },
   },
-  components: { warnRoomCard },
+  components: { speedDial, warnRoomCard },
   computed: {
     // source for Visitor dropdown
     visitors() {
       let allvisitors = Visitor.all();
-      return [...allvisitors, ...[{ visitor: ONBOARD, id: '' }]];
+      return allvisitors;
     },
 
     visitor() {
@@ -100,6 +126,8 @@ export default {
 
   data() {
     return {
+      mainIcon: 'mdi-account-outline',
+      newVisitor: false,
       dialog: false,
       // used by onUpdateVisitor() below
       // but what does nsp mean for a Visitor
@@ -119,6 +147,17 @@ export default {
   },
 
   methods: {
+    hint() {
+      return `ID: ${this.$socket.id}`;
+    },
+    onAddVisitor() {
+      this.newVisitor = true;
+    },
+
+    onDeleteVisitor() {
+      this.selectedVisitor = null;
+    },
+
     connectToServer() {
       if (
         this.$socket.connected &&
@@ -148,13 +187,15 @@ export default {
       if (!this.selectedVisitor?.id) {
         return;
       }
-      // ia this call necessary given we have a watcher on this variable?
+      // ia this call necessary given we have a watcher on this variable? yes,
+      // because the watcher handles deleted Visitors, and onEmitVisitor() does not
       State.changeYourId(this.selectedVisitor.id);
       this.$emit('visitor', this.selectedVisitor);
     },
 
     // update IndexedDb and set values for selection
     onUpdateVisitor(newVal) {
+      this.newVisitor = false;
       console.assert(this.selectedVisitor, 'Missing selectedVisitor object.');
       this.selectedVisitor.visitor = newVal;
       this.selectedVisitor.id = base64id.generateId();
@@ -185,6 +226,7 @@ export default {
   },
   watch: {
     selectedVisitor(newVal, oldVal) {
+      // newVal is set to null when deleting a visitor
       if (!newVal) {
         Visitor.delete(oldVal.id);
         // deleting the last Visitor will leave Visitor entity null...

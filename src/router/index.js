@@ -2,7 +2,7 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Home from '../views/Home.vue';
 import Visitor from '@/components/Visitor.vue';
-// import Room from '@/components/Room.vue';
+import Room from '@/components/Room.vue';
 // import Admin from '@/components/Admin.vue';
 // import State from '@/models/State';
 
@@ -47,14 +47,16 @@ const routes = [
   {
     path: '/visitor',
     name: 'Visitor',
-    component: () =>
-      import(/* webpackChunkName: "visitor" */ '@/components/Visitor.vue'),
+    component: Visitor,
+    // component: () =>
+    //   import(/* webpackChunkName: "visitor" */ '@/components/Visitor.vue'),
   },
   {
     path: '/room',
     name: 'Room',
-    component: () =>
-      import(/* webpackChunkName: "room" */ '@/components/Room.vue'),
+    component: Room,
+    // component: () =>
+    //   import(/* webpackChunkName: "room" */ '@/components/Room.vue'),
   },
   {
     path: '/about',

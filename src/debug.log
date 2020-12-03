@@ -102,3 +102,11 @@
 [1202/104017.575:ERROR:crash_report_database_win.cc(498)] failed to stat report
 [1202/104017.576:ERROR:filesystem_win.cc(116)] GetFileAttributes C:\Users\mcorn\AppData\Local\Temp\.profile\Crashpad\reports\13f3e1ce-bdbe-4815-b807-fcf19a4e525d.dmp: The system cannot find the file specified. (0x2)
 [1202/104017.577:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1202/162300.797:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1202/165019.542:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1202/172841.307:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1202/181437.474:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1202/203814.356:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1202/210449.398:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1202/214733.503:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1202/222112.685:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)

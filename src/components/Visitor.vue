@@ -24,7 +24,6 @@
       multi-line
       vertical
     >
-      {{ feedbackMessage }}
     </v-snackbar>
 
     <firstTimeCard v-if="firstTime" />
@@ -107,12 +106,14 @@ import State from '@/models/State';
 import Visitor from '@/models/Visitor';
 
 import diaryCard from '@/components/cards/visitor/diaryCard';
+import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
-import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
+
+import speedDial from '@/components/cards/SpeedDial';
 
 import clc from 'cli-color';
 // const success = clc.green.bold;
@@ -140,6 +141,7 @@ export default {
     roomEntryCard,
     dataTableCard,
     auditTrailCard,
+    speedDial,
   },
   computed: {
     showDetails() {
@@ -507,7 +509,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     },
 
     onReconnect() {
-      connectToServer;
+      this.connectToServer();
     },
 
     onVisitorReady(visitor) {
@@ -657,13 +659,14 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     },
 
     connectToServer() {
-      if (
-        this.$socket.connected &&
-        this.$socket.io.opts &&
-        this.$socket.io.opts.query.id != this.enabled.visitor?.id
-      ) {
-        this.$socket.disconnect();
-      }
+      // if (
+      //   this.$socket.connected &&
+      //   this.$socket.io.opts &&
+      //   !this.$socket.io.opts.query &&
+      //   this.$socket.io.opts.query.id != this.enabled.visitor?.id
+      // ) {
+      //   this.$socket.disconnect();
+      // }
       this.$socket.io.opts.query = {
         visitor: this.enabled.visitor.visitor,
         id: this.enabled.visitor.id,
@@ -694,11 +697,11 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     await State.$fetch();
     await Message.$fetch();
     await Visitor.$fetch();
-
-    this.connectToServer();
+    if (this.enabled.visitor.visitor) {
+      this.connectToServer();
+    }
     this.exposeOpenRooms();
-    // log the useragent in case we can't recognize it
-    // this.log(navigator.userAgent);
+
     this.overlay = false;
     console.log('Visitor.vue mounted');
   },

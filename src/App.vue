@@ -11,9 +11,12 @@
             max-height="36"
             max-width="75"
         /></v-col>
+        <v-col> <v-btn color="primary" text to="/admin"> </v-btn></v-col>
+        <v-col> <v-btn color="primary" text to="/room"> </v-btn></v-col>
+        <v-col> <v-btn color="primary" text to="/visitor"> </v-btn></v-col>
         <v-spacer></v-spacer>
         <v-col class="text-right"
-          ><small>{{ $socket.io.uri }}</small></v-col
+          ><small>{{ socketUrl }}</small></v-col
         >
       </v-row>
       <!-- src="@/assets/soteriaLogoCovidRed.jpg" 
@@ -111,7 +114,7 @@ export default {
   },
   data: () => ({
     socketInfo: '',
-
+    socketUrl: '',
     rating: 3,
     links: [
       {
@@ -134,7 +137,8 @@ export default {
       // wait until a real Room connection or Visitor connection shows up
       if (this.$socket.io.opts.query) {
         const { id, nsp } = this.$socket.io.opts.query;
-        this.socketInfo = `${nsp ? nsp : '/'}#${id}`;
+        this.socketInfo = `${id}`;
+        this.socketUrl = `${this.$socket.io.uri}${nsp}`;
       }
     },
     disconnect() {
@@ -147,6 +151,9 @@ export default {
       console.log(this.$showDetails);
     },
   },
+
   mixins: [update],
+
+  async mounted() {},
 };
 </script>

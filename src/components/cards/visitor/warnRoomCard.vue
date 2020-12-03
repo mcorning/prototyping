@@ -6,7 +6,7 @@
     <v-dialog v-model="dialog" persistent dark max-width="350">
       <template v-slot:activator="{ on, attrs }" v-slot:extension>
         <v-fab-transition>
-          <v-btn color="error" dark v-bind="attrs" v-on="on" fab>
+          <v-btn color="error" dark v-bind="attrs" v-on="on" fab x-large>
             <v-icon>mdi-home-alert</v-icon>
           </v-btn></v-fab-transition
         >
@@ -114,7 +114,7 @@ export default {
     },
 
     items() {
-      if (this.visitorCheckins.length) {
+      if (this.visitorCheckins?.length) {
         let x = this.groupMessagesByRoomAndDate({
           array: this.visitorCheckins,
           prop: 'room',

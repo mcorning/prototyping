@@ -3,21 +3,48 @@
     <v-card>
       <v-card-text>
         <v-row align="center" justify="space-between">
-          <v-col>
+          <v-col cols="auto">
+            <v-text-field
+              v-if="newRoom || !rooms.length"
+              label="Enter your Room name:"
+              hint="Use a unique name you could use to invite in someone from your community."
+              persistent-hint
+              clearable
+              @change="onUpdateRoom($event)"
+            />
             <v-select
+              v-if="rooms.length && !newRoom"
               v-model="selectedRoom"
               :items="rooms"
               item-text="room"
               item-value="id"
               :label="roomSelectedLabel"
-              clearable
               return-object
               single-line
               :prepend-icon="statusIcon"
               @change="onEmitRoom"
+              :hint="hint()"
             ></v-select>
           </v-col>
-          <v-col class="col-md-4 pl-10">
+          <v-col cols="1" class="text-center">
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <span v-bind="attrs" v-on="on">
+                  <speedDial
+                    :room="true"
+                    :mainIcon="mainIcon"
+                    @added="onAddRoom"
+                    @deleted="onDeleteRoom"
+                    @open="act"
+                    @close="act"
+                  />
+                </span>
+              </template>
+              <span>Room Tasks</span>
+            </v-tooltip>
+          </v-col>
+          <v-spacer></v-spacer>
+          <!-- <v-col class="col-md-4 pl-10">
             <div v-if="selectedRoom.id" class="text-center">
               <v-btn
                 :color="closed ? 'success' : 'warning'"
@@ -31,7 +58,7 @@
                 {{ closed ? 'Open Room' : 'Close Room' }}
               </span>
             </div>
-          </v-col>
+          </v-col> -->
         </v-row>
       </v-card-text>
     </v-card>
@@ -41,13 +68,16 @@
 </template>
 
 <script>
+import base64id from 'base64id';
+
 import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
 import firstTimeCard from '@/components/cards/room/firstTimeCard';
+import speedDial from '@/components/cards/SpeedDial';
 
 export default {
-  components: { firstTimeCard },
+  components: { firstTimeCard, speedDial },
 
   computed: {
     roomSelectedLabel() {
@@ -88,8 +118,8 @@ export default {
   data() {
     return {
       closed: true,
-
-      newRoom: '',
+      mainIcon: 'mdi-home-outline',
+      newRoom: false,
       selectedRoom: {},
       statusIcon: 'mdi-lan-disconnect',
     };
@@ -105,6 +135,26 @@ export default {
   },
 
   methods: {
+    hint() {
+      return `ID: ${this.$socket.id}`;
+    },
+
+    onAddRoom() {
+      this.newRoom = true;
+    },
+
+    onDeleteRoom() {
+      this.selectedRoom = null;
+    },
+    onUpdateRoom(newVal) {
+      this.newRoom = false;
+
+      this.selectedRoom.room = newVal;
+      this.selectedRoom.id = base64id.generateId();
+      Room.update(this.selectedRoom.room, this.selectedRoom.id, this.nsp)
+        .then((r) => console.log('New Room:', r))
+        .catch((e) => console.log(e));
+    },
     // called by Open/Close Room button
     act() {
       const msg = {
@@ -173,7 +223,7 @@ export default {
 
     await State.$fetch();
     await Room.$fetch();
-    this.selectedRoomInit();
+    // this.selectedRoomInit();
   },
 };
 </script>
