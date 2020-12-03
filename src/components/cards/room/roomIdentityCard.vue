@@ -1,6 +1,23 @@
 <template>
   <div>
     <v-card>
+      <v-card-title>Manage Your Rooms</v-card-title>
+      <v-card-subtitle
+        >Currently, you're
+        {{
+          $socket.connected
+            ? 'connected. Select and open a Room below so Visitors can use LCT.'
+            : 'disconnected. '
+        }}
+        <v-btn
+          v-if="$socket.disconnected"
+          color="secondary lighten-2"
+          class="black--text"
+          small
+          @click="onEmitVisitor()"
+          >Connect?</v-btn
+        >
+      </v-card-subtitle>
       <v-card-text>
         <v-row align="center" justify="space-between">
           <v-col cols="auto">
@@ -29,7 +46,7 @@
           <v-col cols="1" class="text-center">
             <v-tooltip bottom>
               <template v-slot:activator="{ on, attrs }">
-                <span v-bind="attrs" v-on="on">
+                <span v-bind="attrs" v-on="on" class="text-center">
                   <speedDial
                     :room="true"
                     :mainIcon="mainIcon"

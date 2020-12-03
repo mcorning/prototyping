@@ -19,13 +19,7 @@
       </v-btn>
     </template>
 
-    <v-btn fab dark small color="green" @click="$emit('added')">
-      <v-icon>mdi-plus</v-icon>
-    </v-btn>
-    <v-btn fab dark small color="orange" @click="$emit('deleted')">
-      <v-icon>mdi-delete</v-icon>
-    </v-btn>
-    <div v-if="room">
+    <div v-if="room" class="text-center">
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <span v-bind="attrs" v-on="on" class="text-center pb-3">
@@ -34,7 +28,7 @@
             </v-btn>
           </span>
         </template>
-        <span>Open Room</span>
+        <span class="text-center"> Open Room</span>
       </v-tooltip>
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
@@ -47,6 +41,12 @@
         <span>Close Room</span>
       </v-tooltip>
     </div>
+    <v-btn fab dark small color="green" @click="$emit('added')">
+      <v-icon>mdi-plus</v-icon>
+    </v-btn>
+    <v-btn fab dark small color="orange" @click="$emit('deleted')">
+      <v-icon>mdi-delete</v-icon>
+    </v-btn>
   </v-speed-dial>
 </template>
 
@@ -59,7 +59,7 @@ export default {
     },
   },
   data: () => ({
-    direction: 'right',
+    direction: 'left',
     fab: false,
     hover: true,
     top: false,

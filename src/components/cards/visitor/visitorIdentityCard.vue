@@ -1,6 +1,6 @@
 <template>
   <v-card>
-    <h3>Connect to Local Contact Tracing</h3>
+    <v-card-title>Connect to Local Contact Tracing</v-card-title>
     <v-card-subtitle
       >Currently, you're
       {{
@@ -19,7 +19,7 @@
     </v-card-subtitle>
     <v-card-text>
       <v-row class="child-flex" align="center" justify="space-between">
-        <v-col cols="auto" sm="6" md="4">
+        <v-col cols="10" sm="6" md="6">
           <v-text-field
             v-if="newVisitor"
             label="Enter your nickname:"
@@ -45,7 +45,7 @@
           >
           </v-select>
         </v-col>
-        <v-col cols="1" class="text-center">
+        <v-col cols="2" class="text-center">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
               <span v-bind="attrs" v-on="on">
@@ -61,14 +61,9 @@
           </v-tooltip>
         </v-col>
         <v-spacer></v-spacer>
-
-        <v-col
-          v-if="$socket.connected"
-          cols="4"
-          sm="6"
-          md="4"
-          class="text-right"
-        >
+      </v-row>
+      <v-row align="center">
+        <v-col v-if="$socket.connected" class="text-center ">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
               <span v-bind="attrs" v-on="on" class="text-center">

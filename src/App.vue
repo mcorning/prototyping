@@ -15,9 +15,6 @@
         <v-col> <v-btn color="primary" text to="/room"> </v-btn></v-col>
         <v-col> <v-btn color="primary" text to="/visitor"> </v-btn></v-col>
         <v-spacer></v-spacer>
-        <v-col class="text-right"
-          ><small>{{ socketUrl }}</small></v-col
-        >
       </v-row>
       <!-- src="@/assets/soteriaLogoCovidRed.jpg" 
                               width="40"
@@ -84,14 +81,9 @@
 
     <v-app-bar bottom dense app color="primary" dark>
       <v-row align="center" dense justify="space-between">
-        <v-col>
-          <small> {{ socketInfo }}</small></v-col
+        <v-col class="text-left"
+          ><small>{{ socketUrl }}</small></v-col
         >
-        <!-- <v-col cols="2" class="text-center">
-          <v-btn @click="toggleDetails()" text>
-            <v-icon>mdi-glasses</v-icon>
-          </v-btn></v-col
-        > -->
         <v-col class="text-right">
           <small>V {{ build }} </small>
         </v-col>

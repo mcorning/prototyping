@@ -24,6 +24,7 @@
       multi-line
       vertical
     >
+      {{ feedbackMessage }}
     </v-snackbar>
 
     <firstTimeCard v-if="firstTime" />

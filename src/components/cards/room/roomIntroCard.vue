@@ -5,9 +5,11 @@
         <v-list-item-title class="title">
           Your Room
         </v-list-item-title>
-        <v-list-item-subtitle>Visitors will log in.</v-list-item-subtitle>
+        <v-list-item-subtitle
+          >Visitors will log into your Room.</v-list-item-subtitle
+        >
         <v-list-item-subtitle class="pt-0 margin=top=-16 text-right"
-          >Visitors in quarantine will alert others.</v-list-item-subtitle
+          >Your Room will alert others.</v-list-item-subtitle
         >
       </v-list-item-content>
     </v-list-item>
