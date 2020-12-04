@@ -23,7 +23,19 @@
         >
       </v-row>
     </v-app-bar>
-
+    <v-snackbar
+      centered
+      :value="updateExists"
+      :timeout="-1"
+      color="primary darken-1"
+      vertical
+    >
+      An update is available. This will have no effect on your stored data. It
+      will, however, keep your LCT in sync with the server.
+      <v-btn text @click="refreshApp">
+        Update
+      </v-btn>
+    </v-snackbar>
     <v-main>
       <router-view></router-view>
     </v-main>
@@ -135,7 +147,9 @@ export default {
       if (this.$socket.io.opts.query) {
         const { id, nsp } = this.$socket.io.opts.query;
         this.socketInfo = `${id}`;
-        this.socketUrl = `${this.$socket.io.uri}${nsp}`;
+        const uri = this.$socket.io.uri;
+        const url = uri.endsWith('/') ? `${uri}${nsp}` : `${uri}/${nsp}`;
+        this.socketUrl = url;
       }
     },
     disconnect() {

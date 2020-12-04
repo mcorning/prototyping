@@ -9,7 +9,7 @@
         see update mixin 
      note use of :value instead of v-model (because updateExists gets it value from the mixin -->
     <v-snackbar top right :value="updateExists" :timeout="-1" color="primary">
-      An update is available
+      An update is available for Visitors.
       <v-btn text @click="refreshApp">
         Update
       </v-btn>
@@ -17,14 +17,18 @@
 
     <!-- note use of v-model (because this snackbar will come and go, as necessary) -->
     <v-snackbar
-      centered
-      v-model="openSnackbar"
-      :timeout="7000"
+      v-model="snackBar"
+      :timeout="4000"
       color="primary"
       multi-line
       vertical
     >
       {{ feedbackMessage }}
+      <template v-slot:action="{ attrs }">
+        <v-btn color="white" text v-bind="attrs" @click="snackbar = false">
+          Close
+        </v-btn>
+      </template>
     </v-snackbar>
 
     <firstTimeCard v-if="firstTime" />
@@ -51,7 +55,7 @@
         transition="scale-transition"
         >{{ alertMessage }}
       </v-alert>
-      <v-row v-show="$socket.connected">
+      <v-row>
         <v-col>
           <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
         /></v-col>
@@ -258,7 +262,7 @@ export default {
 
   data: () => ({
     overlay: true,
-    openSnackbar: true,
+    snackBar: true,
     connectionMessage: 'Provide a name to Connect to the Server.',
     disconnectedFromServer: true,
     showEntryRoomCard: false,
@@ -403,7 +407,7 @@ export default {
 
       this.overlay = false;
 
-      this.openSnackbar = true;
+      this.snackBar = true;
       console.groupEnd();
       console.warn(
         `End of Visitor's responsibility. Room(s) take over from here...`

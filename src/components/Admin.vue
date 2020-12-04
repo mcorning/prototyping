@@ -3,7 +3,7 @@
     <!-- PWA support 
     see update mixin for details-->
     <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
-      An update is available.
+      An update is available for Admins.
       <v-btn text @click="refreshApp">
         Update
       </v-btn>

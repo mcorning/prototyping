@@ -2,8 +2,14 @@
   <div>
     <!-- PWA support 
     see update mixin for details-->
-    <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
-      An update is available
+    <v-snackbar
+      top
+      :value="updateExists"
+      :timeout="-1"
+      color="primary"
+      vertical
+    >
+      An update is available for Rooms.
       <v-btn text @click="refreshApp">
         Update
       </v-btn>
