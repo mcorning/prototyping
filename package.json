@@ -1,6 +1,6 @@
 {
   "name": "lct",
-  "version": "12.03.11.32",
+  "version": "12.03.17.24",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",

@@ -2,6 +2,9 @@
   <v-app>
     <v-app-bar app color="primary" dense dark>
       <v-row align="center" justify="end" dense>
+        <!-- <v-col cols="auto">
+          <soteria-icon />
+        </v-col> -->
         <v-col cols="auto">
           <v-img
             alt="Enduring Net Logo"
@@ -10,28 +13,15 @@
             src="@/assets/Enduring-Net-Logo-Portrait-Purple-RGB-BG.png"
             max-height="36"
             max-width="75"
-        /></v-col>
-        <v-col> <v-btn color="primary" text to="/admin"> </v-btn></v-col>
-        <v-col> <v-btn color="primary" text to="/room"> </v-btn></v-col>
-        <v-col> <v-btn color="primary" text to="/visitor"> </v-btn></v-col>
-        <v-spacer></v-spacer>
-      </v-row>
-      <!-- src="@/assets/soteriaLogoCovidRed.jpg" 
-                              width="40"
--->
+          />
+        </v-col>
 
-      <!-- <div class="d-flex align-left">
-        <v-btn class="pl-0" text to="/home">
-          <v-img
-            alt="Enduring Net Logo"
-            class="shrink "
-            contain
-            src="@/assets/Enduring-Net-Logo-Portrait-Purple-RGB-BG.png"
-            max-height="36"
-            max-width="75"
-        /></v-btn> -->
-      <!-- <soteria-icon /> -->
-      <!-- </div> -->
+        <v-spacer></v-spacer>
+
+        <v-col cols="auto"
+          ><v-card-title>Local Contact Tracing</v-card-title></v-col
+        >
+      </v-row>
     </v-app-bar>
 
     <v-main>
@@ -84,6 +74,16 @@
         <v-col class="text-left"
           ><small>{{ socketUrl }}</small></v-col
         >
+        <v-col v-if="inDevelopment">
+          <v-select
+            v-model="route"
+            :items="routes"
+            dense
+            hide-details
+            color="primary darken=5"
+            dark
+          ></v-select
+        ></v-col>
         <v-col class="text-right">
           <small>V {{ build }} </small>
         </v-col>
@@ -103,8 +103,13 @@ export default {
     build() {
       return this.$store.getters.appVersion;
     },
+    inDevelopment() {
+      return process.env.NODE_ENV == 'development';
+    },
   },
   data: () => ({
+    route: 'visitor',
+    routes: ['visitor', 'room', 'admin'],
     socketInfo: '',
     socketUrl: '',
     rating: 3,
@@ -145,6 +150,12 @@ export default {
   },
 
   mixins: [update],
+
+  watch: {
+    route(val) {
+      this.$router.push(val);
+    },
+  },
 
   async mounted() {},
 };

@@ -3,20 +3,20 @@
     <v-card>
       <v-card-title>Manage Your Rooms</v-card-title>
       <v-card-subtitle
-        >Currently, you're
+        >Currently,
         {{
           $socket.connected
-            ? 'connected. Select and open a Room below so Visitors can use LCT.'
-            : 'disconnected. '
+            ? connectedMessage
+            : 'you are disconnected. Open or create a Room below.'
         }}
-        <v-btn
+        <!-- <v-btn
           v-if="$socket.disconnected"
           color="secondary lighten-2"
           class="black--text"
           small
           @click="onEmitVisitor()"
           >Connect?</v-btn
-        >
+        > -->
       </v-card-subtitle>
       <v-card-text>
         <v-row align="center" justify="space-between">
@@ -97,6 +97,10 @@ export default {
   components: { firstTimeCard, speedDial },
 
   computed: {
+    connectedMessage() {
+      return `you are connected. Open ${this.selectedRoom.room} below so Visitors can use LCT.`;
+    },
+
     roomSelectedLabel() {
       return 'Select your Room';
     },
@@ -236,11 +240,11 @@ export default {
     },
   },
   async mounted() {
+    // let self = this;
     await Message.$fetch();
-
     await State.$fetch();
     await Room.$fetch();
-    // this.selectedRoomInit();
+    this.selectedRoomInit();
   },
 };
 </script>

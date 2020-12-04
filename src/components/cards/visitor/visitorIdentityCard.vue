@@ -19,7 +19,7 @@
     </v-card-subtitle>
     <v-card-text>
       <v-row class="child-flex" align="center" justify="space-between">
-        <v-col cols="10" sm="6" md="6">
+        <v-col cols="6">
           <v-text-field
             v-if="newVisitor"
             label="Enter your nickname:"
@@ -45,8 +45,8 @@
           >
           </v-select>
         </v-col>
-        <v-col cols="2" class="text-center">
-          <v-tooltip bottom>
+        <v-col class="text-center">
+          <!-- <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
               <span v-bind="attrs" v-on="on">
                 <speedDial
@@ -58,11 +58,31 @@
               </span>
             </template>
             <span>Visitor Tasks</span>
+          </v-tooltip> -->
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <span v-bind="attrs" v-on="on">
+                <v-btn fab dark small color="green" @click="onAddVisitor()">
+                  <v-icon>mdi-plus</v-icon>
+                </v-btn>
+              </span>
+            </template>
+            <span>Add Visitor</span>
+          </v-tooltip>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <span v-bind="attrs" v-on="on">
+                <v-btn fab dark small color="orange" @click="onDeleteVisitor()">
+                  <v-icon>mdi-delete</v-icon>
+                </v-btn>
+              </span>
+            </template>
+            <span>Delete Visitor</span>
           </v-tooltip>
         </v-col>
         <v-spacer></v-spacer>
       </v-row>
-      <v-row align="center">
+      <v-row align="center" justify="space-between">
         <v-col v-if="$socket.connected" class="text-center ">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -90,7 +110,7 @@ import Visitor from '@/models/Visitor';
 import State from '@/models/State';
 
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
-import speedDial from '@/components/cards/SpeedDial';
+// import speedDial from '@/components/cards/SpeedDial';
 
 export default {
   props: {
@@ -99,7 +119,10 @@ export default {
       default: null,
     },
   },
-  components: { speedDial, warnRoomCard },
+  components: {
+    // speedDial,
+    warnRoomCard,
+  },
   computed: {
     // source for Visitor dropdown
     visitors() {
@@ -134,7 +157,10 @@ export default {
   },
   sockets: {
     connect() {
-      this.statusIcon = 'mdi-lan-connect';
+      if (this.$socket.id) {
+        this.statusIcon = 'mdi-lan-connect';
+        this.log(`Socket ${this.$socket.id} connected.`);
+      }
     },
     disconnect() {
       this.statusIcon = 'mdi-lan-disconnect';
@@ -162,9 +188,9 @@ export default {
         this.$socket.disconnect();
       }
       this.$socket.io.opts.query = {
-        visitor: this.selectedVisitor.visitor.visitor,
-        id: this.selectedVisitor.visitor.id,
-        nsp: this.selectedVisitor.visitor.nsp,
+        visitor: this.selectedVisitor.visitor,
+        id: this.selectedVisitor.id,
+        nsp: this.selectedVisitor.nsp,
       };
       this.$socket.connect();
     },
@@ -185,6 +211,8 @@ export default {
       // ia this call necessary given we have a watcher on this variable? yes,
       // because the watcher handles deleted Visitors, and onEmitVisitor() does not
       State.changeYourId(this.selectedVisitor.id);
+      this.connectToServer();
+
       this.$emit('visitor', this.selectedVisitor);
     },
 
