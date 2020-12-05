@@ -525,9 +525,12 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
 
     onVisitorReady(visitor) {
       // this.enabled holds two objects: room and visitor
-      this.enabled.visitor = visitor;
-
-      this.connectToServer();
+      // visitor will be empty during OBX
+      if (visitor) {
+        this.enabled.visitor = visitor;
+        //connectToServer only when there's an object available to populate query
+        this.connectToServer();
+      }
     },
 
     // TODO why is this method here? we enter room with onAct() above...
