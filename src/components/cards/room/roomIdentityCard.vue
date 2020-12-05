@@ -9,16 +9,7 @@
             ? connectedMessage
             : 'you are disconnected. Open or create a Room below.'
         }}
-        <!-- <v-btn
-          v-if="$socket.disconnected"
-          color="secondary lighten-2"
-          class="black--text"
-          small
-          @click="onEmitVisitor()"
-          >Connect?</v-btn
-        > -->
       </v-card-subtitle>
-      <v-card-subtitle>{{ status() }}</v-card-subtitle>
 
       <v-card-text>
         <v-row align="center" justify="space-between">
@@ -54,8 +45,8 @@
                     :mainIcon="mainIcon"
                     @added="onAddRoom"
                     @deleted="onDeleteRoom"
-                    @open="act"
-                    @close="act"
+                    @open="onOpen"
+                    @close="onClose"
                   />
                 </span>
               </template>
@@ -103,6 +94,9 @@ export default {
     log: {
       type: Function,
     },
+    trace: {
+      type: Function,
+    },
   },
 
   components: { firstTimeCard, speedDial },
@@ -127,16 +121,6 @@ export default {
     rooms() {
       let allRooms = Room.all();
       return allRooms;
-    },
-    // this came from Room.vue. why the map?
-    // rooms() {
-    //   return Room.all().map((v) => v.selectedRoom.id);
-    // },
-
-    lastRoom() {
-      let id = State.find(0)?.roomId;
-      let r = this.findRoomWithId(id);
-      return r;
     },
 
     messages: {
@@ -163,6 +147,7 @@ export default {
   sockets: {
     //#region socket.io reserved events
     connect() {
+      // ignore any non-Room sockets
       if (!this.$socket.io.opts.query) {
         this.$socket.disconnect();
         return;
@@ -177,9 +162,9 @@ export default {
         'roomIdentityCard.vue'
       );
       console.groupEnd();
-
+      // cache last Room used
       State.changeRoomId(id);
-
+      // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
     },
 
@@ -188,6 +173,7 @@ export default {
 
       this.log(`Disconnect: ${reason}`, 'roomIdentityCard.vue');
     },
+    //#region Other socket events
     error(reason) {
       this.log(`Error ${reason}`, 'roomIdentityCard.vue');
     },
@@ -220,27 +206,39 @@ export default {
     reconnect_failed(reason) {
       this.log(`Reconnect_failed ${reason}`, 'roomIdentityCard.vue');
     },
-    //#endregion end socket.io reserved events
+    //#endregion
 
-    // end sockets:
+    //#endregion end socket.io reserved events
   },
 
   methods: {
-    hint() {
-      return `ID: ${this.$socket.id}`;
+    // onUpdateRoom() called by:
+    //    newRoom's text-field component
+    //
+    //    it adds a Room to the Room entity (including a new id for the server to use during connection there)
+    //    then it connects to the server
+    onUpdateRoom(newVal) {
+      this.newRoom = false;
+
+      this.selectedRoom.room = newVal;
+      this.selectedRoom.id = base64id.generateId();
+      Room.update(this.selectedRoom.room, this.selectedRoom.id, this.nsp)
+        .then((r) => {
+          console.log('New Room:', r);
+          this.onRoomSelected();
+        })
+        .catch((e) => console.log(e));
     },
-    status() {
-      let status = this.$socket.io.opts.query
-        ? `${this.$socket.id} ${this.$socket.connected} ${JSON.stringify(
-            this.$socket.io.opts.query,
-            null,
-            3
-          )} `
-        : 'No connected Room socket';
-      return status;
-    },
-    // this sets the query object that includes data about the state of the UI;
-    // namely, is the Room open or closed? by default, it's closed.
+
+    // onRoomSelected called by:
+    //    onUpdateRoom() when user adds a Room
+    //    selectedRomm select component
+    //    selectedRoomInit() method called by mounted()
+    //
+    // onRoomSelected() handles connection options.
+    //    it ignores connect() when the connected Room tries to connect again (for what ever reason)
+    //    if the selectedRoom changes, it disconnects the old Room and connects the new Room
+    //    otherwise i updates the query (including the open/closed state of the Room)
     onRoomSelected() {
       if (this.$socket.connected) {
         console.log(`${this.$socket.io.opts.query.room} is  connected`);
@@ -261,22 +259,6 @@ export default {
         nsp: '',
       };
       this.$socket.connect();
-    },
-
-    // handles the act event from roomIdentityCard (and any later $socket.emit calls)
-    // attempts reconnect, if necessary
-    emit(payload) {
-      // open or closed
-      this.$socket.io.opts.query.state = payload.message.message;
-      this.closed = payload.message.message;
-      let msg =
-        `Emitting ${payload.event}` +
-        (payload.message.room ? ` to server for ${payload.message.room}` : '');
-      this.log(msg);
-      this.$socket.emit(payload.event, payload.message, (ack) => {
-        this.trace({ caption: `ACK: ${payload.event}:`, msg: ack });
-        this.log(ack, 'ACKS');
-      });
     },
 
     onChangeRoom(val) {
@@ -327,6 +309,7 @@ export default {
         });
       }
     },
+
     onAddRoom() {
       this.newRoom = true;
     },
@@ -334,20 +317,21 @@ export default {
     onDeleteRoom() {
       this.selectedRoom = null;
     },
-    onUpdateRoom(newVal) {
-      this.newRoom = false;
 
-      this.selectedRoom.room = newVal;
-      this.selectedRoom.id = base64id.generateId();
-      Room.update(this.selectedRoom.room, this.selectedRoom.id, this.nsp)
-        .then((r) => console.log('New Room:', r))
-        .catch((e) => console.log(e));
+    //#region  handlers for speedDial
+    onOpen() {
+      this.act('open');
     },
+
+    onClose() {
+      this.act('close');
+    },
+    //#endregion
+
     // called by Open/Close Room button
-    act() {
+    act(action) {
       const msg = {
         room: this.selectedRoom.room,
-        id: this.selectedRoom.id,
         message: this.closed ? 'Opened' : 'Closed',
         sentTime: new Date().toISOString(),
       };
@@ -363,8 +347,36 @@ export default {
           this.alert = true;
         },
       };
-      this.closed = !this.closed;
-      this.$emit('act', payload);
+      this.closed = action == 'close';
+      this.emit(payload);
+    },
+
+    emit(payload) {
+      // open or closed
+      this.$socket.io.opts.query.state = payload.message.message;
+      // this.closed = payload.message.message;
+      let msg =
+        `Emitting ${payload.event}` +
+        (payload.message.room ? ` to server for ${payload.message.room}` : '');
+      this.log(msg);
+      this.$socket.emit(payload.event, payload.message, (ack) => {
+        this.trace({ caption: `ACK: ${payload.event}:`, msg: ack });
+        this.log(ack, 'ACKS');
+      });
+    },
+
+    hint() {
+      return `ID: ${this.$socket.id}`;
+    },
+    status() {
+      let status = this.$socket.io.opts.query
+        ? `${this.$socket.id} ${this.$socket.connected} ${JSON.stringify(
+            this.$socket.io.opts.query,
+            null,
+            3
+          )} `
+        : 'No connected Room socket';
+      return status;
     },
 
     findRoomWithId(id = this.selectedRoom?.id) {

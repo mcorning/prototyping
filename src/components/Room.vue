@@ -24,7 +24,7 @@
 
     <roomIntroCard />
 
-    <roomIdentityCard :log="log" />
+    <roomIdentityCard :log="log" :trace="trace" />
 
     <v-expansion-panels v-if="messages.length">
       <v-expansion-panel>
@@ -171,7 +171,6 @@ export default {
     hasRoomManager: false,
     daysBack: 0,
     today: 'YYYY-MM-DD',
-    closed: true,
 
     logHeaders: [
       { text: 'Message', value: 'message' },
