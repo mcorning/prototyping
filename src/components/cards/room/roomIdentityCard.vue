@@ -240,25 +240,29 @@ export default {
     //    if the selectedRoom changes, it disconnects the old Room and connects the new Room
     //    otherwise i updates the query (including the open/closed state of the Room)
     onRoomSelected() {
-      if (this.$socket.connected) {
-        console.log(`${this.$socket.io.opts.query.room} is  connected`);
-        if (this.$socket.io.opts.query.room == this.selectedRoom.room) {
-          return;
+      try {
+        if (this.$socket.connected) {
+          console.log(`${this.$socket.io.opts.query.room} is  connected`);
+          if (this.$socket.io.opts.query.room == this.selectedRoom.room) {
+            return;
+          }
+          console.log(
+            `${this.selectedRoom.room} is not connected. Disconnecting ${this.$socket.io.opts.query.room}`
+          );
+          this.$socket.disconnect();
         }
-        console.log(
-          `${this.selectedRoom.room} is not connected. Disconnecting ${this.$socket.io.opts.query.room}`
-        );
-        this.$socket.disconnect();
-      }
-      this.log(`Connecting ${this.selectedRoom.room} to Server...`);
+        this.log(`Connecting ${this.selectedRoom.room} to Server...`);
 
-      this.$socket.io.opts.query = {
-        room: this.selectedRoom.room,
-        id: this.selectedRoom.id,
-        closed: this.closed,
-        nsp: '',
-      };
-      this.$socket.connect();
+        this.$socket.io.opts.query = {
+          room: this.selectedRoom.room,
+          id: this.selectedRoom.id,
+          closed: this.closed,
+          nsp: '',
+        };
+        this.$socket.connect();
+      } catch (error) {
+        console.error(error);
+      }
     },
 
     onChangeRoom(val) {
