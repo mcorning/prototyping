@@ -8,12 +8,12 @@
     <!-- PWA support 
         see update mixin 
      note use of :value instead of v-model (because updateExists gets it value from the mixin -->
-    <v-snackbar top right :value="updateExists" :timeout="-1" color="primary">
+    <!-- <v-snackbar top right :value="updateExists" :timeout="-1" color="primary">
       An update is available for Visitors.
       <v-btn text @click="refreshApp">
         Update
       </v-btn>
-    </v-snackbar>
+    </v-snackbar> -->
 
     <!-- note use of v-model (because this snackbar will come and go, as necessary) -->
     <v-snackbar
@@ -30,13 +30,19 @@
         </v-btn>
       </template>
     </v-snackbar>
+    <!-- 
+    <firstTimeCard
+      v-if="firstTime"
+      :log="log"
+      @visitor="onVisitorReady($event)"
+    /> -->
 
-    <firstTimeCard v-if="firstTime" />
-
-    <v-container v-else fluid>
+    <!-- <v-container v-else fluid> -->
+    <v-container fluid>
       <v-row dense justify="space-between" class="child-flex">
         <v-col
           ><visitorIdentityCard
+            :parentSelectedVisitor="enabled.visitor"
             :log="log"
             @visitor="onVisitorReady($event)"
             @warned="onWarned($event)"

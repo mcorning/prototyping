@@ -32,9 +32,12 @@
     >
       An update is available. This will have no effect on your stored data. It
       will, however, keep your LCT in sync with the server.
-      <v-btn text @click="refreshApp">
-        Update
-      </v-btn>
+
+      <template v-slot:action="{ attrs }">
+        <v-btn color="white" text v-bind="attrs" @click="refreshApp">
+          Update
+        </v-btn>
+      </template>
     </v-snackbar>
     <v-main>
       <router-view></router-view>
@@ -148,7 +151,9 @@ export default {
         const { id, nsp } = this.$socket.io.opts.query;
         this.socketInfo = `${id}`;
         const uri = this.$socket.io.uri;
-        const url = uri.endsWith('/') ? `${uri}${nsp}` : `${uri}/${nsp}`;
+        const url = uri.endsWith('/')
+          ? `${uri}${nsp ? nsp : ''}`
+          : `${uri}/${nsp ? nsp : ''}`;
         this.socketUrl = url;
       }
     },

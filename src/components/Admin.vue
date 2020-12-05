@@ -2,12 +2,12 @@
   <v-container>
     <!-- PWA support 
     see update mixin for details-->
-    <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
+    <!-- <v-snackbar top :value="updateExists" :timeout="-1" color="primary">
       An update is available for Admins.
       <v-btn text @click="refreshApp">
         Update
       </v-btn>
-    </v-snackbar>
+    </v-snackbar> -->
     <v-card>
       <v-card-title>Room Management</v-card-title>
       <v-card-subtitle>Only Admins can add or delete Rooms.</v-card-subtitle>

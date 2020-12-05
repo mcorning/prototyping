@@ -101,6 +101,7 @@ export default {
     onChangingRoom() {
       // send the Room data back to Visitor so it can add the Visitor data to emit with enterRoom on the Server
       this.log(printJson(this.roomSelected));
+      this.$vuetify.goTo(999, { duration: 300 });
       this.$emit('roomSelected', this.roomSelected);
     },
 

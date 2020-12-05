@@ -114,6 +114,10 @@ import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 
 export default {
   props: {
+    parentSelectedVisitor: {
+      type: Object,
+    },
+
     log: {
       type: Function,
       default: null,
@@ -151,7 +155,7 @@ export default {
       // but what does nsp mean for a Visitor
       // if a Visitor can visit Rooms in any available nsp?
       nsp: '',
-      selectedVisitor: {},
+      selectedVisitor: this.parentSelectedVisitor,
       statusIcon: 'mdi-lan-disconnect',
     };
   },
@@ -230,21 +234,13 @@ export default {
     },
 
     selectedVisitorInit() {
-      // first check for any visitor (onboarding will not have one yet)
-      if (!Visitor.exists()) {
-        // ensure there is a property (may be removed by removing a Visitor)
-        this.selectedVisitor = { visitor: '', id: '' };
-        return;
-      }
       let x = State.find(0);
-      if (!x) {
-        alert('Welcome to Local Contact Tracing');
-        return;
+      if (x) {
+        let id = x.visitorId;
+        let v = this.findVisitorWithId(id);
+        this.selectedVisitor = v;
+        this.$emit('visitor', this.selectedVisitor);
       }
-      let id = x.visitorId;
-      let v = this.findVisitorWithId(id);
-      this.selectedVisitor = v;
-      this.$emit('visitor', this.selectedVisitor);
     },
   },
   watch: {

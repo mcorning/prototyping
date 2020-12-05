@@ -3,10 +3,9 @@
     <v-card>
       <v-card-title>First Time?</v-card-title>
       <v-card-text
-        >Enter your name in the field below. We enable more than one person to
-        use the same instance of the app or device. You can delete an entry with
-        the X button.</v-card-text
-      >
+        >Enter your nickname in the field below. We enable more than one
+        nickname to use the same instance of the app or device.
+      </v-card-text>
       <v-card-text>
         <v-text-field
           label="Enter your nickname:"
@@ -60,9 +59,14 @@ export default {
       this.selectedVisitor.visitor = newVal;
       this.selectedVisitor.id = base64id.generateId();
       // static update function on Visitor model
-      Visitor.update(newVal, this.selectedVisitor.id, this.nsp).catch((e) =>
-        console.log(e)
-      );
+      try {
+        Visitor.update(newVal, this.selectedVisitor.id, this.nsp).catch((e) =>
+          console.log(e)
+        );
+      } catch (error) {
+        alert(error);
+      }
+
       this.onEmitVisitor();
     },
 

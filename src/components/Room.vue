@@ -2,7 +2,7 @@
   <div>
     <!-- PWA support 
     see update mixin for details-->
-    <v-snackbar
+    <!-- <v-snackbar
       top
       :value="updateExists"
       :timeout="-1"
@@ -13,7 +13,7 @@
       <v-btn text @click="refreshApp">
         Update
       </v-btn>
-    </v-snackbar>
+    </v-snackbar> -->
 
     <roomIntroCard />
 
