@@ -1,23 +1,30 @@
 <template>
   <div>
+    <v-overlay :value="overlay">
+      <v-progress-circular indeterminate size="64"></v-progress-circular>
+    </v-overlay>
+
     <!-- PWA support 
     see update mixin for details-->
-    <!-- <v-snackbar
+    <v-snackbar
       top
       :value="updateExists"
       :timeout="-1"
       color="primary"
       vertical
     >
-      An update is available for Rooms.
-      <v-btn text @click="refreshApp">
-        Update
-      </v-btn>
-    </v-snackbar> -->
+      An update is available for Rooms. This will not effect your data in local
+      storage.
+      <template v-slot:action="{ attrs }">
+        <v-btn color="white" text v-bind="attrs" @click="refreshApp">
+          Update
+        </v-btn>
+      </template>
+    </v-snackbar>
 
     <roomIntroCard />
 
-    <roomIdentityCard @room="onHandleRoom($event)" @act="emit($event)" />
+    <roomIdentityCard :log="log" />
 
     <v-expansion-panels v-if="messages.length">
       <v-expansion-panel>
@@ -41,6 +48,13 @@
 </template>
 
 <script>
+/*
+Room.vue has one UI responsibility and one functional:
+  1) control all the vue components for Room operations
+  2) handle messages from the LCT server
+
+The <roomIdentityCard/> component handles connecting Rooms to the LCT server
+*/
 import base64id from 'base64id';
 
 import moment from 'moment';
@@ -55,8 +69,8 @@ import ErrorService from '@/Services/ErrorService';
 import update from '@/mixins/update.js';
 
 import Message from '@/models/Message';
-import Visitor from '@/models/Visitor';
-import Room from '@/models/Room';
+// import Visitor from '@/models/Visitor';
+// import Room from '@/models/Room';
 import State from '@/models/State';
 import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
@@ -80,12 +94,7 @@ const local = process.env.NODE_ENV == 'development';
 
 export default {
   name: 'LctRoom',
-  watch: {
-    $socket(newValue, oldValue) {
-      alert('watching');
-      console.log(newValue, oldValue);
-    },
-  },
+
   components: {
     // systemBarTop,
     roomIntroCard,
@@ -95,31 +104,6 @@ export default {
     auditTrailCard,
   },
   computed: {
-    stateIs() {
-      return this.$socket.connected ? 'Online' : 'Offline';
-    },
-
-    userAgent() {
-      let ua = navigator.userAgent;
-      let userAgent;
-      if (ua.includes('Edg')) {
-        userAgent = 'Edge';
-      } else if (ua.includes('Chrome')) {
-        userAgent = 'Chrome';
-      } else if (ua.includes('Firefox/82')) {
-        userAgent = 'Firefox Dev';
-      } else if (ua.includes('Firefox') || ua.includes('KHTML')) {
-        userAgent = 'Firefox';
-      } else {
-        userAgent = 'Unknown ';
-      }
-      return userAgent;
-    },
-
-    roomisEmpty() {
-      return !this.rooms.length;
-    },
-
     state: {
       get() {
         let s = State.query().first();
@@ -130,18 +114,6 @@ export default {
       },
     },
 
-    rooms() {
-      return Room.all().map((v) => v.selectedRoom.id);
-    },
-
-    managedRoom: {
-      get() {
-        return this.state?.managerId;
-      },
-      set(newVal) {
-        State.updateManagerId(newVal);
-      },
-    },
     messages: {
       get() {
         return Message.all();
@@ -176,6 +148,8 @@ export default {
   },
 
   data: () => ({
+    overlay: true,
+
     visitFormat: 'HH:mm on ddd, MMM DD',
     // showDetails: local,
     socketMessage: 'room',
@@ -231,64 +205,6 @@ export default {
   }),
 
   sockets: {
-    //#region socket.io reserved events
-    connect() {
-      if (this.$socket.io.opts?.query) {
-        const { room, id, nsp, closed } = this.$socket.io.opts.query;
-        console.group('onConnect');
-        console.log(
-          `[${getNow()}] ${printJson(this.$socket.id)} ${
-            this.closed ? 'closed' : 'open'
-          }`
-        );
-
-        console.log(`${room} ${closed ? 'closed' : 'open'}`);
-        this.log(
-          `Server connected using Id: ${id}, Room: ${room}, and nsp ${nsp} `,
-          'Room.vue'
-        );
-        // } else {
-        //   this.$socket.disconnect(true);
-      }
-      console.groupEnd();
-    },
-    disconnect(reason) {
-      this.log(`Disconnect: ${reason}`, 'Room.vue');
-    },
-    error(reason) {
-      this.log(`Error ${reason}`, 'Room.vue');
-    },
-    connect_error(reason) {
-      this.log(`Connect_error ${reason}`, 'Room.vue');
-    },
-    connect_timeout(reason) {
-      this.log(`Connect_timeout ${reason}`, 'Room.vue');
-    },
-    reconnect(reason) {
-      console.group('onReconnect');
-      console.warn(
-        `[${getNow()}] ${printJson(
-          this.$socket.io.opts.query
-        )} Recconnect ${reason}`,
-        'Room.vue'
-      );
-      this.log(`Recconnect ${reason}`, 'Room.vue');
-      console.groupEnd();
-    },
-    reconnect_attempt(reason) {
-      this.log(`Reconnect_attempt ${reason}`, 'Room.vue');
-    },
-    reconnecting(reason) {
-      this.log(`Reconnecting ${reason}`, 'Room.vue');
-    },
-    reconnect_error(reason) {
-      this.log(`Reconnect_error ${reason}`, 'Room.vue');
-    },
-    reconnect_failed(reason) {
-      this.log(`Reconnect_failed ${reason}`, 'Room.vue');
-    },
-    //#endregion end socket.io reserved events
-
     // Visitor routine events
     checkIn(msg) {
       this.onCheckIn(msg);
@@ -377,8 +293,6 @@ export default {
         // ends notifyRoom region above
       }
     },
-
-    // end sockets:
   },
 
   // Emitters:   Visitor            Server        Room
@@ -466,93 +380,10 @@ export default {
     },
 
     //#region - other methods
-    refreshConnection(hard) {
-      window.location.reload(hard);
-    },
-
-    getTextColor(type) {
-      return type == 'alert' ? 'red--text' : '';
-    },
-
-    getIconColor(type) {
-      return type == 'alert' ? 'red' : 'gray';
-    },
-
-    changeRoom(val) {
-      let msg;
-      if (!val || this.rooms.length > 1) {
-        msg = {
-          room: this.selectedRoom.id,
-          // TODO why deleted?
-          message: val ? 'Closed' : 'Deleted',
-          sentTime: new Date().toISOString(),
-        };
-        this.emit({
-          event: 'closeRoom',
-          message: msg,
-          ack: (ack) => {
-            // TODO why length?
-            this.closed = ack.error.length;
-            let msg = `${ack.message}  ${ack.error}`;
-            this.alertMessage = msg;
-            this.alertColor = val ? 'success' : 'warning';
-            this.alert = true;
-            this.log(`Closed Room ${this.selectedRoom.id}`);
-          },
-        });
-      }
-      if (val && this.rooms.length) {
-        msg = {
-          room: this.selectedRoom.room,
-          id: this.selectedRoom.id,
-          message: 'Opened',
-          state: this.closed,
-          sentTime: new Date().toISOString(),
-        };
-        this.emit({
-          event: 'openRoom',
-          message: msg,
-          ack: (ack) => {
-            this.closed = ack.error.length;
-            let msg = `${ack.message}  ${ack.error}`;
-            this.alertMessage = msg;
-            this.alertColor = 'success';
-            this.alert = true;
-            this.log('Opened Room');
-          },
-        });
-      }
-    },
-
-    reset() {
-      this.deleting = false;
-    },
-    // handles the act event from roomIdentityCard (and any later $socket.emit calls)
-    // attempts reconnect, if necessary
-    emit(payload) {
-      if (!this.$socket.id) {
-        this.connectToServer();
-      }
-      // open or closed
-      this.$socket.io.opts.query.state = payload.message.message;
-      this.closed = payload.message.message;
-      let msg =
-        `Emitting ${payload.event}` +
-        (payload.message.room ? ` to server for ${payload.message.room}` : '');
-      this.log(msg);
-      this.$socket.emit(payload.event, payload.message, (ack) => {
-        this.trace({ caption: `ACK: ${payload.event}:`, msg: ack });
-        this.log(ack, 'ACKS');
-      });
-    },
 
     // end main methods
 
     // helper methods
-    disconnectFromServer() {
-      console.log('Disconnection from Server');
-      this.$socket.disconnect(true); // passing true closes underlying connnection
-    },
 
     log(msg, type = 'info') {
       this.cons.push({
@@ -569,63 +400,7 @@ export default {
     },
 
     // end helper methods
-    socketInfo() {
-      if (this.$socket.disconnected) {
-        return 'Connecting...';
-      }
 
-      const query = this.$socket.io.opts?.query;
-      if (!query) {
-        return `${this.$socket.id} isn't yours. Restart app.`;
-      }
-
-      const { id, nsp, room } = query;
-      const info = `${nsp} ${id} ${room}`;
-      return info;
-    },
-
-    // this sets the query object that includes data about the state of the UI;
-    // namely, is the Room open or closed? by default, it's closed.
-    // but emit() updates this with the message sent by the roomIdentityCard
-    connectToServer() {
-      this.log('Connecting to Server...');
-      if (
-        this.$socket.connected &&
-        this.$socket.io.opts &&
-        this.$socket.io.opts.query.id != this.selectedRoom.id
-      ) {
-        this.$socket.disconnect();
-      }
-      this.$socket.io.opts.query = {
-        room: this.selectedRoom.room,
-        id: this.selectedRoom.id,
-        closed: this.closed,
-        nsp: '',
-      };
-      this.$socket.connect();
-    },
-
-    onHandleRoom(room) {
-      this.selectedRoom = room;
-      this.connectToServer();
-    },
-
-    findRoomWithId(id = this.selectedRoom?.id) {
-      let r = Room.find(id) || '';
-      return r;
-    },
-
-    selectedRoomInit() {
-      let x = State.find(0);
-      let id = x?.roomId;
-      let r = this.findRoomWithId(id);
-      if (r) {
-        this.selectedRoom = r;
-        this.connectToServer();
-      } else {
-        this.selectedRoom = { room: '', id: '' };
-      }
-    },
     //#endregion
   },
 
@@ -636,14 +411,11 @@ export default {
 
   async mounted() {
     await Message.$fetch();
-    await Room.$fetch();
-    await Visitor.$fetch();
+    // await Room.$fetch();
+    // await Visitor.$fetch();
     await State.$fetch();
-    this.selectedRoomInit();
-
-    // log the useragent in case we can't recognize it
-    this.log(navigator.userAgent);
     console.log('Room.vue mounted');
+    this.overlay = false;
   },
 };
 </script>

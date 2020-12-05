@@ -31,11 +31,13 @@
       </template>
     </v-snackbar>
     <!-- 
+-->
     <firstTimeCard
       v-if="firstTime"
       :log="log"
       @visitor="onVisitorReady($event)"
-    /> -->
+    />
+    -->
 
     <!-- <v-container v-else fluid> -->
     <v-container fluid>
@@ -49,6 +51,7 @@
           />
         </v-col>
       </v-row>
+
       <v-alert
         :value="alert"
         dark
@@ -61,6 +64,7 @@
         transition="scale-transition"
         >{{ alertMessage }}
       </v-alert>
+
       <v-row>
         <v-col>
           <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
@@ -529,7 +533,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       if (visitor) {
         this.enabled.visitor = visitor;
         //connectToServer only when there's an object available to populate query
-        this.connectToServer();
+        // this.connectToServer();
       }
     },
 
@@ -704,7 +708,9 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     },
   },
 
-  async created() {},
+  async created() {
+    console.log('Visitor.vue created');
+  },
 
   async mounted() {
     await Room.$fetch();
