@@ -171,27 +171,6 @@ export default {
       }
     },
 
-    // isToday(date) {
-    //   let x = moment(date).format(this.today);
-    //   let y = moment()
-    //     .add(-this.daysBack, 'day')
-    //     .format(this.today);
-    //   return x == y;
-    // },
-
-    // isBetween(date) {
-    //   let visit = moment(date);
-
-    //   let past = moment()
-    //     .add(-this.daysBack, 'day')
-    //     .format('YYYY-MM-DD');
-    //   let tomorrow = moment()
-    //     .add(1, 'day')
-    //     .format('YYYY-MM-DD');
-    //   let test = visit.isBetween(past, tomorrow);
-    //   return test;
-    // },
-
     deleteMessage(id) {
       let m = `Deleting message ${id}`;
       this.log(m);
@@ -201,12 +180,6 @@ export default {
     deleteAllMessages() {
       this.log(`Deleting all messages`);
       Message.deleteAll();
-      // TODO do we need this? if so, why?
-      //this.refreshConnection(true);
-    },
-
-    refreshConnection(hard) {
-      window.location.reload(hard);
     },
 
     toggleVisits() {

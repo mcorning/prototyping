@@ -126,19 +126,11 @@ export default {
 
   data: () => ({
     route: 'visitor',
-    routes: ['visitor', 'room', 'admin'],
+    routes: ['visitor'],
     socketInfo: '',
     // socketUrl: '',
     rating: 3,
     links: [
-      {
-        label: 'Admin',
-        url: '/admin',
-      },
-      {
-        label: 'Room',
-        url: '/room',
-      },
       {
         label: 'Visitor',
         url: '/visitor',

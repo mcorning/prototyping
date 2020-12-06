@@ -132,7 +132,6 @@ const { printJson, getNow } = helpers;
 import moment from 'moment';
 
 import Message from '@/models/Message';
-import Room from '@/models/Room';
 import State from '@/models/State';
 import Visitor from '@/models/Visitor';
 
@@ -262,10 +261,6 @@ export default {
       set(newVal) {
         console.log(newVal);
       },
-    },
-
-    pastRooms() {
-      return Room.all().map((v) => v.roomId);
     },
 
     userAgent() {
@@ -729,7 +724,6 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
   },
 
   async mounted() {
-    await Room.$fetch();
     await State.$fetch();
     await Message.$fetch();
     await Visitor.$fetch();
