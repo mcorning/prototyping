@@ -76,7 +76,7 @@ export default {
         return;
       }
       // ia this call necessary given we have a watcher on this variable?
-      State.changeYourId(this.selectedVisitor.id);
+      State.changeVisitorId(this.selectedVisitor.id);
       this.$emit('visitor', this.selectedVisitor);
     },
 

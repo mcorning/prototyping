@@ -60,7 +60,6 @@
       <v-row dense justify="space-between" class="child-flex">
         <v-col
           ><visitorIdentityCard
-            :parentSelectedVisitor="enabled.visitor"
             :log="log"
             @visitor="onVisitorReady($event)"
             @warned="onWarned($event)"
@@ -312,55 +311,7 @@ export default {
   }),
 
   sockets: {
-    // socket.io reserved events
-    connect() {
-      this.disconnectedFromServer = false;
-      if (this.$socket.io.opts?.query) {
-        const { visitor, id, nsp } = this.$socket.io.opts.query;
-        this.log(
-          `Server connected using Id: ${id}, Visitor: ${visitor}, and nsp ${nsp} `,
-          'Visitor.vue'
-        );
-      }
-    },
-
-    //#region Other connection events
-    disconnect(reason) {
-      this.disconnectedFromServer = true;
-      this.log(`Disconnect: ${reason}`, 'Visitor.vue');
-    },
-    error(reason) {
-      this.log(`Error ${reason}`, 'Visitor.vue');
-    },
-    connect_error(reason) {
-      this.log(`Connect_error ${reason}`, 'Visitor.vue');
-    },
-    connect_timeout(reason) {
-      this.log(`Connect_timeout ${reason}`, 'Visitor.vue');
-    },
-    reconnect(reason) {
-      this.log(`Recconnect ${reason}`, 'Visitor.vue');
-    },
-    reconnect_attempt(reason) {
-      this.log(`Reconnect_attempt ${reason}`, 'Visitor.vue');
-    },
-    reconnecting(reason) {
-      this.log(`Reconnecting ${reason}`, 'Visitor.vue');
-    },
-    reconnect_error(reason) {
-      this.log(`Reconnect_error ${reason}`, 'Visitor.vue');
-    },
-    reconnect_failed(reason) {
-      this.log(`Reconnect_failed ${reason}`, 'Visitor.vue');
-    },
-    // end socket.io reserved events
-
-    message(msg) {
-      this.log(msg);
-    },
-    //#endregion
-    // end socket.io reserved events
-
+    //#region Socket.io custom events
     availableRoomsExposed(rooms) {
       const msg = rooms
         ? `Available Rooms may not be open Rooms: ${printJson(rooms)}`
@@ -384,6 +335,8 @@ export default {
     exposureAlert(alertMessage) {
       this.onExposureAlert(alertMessage);
     },
+
+    //#endregion
   },
 
   // Visitor emits exposureWarning to Server sending
@@ -532,10 +485,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       this.enabled.room = selectedRoom;
       this.showEntryRoomCard = true;
       this.connectionMessage = null;
-    },
-
-    onReconnect() {
-      this.connectToServer();
+      console.log(printJson(this.enabled.room));
     },
 
     onVisitorReady(visitor) {
@@ -543,8 +493,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       // visitor will be empty during OBX
       if (visitor) {
         this.enabled.visitor = visitor;
-        //connectToServer only when there's an object available to populate query
-        // this.connectToServer();
+        console.log(printJson(this.enabled.visitor));
       }
     },
 
@@ -664,11 +613,6 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       console.log(bold(highlight(printJson(msg))));
     },
 
-    // TODO implement this or remove it
-    removeVisitor() {
-      // the server will remove this socket
-      this.emit({ event: 'removeVisitor' });
-    },
     //#endregion
 
     //#region other important emitters
@@ -687,22 +631,22 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       });
     },
 
-    connectToServer() {
-      // if (
-      //   this.$socket.connected &&
-      //   this.$socket.io.opts &&
-      //   !this.$socket.io.opts.query &&
-      //   this.$socket.io.opts.query.id != this.enabled.visitor?.id
-      // ) {
-      //   this.$socket.disconnect();
-      // }
-      this.$socket.io.opts.query = {
-        visitor: this.enabled.visitor.visitor,
-        id: this.enabled.visitor.id,
-        nsp: this.enabled.visitor.nsp,
-      };
-      this.$socket.connect();
-    },
+    // connectToServer() {
+    //   // if (
+    //   //   this.$socket.connected &&
+    //   //   this.$socket.io.opts &&
+    //   //   !this.$socket.io.opts.query &&
+    //   //   this.$socket.io.opts.query.id != this.enabled.visitor?.id
+    //   // ) {
+    //   //   this.$socket.disconnect();
+    //   // }
+    //   this.$socket.io.opts.query = {
+    //     visitor: this.enabled.visitor.visitor,
+    //     id: this.enabled.visitor.id,
+    //     nsp: this.enabled.visitor.nsp,
+    //   };
+    //   this.$socket.connect();
+    // },
   },
 
   // PWA support (see import above)
@@ -727,9 +671,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     await State.$fetch();
     await Message.$fetch();
     await Visitor.$fetch();
-    if (this.enabled.visitor.visitor) {
-      this.connectToServer();
-    }
+
     this.exposeOpenRooms();
 
     this.overlay = false;

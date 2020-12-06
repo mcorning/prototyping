@@ -13,7 +13,7 @@
         color="secondary lighten-2"
         class="black--text"
         small
-        @click="onEmitVisitor()"
+        @click="onVisitorSelected"
         >Connect?</v-btn
       >
     </v-card-subtitle>
@@ -26,7 +26,7 @@
             hint="How do you want to be seen?"
             persistent-hint
             clearable
-            @change="onUpdateVisitor"
+            @change="onUpdateVisitor($event)"
           />
           <v-select
             v-else
@@ -41,7 +41,7 @@
             single-line
             autofocus
             :prepend-icon="statusIcon"
-            @change="onEmitVisitor"
+            @change="onVisitorSelected()"
           >
           </v-select>
         </v-col>
@@ -91,7 +91,7 @@
                   :visitor="selectedVisitor"
                   :log="log"
                   @warned="onWarned($event)"
-                  @connect="connectToServer()"
+                  @connect="onVisitorSelected()"
                 />
               </span>
             </template>
@@ -114,10 +114,6 @@ import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 
 export default {
   props: {
-    parentSelectedVisitor: {
-      type: Object,
-    },
-
     log: {
       type: Function,
       default: null,
@@ -138,19 +134,12 @@ export default {
       let v = Visitor.find(this.selectedVisitor?.id) || '';
       return v;
     },
-
-    lastVisitor() {
-      let id = State.find(0)?.visitorId;
-      let v = this.findVisitorWithId(id);
-      return v;
-    },
   },
 
   data() {
     return {
       mainIcon: 'mdi-account-outline',
       newVisitor: false,
-      dialog: false,
       // used by onUpdateVisitor() below
       // but what does nsp mean for a Visitor
       // if a Visitor can visit Rooms in any available nsp?
@@ -160,20 +149,69 @@ export default {
     };
   },
   sockets: {
+    //#region socket.io reserved events
     connect() {
-      if (this.$socket.id) {
-        this.statusIcon = 'mdi-lan-connect';
-        this.log(`Socket ${this.$socket.id} connected.`);
+      // ignore any non-Visitor sockets
+      if (!this.$socket.io.opts.query) {
+        this.$socket.disconnect();
+        return;
       }
+      const { visitor, id, nsp } = this.$socket.io.opts.query;
+      console.group('onConnect');
+
+      this.log(
+        `Server connected using Id: ${id}, Visitor: ${visitor}, and nsp ${nsp} `,
+        'visitorIdentityCard.vue'
+      );
+      console.groupEnd();
+      // cache last Room used
+      State.changeVisitorId(id);
+      // set icon to indicate connect() handled
+      this.statusIcon = 'mdi-lan-connect';
+      this.$emit('visitor', this.selectedVisitor);
     },
-    disconnect() {
+
+    //#region Other connection events
+    disconnect(reason) {
+      this.disconnectedFromServer = true;
+      this.log(`Disconnect: ${reason}`, 'Visitor.vue');
       this.statusIcon = 'mdi-lan-disconnect';
     },
+    error(reason) {
+      this.log(`Error ${reason}`, 'Visitor.vue');
+    },
+    connect_error(reason) {
+      this.log(`Connect_error ${reason}`, 'Visitor.vue');
+    },
+    connect_timeout(reason) {
+      this.log(`Connect_timeout ${reason}`, 'Visitor.vue');
+    },
+    reconnect(reason) {
+      this.log(`Recconnect ${reason}`, 'Visitor.vue');
+      this.onVisitorSelected();
+    },
+    reconnect_attempt(reason) {
+      this.log(`Reconnect_attempt ${reason}`, 'Visitor.vue');
+    },
+    reconnecting(reason) {
+      this.log(`Reconnecting ${reason}`, 'Visitor.vue');
+    },
+    reconnect_error(reason) {
+      this.log(`Reconnect_error ${reason}`, 'Visitor.vue');
+    },
+    reconnect_failed(reason) {
+      this.log(`Reconnect_failed ${reason}`, 'Visitor.vue');
+    },
+    message(msg) {
+      this.log(msg);
+    },
+    //#endregion
+    //#endregion end socket.io reserved events
   },
 
   methods: {
     hint() {
-      return `ID: ${this.$socket.id}`;
+      return `ID: ${this.$socket.id || 'Disconnected'}`;
     },
     onAddVisitor() {
       this.newVisitor = true;
@@ -183,21 +221,6 @@ export default {
       this.selectedVisitor = null;
     },
 
-    connectToServer() {
-      if (
-        this.$socket.connected &&
-        this.$socket.io.opts &&
-        this.$socket.io.opts.query.id != this.selectedVisitor.visitor?.id
-      ) {
-        this.$socket.disconnect();
-      }
-      this.$socket.io.opts.query = {
-        visitor: this.selectedVisitor.visitor,
-        id: this.selectedVisitor.id,
-        nsp: this.selectedVisitor.nsp,
-      };
-      this.$socket.connect();
-    },
     onWarned(data) {
       this.$emit('warned', data);
     },
@@ -207,19 +230,6 @@ export default {
       return v;
     },
 
-    onEmitVisitor() {
-      // if we delete a nickname, no need to process selectedVisitor
-      if (!this.selectedVisitor?.id) {
-        return;
-      }
-      // ia this call necessary given we have a watcher on this variable? yes,
-      // because the watcher handles deleted Visitors, and onEmitVisitor() does not
-      State.changeYourId(this.selectedVisitor.id);
-      this.connectToServer();
-
-      this.$emit('visitor', this.selectedVisitor);
-    },
-
     // update IndexedDb and set values for selection
     onUpdateVisitor(newVal) {
       this.newVisitor = false;
@@ -227,24 +237,73 @@ export default {
       this.selectedVisitor.visitor = newVal;
       this.selectedVisitor.id = base64id.generateId();
       // static update function on Visitor model
-      Visitor.update(newVal, this.selectedVisitor.id, this.nsp).catch((e) =>
-        console.log(e)
-      );
-      this.onEmitVisitor();
+      Visitor.update(
+        this.selectedVisitor.visitor,
+        this.selectedVisitor.id,
+        this.nsp
+      )
+        .then((v) => {
+          console.log('New Visitor:', v);
+          this.onVisitorSelected();
+        })
+        .catch((e) => console.log(e));
+    },
+
+    onVisitorSelected() {
+      try {
+        if (this.$socket.connected) {
+          console.log(`${this.$socket.io.opts.query.visitor} is  connected`);
+          if (
+            this.$socket.io.opts.query.visitor == this.selectedVisitor.visitor
+          ) {
+            return;
+          }
+          console.log(
+            `${this.selectedVisitor.visitor} is not connected. Disconnecting ${this.$socket.io.opts.query.visitor}`
+          );
+          this.$socket.disconnect();
+        }
+        this.log(`Connecting ${this.selectedVisitor.visitor} to Server...`);
+
+        this.$socket.io.opts.query = {
+          visitor: this.selectedVisitor.visitor,
+          id: this.selectedVisitor.id,
+          nsp: '',
+        };
+        this.$socket.connect();
+      } catch (error) {
+        console.warn(error);
+      }
     },
 
     selectedVisitorInit() {
-      let x = State.find(0);
-      if (x) {
-        let id = x.visitorId;
-        let v = this.findVisitorWithId(id);
+      let id = State.find(0)?.visitorId;
+      let v = this.findVisitorWithId(id);
+      if (v) {
         this.selectedVisitor = v;
-        this.$emit('visitor', this.selectedVisitor);
+        this.onVisitorSelected();
+      } else {
+        this.selectedVisitor = { room: '', id: '' };
       }
     },
   },
   watch: {
     selectedVisitor(newVal, oldVal) {
+      if (!newVal) {
+        const self = this;
+        Visitor.delete(oldVal.id).then((allVisitors) => {
+          console.log('self.selectedVisitor :>> ', self.selectedVisitor);
+          console.log('Visitors after delete:', allVisitors);
+          if (allVisitors.length == 0) {
+            console.log('self.selectedVisitor', self.selectedVisitor);
+          }
+        });
+      }
+      if (!this.selectedVisitor) {
+        this.selectedVisitor = { visitor: '', id: '' };
+      }
+    },
+    selectedVisitorOrig(newVal, oldVal) {
       // newVal is set to null when deleting a visitor
       if (!newVal) {
         Visitor.delete(oldVal.id);

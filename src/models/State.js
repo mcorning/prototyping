@@ -54,7 +54,7 @@ export default class State extends Model {
     return p;
   }
 
-  static async changeYourId(val) {
+  static async changeVisitorId(val) {
     console.log('STATE: visitorId now:', val);
     let p = await this.$update({
       data: { id: 0, visitorId: val },

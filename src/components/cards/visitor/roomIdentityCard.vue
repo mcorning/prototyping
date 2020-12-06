@@ -15,7 +15,6 @@
         persistent-hint
         return-object
         single-line
-        autofocus
         @change="onChangingRoom"
       ></v-select>
       <!-- </v-col>
