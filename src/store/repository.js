@@ -1,6 +1,5 @@
 import State from '@/models/State';
 import Room from '@/models/Room';
-import Visitor from '@/models/Visitor';
 
 // using the query builder, we can easily get the specific data
 // we need in our components
@@ -33,13 +32,6 @@ export default class DataRepository {
     if (fetched.rooms?.length) {
       let rooms = fetched.rooms[0];
       return rooms;
-    }
-  }
-  static async getNames() {
-    let fetched = await Visitor.$fetch();
-    if (fetched.visitors?.length) {
-      let visitors = fetched.visitors[0];
-      return visitors;
     }
   }
 }

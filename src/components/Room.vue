@@ -69,13 +69,13 @@ import ErrorService from '@/Services/ErrorService';
 import update from '@/mixins/update.js';
 
 import Message from '@/models/Message';
-// import Visitor from '@/models/Visitor';
-// import Room from '@/models/Room';
 import State from '@/models/State';
+
 import roomIntroCard from '@/components/cards/room/roomIntroCard';
 import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
+
 import clc from 'cli-color';
 // const success = clc.green.bold;
 // const error = clc.red.bold;
