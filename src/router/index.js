@@ -1,56 +1,14 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-// import Home from '../views/Home.vue';
-// import Visitor from '@/components/Visitor.vue';
-import Room from '@/components/Room.vue';
-// import Admin from '@/components/Admin.vue';
-// import State from '@/models/State';
+import Visitor from '@/components/Visitor.vue';
 
 Vue.use(VueRouter);
-
-// TODO can you fix this now?
-//
-// this fails, and i don't know how to fix it
-// resorting to manual override
-// async function getDefaultVue() {
-//   let fetched = await State.$fetch();
-//   if (fetched.state?.length) {
-//     let state = fetched.state[0];
-//     return state.defaultVue;
-//   }
-// }
 
 const routes = [
   {
     path: '/',
     name: 'Root',
-    component: Room,
-  },
-  // {
-  //   path: '/home',
-  //   name: 'Home',
-  //   component: Home,
-  // },
-  // {
-  //   path: '/admin',
-  //   name: 'Admin',
-  //   component: () =>
-  //     import(/* webpackChunkName: "admin" */ '@/components/Admin.vue'),
-  // },
-
-  // {
-  //   path: '/visitor',
-  //   name: 'Visitor',
-  //   // component: Visitor,
-  //   component: () =>
-  //     import(/* webpackChunkName: "visitor" */ '@/components/Visitor.vue'),
-  // },
-  {
-    path: '/room',
-    name: 'Room',
-    component: Room,
-    // component: () =>
-    //   import(/* webpackChunkName: "room" */ '@/components/Room.vue'),
+    component: Visitor,
   },
   // {
   //   path: '/about',

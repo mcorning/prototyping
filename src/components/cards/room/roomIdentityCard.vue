@@ -10,10 +10,32 @@
             : 'you are disconnected. Open or create a Room below.'
         }}
       </v-card-subtitle>
-
+      <v-snackbar
+        v-model="openSnackbar"
+        color="primary"
+        multi-line
+        vertical
+        :timeout="timeout"
+        centered
+      >
+        {{ openSnackbarText }}
+        <template v-slot:action="{ attrs }">
+          <v-btn color="white" text v-bind="attrs" @click="onOpen">
+            Yes
+          </v-btn>
+          <v-btn
+            color="white"
+            text
+            v-bind="attrs"
+            @click="openSnackbar = false"
+          >
+            No
+          </v-btn>
+        </template>
+      </v-snackbar>
       <v-card-text>
         <v-row align="center" justify="space-between">
-          <v-col cols="auto">
+          <v-col cols="8">
             <v-text-field
               v-if="newRoom || !rooms.length"
               label="Enter your Room name:"
@@ -102,6 +124,10 @@ export default {
   components: { firstTimeCard, speedDial },
 
   computed: {
+    openSnackbarText() {
+      return `Would like to open ${this.selectedRoom.room} now?`;
+    },
+
     connectedMessage() {
       return `you are connected. Open ${this.selectedRoom.room} below so Visitors can use LCT.`;
     },
@@ -141,6 +167,8 @@ export default {
       newRoom: false,
       selectedRoom: {},
       statusIcon: 'mdi-lan-disconnect',
+      openSnackbar: false,
+      timeout: 10000,
     };
   },
 
@@ -166,6 +194,7 @@ export default {
       State.changeRoomId(id);
       // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
+      this.openSnackbar = true;
     },
 
     disconnect(reason) {
@@ -173,6 +202,7 @@ export default {
 
       this.log(`Disconnect: ${reason}`, 'roomIdentityCard.vue');
     },
+
     //#region Other socket events
     error(reason) {
       this.log(`Error ${reason}`, 'roomIdentityCard.vue');
@@ -261,7 +291,9 @@ export default {
         };
         this.$socket.connect();
       } catch (error) {
-        console.error(error);
+        console.error('onRoomSelected():', error);
+        console.warn(`Disconnecting socket ${this.$socket.id}`);
+        this.$socket.disconnect();
       }
     },
 
@@ -324,6 +356,7 @@ export default {
 
     //#region  handlers for speedDial
     onOpen() {
+      this.openSnackbar = false;
       this.act('open');
     },
 
@@ -335,6 +368,7 @@ export default {
     // called by Open/Close Room button
     act(action) {
       const msg = {
+        id: this.selectedRoom.id,
         room: this.selectedRoom.room,
         message: this.closed ? 'Opened' : 'Closed',
         sentTime: new Date().toISOString(),
