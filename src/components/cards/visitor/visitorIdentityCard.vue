@@ -8,14 +8,14 @@
           ? 'connected. Pick an open Room below.'
           : 'disconnected. '
       }}
-      <v-btn
+      <!-- <v-btn
         v-if="$socket.disconnected"
         color="secondary lighten-2"
         class="black--text"
         small
         @click="onVisitorSelected"
         >Connect?</v-btn
-      >
+      > -->
     </v-card-subtitle>
     <v-card-text>
       <v-row class="child-flex" align="center" justify="space-between">
@@ -153,7 +153,7 @@ export default {
     connect() {
       // ignore any non-Visitor sockets
       if (!this.$socket.io.opts.query) {
-        this.$socket.disconnect();
+        //this.$socket.disconnect();
         return;
       }
       const { visitor, id, nsp } = this.$socket.io.opts.query;
