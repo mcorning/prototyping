@@ -13,7 +13,7 @@
 
       <v-card-text>
         <v-row align="center" justify="space-between">
-          <v-col cols="auto">
+          <v-col cols="8">
             <v-text-field
               v-if="newRoom || !rooms.length"
               label="Enter your Room name:"
@@ -32,7 +32,7 @@
               return-object
               single-line
               :prepend-icon="statusIcon"
-              @change="onRoomSelected"
+              @change="onRoomSelected()"
               :hint="hint()"
             ></v-select>
           </v-col>
@@ -261,7 +261,7 @@ export default {
         };
         this.$socket.connect();
       } catch (error) {
-        console.error(error);
+        console.warn(error);
       }
     },
 
