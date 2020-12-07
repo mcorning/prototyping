@@ -8,14 +8,6 @@
           ? 'connected. Pick an open Room below.'
           : 'disconnected. '
       }}
-      <!-- <v-btn
-        v-if="$socket.disconnected"
-        color="secondary lighten-2"
-        class="black--text"
-        small
-        @click="onVisitorSelected"
-        >Connect?</v-btn
-      > -->
     </v-card-subtitle>
     <v-card-text>
       <v-row class="child-flex" align="center" justify="space-between">
@@ -35,7 +27,7 @@
             item-text="visitor"
             item-value="id"
             label="Pick your nickname"
-            :hint="hint()"
+            :hint="hint"
             persistent-hint
             return-object
             single-line
@@ -134,12 +126,19 @@ export default {
       let v = Visitor.find(this.selectedVisitor?.id) || '';
       return v;
     },
+
+    isLctSocket() {
+      return this.$socket.io.opts.query ? true : false;
+    },
+    noVisitors() {
+      return this.visitors.length == 0;
+    },
   },
 
   data() {
     return {
-      mainIcon: 'mdi-account-outline',
       newVisitor: false,
+      mainIcon: 'mdi-account-outline',
       // used by onUpdateVisitor() below
       // but what does nsp mean for a Visitor
       // if a Visitor can visit Rooms in any available nsp?
@@ -153,7 +152,7 @@ export default {
     connect() {
       // ignore any non-Visitor sockets
       if (!this.$socket.io.opts.query) {
-        //this.$socket.disconnect();
+        this.$socket.disconnect();
         return;
       }
       const { visitor, id, nsp } = this.$socket.io.opts.query;
@@ -169,6 +168,7 @@ export default {
       // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
       this.$emit('visitor', this.selectedVisitor);
+      this.hint = this.selectedVisitor.id;
     },
 
     //#region Other connection events
@@ -210,9 +210,6 @@ export default {
   },
 
   methods: {
-    hint() {
-      return `ID: ${this.$socket.id || 'Disconnected'}`;
-    },
     onAddVisitor() {
       this.newVisitor = true;
     },
@@ -232,7 +229,6 @@ export default {
 
     // update IndexedDb and set values for selection
     onUpdateVisitor(newVal) {
-      this.newVisitor = false;
       console.assert(this.selectedVisitor, 'Missing selectedVisitor object.');
       this.selectedVisitor.visitor = newVal;
       this.selectedVisitor.id = base64id.generateId();
@@ -245,6 +241,7 @@ export default {
         .then((v) => {
           console.log('New Visitor:', v);
           this.onVisitorSelected();
+          this.newVisitor = false;
         })
         .catch((e) => console.log(e));
     },
@@ -263,6 +260,7 @@ export default {
           );
           this.$socket.disconnect();
         }
+
         this.log(`Connecting ${this.selectedVisitor.visitor} to Server...`);
 
         this.$socket.io.opts.query = {
@@ -271,8 +269,9 @@ export default {
           nsp: '',
         };
         this.$socket.connect();
+        // }
       } catch (error) {
-        console.warn(error);
+        console.info('onVisitorSelected:', error);
       }
     },
 
@@ -284,6 +283,7 @@ export default {
         this.onVisitorSelected();
       } else {
         this.selectedVisitor = { room: '', id: '' };
+        this.newVisitor = true;
       }
     },
   },
@@ -297,6 +297,8 @@ export default {
           if (allVisitors.length == 0) {
             console.log('self.selectedVisitor', self.selectedVisitor);
           }
+          this.$socket.disconnect();
+          this.newVisitor = this.noVisitors;
         });
       }
       if (!this.selectedVisitor) {

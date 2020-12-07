@@ -630,23 +630,6 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
         this.trace({ caption: 'ACK: exposeOpenRooms', msg: rooms });
       });
     },
-
-    // connectToServer() {
-    //   // if (
-    //   //   this.$socket.connected &&
-    //   //   this.$socket.io.opts &&
-    //   //   !this.$socket.io.opts.query &&
-    //   //   this.$socket.io.opts.query.id != this.enabled.visitor?.id
-    //   // ) {
-    //   //   this.$socket.disconnect();
-    //   // }
-    //   this.$socket.io.opts.query = {
-    //     visitor: this.enabled.visitor.visitor,
-    //     id: this.enabled.visitor.id,
-    //     nsp: this.enabled.visitor.nsp,
-    //   };
-    //   this.$socket.connect();
-    // },
   },
 
   // PWA support (see import above)
