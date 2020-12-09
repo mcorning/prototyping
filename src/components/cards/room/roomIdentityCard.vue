@@ -3,12 +3,8 @@
     <v-card>
       <v-card-title>Manage Your Rooms</v-card-title>
       <v-card-subtitle
-        >Currently,
-        {{
-          $socket.connected
-            ? connectedMessage
-            : 'you are disconnected. Open or create a Room below.'
-        }}
+        >Visitors can log in to open Rooms only. Manage your Room with the Home
+        button below.
       </v-card-subtitle>
 
       <v-card-text>
@@ -33,7 +29,8 @@
               single-line
               :prepend-icon="statusIcon"
               @change="onRoomSelected()"
-              :hint="hint()"
+              persistent-hint
+              :hint="hint"
             ></v-select>
           </v-col>
           <v-col cols="1" class="text-center">
@@ -72,7 +69,30 @@
         </v-row>
       </v-card-text>
     </v-card>
-
+    <v-snackbar
+      v-model="openSnackbar"
+      :timeout="timeout"
+      color="primary"
+      multi-line
+      vertical
+      centered
+    >
+      {{ feedbackMessage }}
+      <template v-slot:action="{ attrs }">
+        <v-btn
+          v-if="yesNoBtns"
+          color="white"
+          text
+          v-bind="attrs"
+          @click="onOpen"
+        >
+          Yes
+        </v-btn>
+        <v-btn color="white" text v-bind="attrs" @click="resetSnackbar">
+          {{ yesNoBtns ? 'No' : 'Close' }}
+        </v-btn>
+      </template>
+    </v-snackbar>
     <firstTimeCard v-if="firstTime" />
   </div>
 </template>
@@ -136,17 +156,28 @@ export default {
 
   data() {
     return {
+      timeout: 10000,
+      reconnected: false,
+      yesNoBtns: false,
+      openSnackbar: true,
+      feedbackMessage:
+        'Thanks for making us safer together using Local Contact Tracing...',
       closed: true,
       mainIcon: 'mdi-home-outline',
       newRoom: false,
       selectedRoom: {},
       statusIcon: 'mdi-lan-disconnect',
+      hint: '',
     };
   },
 
   sockets: {
     //#region socket.io reserved events
     connect() {
+      if (this.reconnected) {
+        this.log('Reconnected. No need to connect(). Returning');
+        return;
+      }
       // ignore any non-Room sockets
       if (!this.$socket.io.opts.query) {
         this.$socket.disconnect();
@@ -166,14 +197,18 @@ export default {
       State.changeRoomId(id);
       // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
+      this.hint = 'ID: ' + this.selectedRoom.id;
+      this.feedbackMessage = `Open ${room} now?`;
+      this.yesNoBtns = true;
+      this.openSnackbar = true;
+      this.timeout = -1;
     },
-
+    //#region Other reserved events
     disconnect(reason) {
       this.statusIcon = 'mdi-lan-disconnect';
 
       this.log(`Disconnect: ${reason}`, 'roomIdentityCard.vue');
     },
-    //#region Other socket events
     error(reason) {
       this.log(`Error ${reason}`, 'roomIdentityCard.vue');
     },
@@ -184,6 +219,12 @@ export default {
       this.log(`Connect_timeout ${reason}`, 'roomIdentityCard.vue');
     },
     reconnect(reason) {
+      this.reconnected = true;
+      this.feedbackMessage = 'Server has reconnected you automagically.';
+      this.yesNoBtns = false;
+      this.timeout = -1;
+      this.openSnackbar = true;
+
       console.group('onReconnect');
       console.warn(
         `[${getNow()}] ${printJson(
@@ -241,16 +282,19 @@ export default {
     //    otherwise i updates the query (including the open/closed state of the Room)
     onRoomSelected() {
       try {
+        this.reconnected = false;
         if (this.$socket.connected) {
           console.log(`${this.$socket.io.opts.query.room} is  connected`);
           if (this.$socket.io.opts.query.room == this.selectedRoom.room) {
+            // if client and server are in sync, no need for further actions
             return;
           }
           console.log(
-            `${this.selectedRoom.room} is not connected. Disconnecting ${this.$socket.io.opts.query.room}`
+            `This socket does not belong to ${this.selectedRoom.room}. Disconnecting ${this.$socket.io.opts.query.room}`
           );
           this.$socket.disconnect();
         }
+
         this.log(`Connecting ${this.selectedRoom.room} to Server...`);
 
         this.$socket.io.opts.query = {
@@ -324,11 +368,50 @@ export default {
 
     //#region  handlers for speedDial
     onOpen() {
-      this.act('open');
+      // this.act('open');
+      this.closed = false;
+      const msg = {
+        room: this.selectedRoom.room,
+        message: 'Opened',
+        sentTime: new Date().toISOString(),
+      };
+      // update Message entity
+      this.messages = msg;
+
+      const payload = {
+        event: 'openRoom',
+        message: msg,
+        ack: (ack) => {
+          this.alertColor = 'success';
+          this.alertMessage = ack.message;
+          this.alert = true;
+        },
+      };
+      this.emit(payload);
+      this.resetSnackbar();
     },
 
     onClose() {
-      this.act('close');
+      this.closed = true;
+      const msg = {
+        room: this.selectedRoom.room,
+        message: 'Closed',
+        sentTime: new Date().toISOString(),
+      };
+      // update Message entity
+      this.messages = msg;
+
+      const payload = {
+        event: 'closeRoom',
+        message: msg,
+        ack: (ack) => {
+          this.alertColor = 'success';
+          this.alertMessage = ack.message;
+          this.alert = true;
+        },
+      };
+      this.emit(payload);
+      this.resetSnackbar();
     },
     //#endregion
 
@@ -353,6 +436,7 @@ export default {
       };
       this.closed = action == 'close';
       this.emit(payload);
+      this.resetSnackbar();
     },
 
     emit(payload) {
@@ -367,11 +451,10 @@ export default {
         this.trace({ caption: `ACK: ${payload.event}:`, msg: ack });
         this.log(ack, 'ACKS');
       });
+      // tell Room to open the Visits expansion-bar
+      this.$emit('open');
     },
 
-    hint() {
-      return `ID: ${this.$socket.id}`;
-    },
     status() {
       let status = this.$socket.io.opts.query
         ? `${this.$socket.id} ${this.$socket.connected} ${JSON.stringify(
@@ -381,6 +464,12 @@ export default {
           )} `
         : 'No connected Room socket';
       return status;
+    },
+
+    resetSnackbar() {
+      this.yesNoBtns = false;
+      this.openSnackbar = false;
+      this.timeout = 10000;
     },
 
     findRoomWithId(id = this.selectedRoom?.id) {
@@ -405,8 +494,10 @@ export default {
       if (!newVal) {
         const self = this;
         Room.delete(oldVal.id).then((allRooms) => {
-          console.log('self.selectedRoom :>> ', self.selectedRoom);
-          console.log('Rooms after delete:', allRooms);
+          this.log(
+            `Deleted ${printJson(oldVal)} and disconnected ${this.$socket.id}`
+          );
+          this.$socket.disconnect(true);
           if (allRooms.length == 0) {
             console.log('self.selectedRoom', self.selectedRoom);
           }

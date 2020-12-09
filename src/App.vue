@@ -23,7 +23,7 @@
         >
       </v-row>
     </v-app-bar>
-    <!-- <v-snackbar
+    <v-snackbar
       centered
       :value="updateExists"
       :timeout="-1"
@@ -38,7 +38,7 @@
           Update
         </v-btn>
       </template>
-    </v-snackbar> -->
+    </v-snackbar>
     <v-main>
       <router-view></router-view>
     </v-main>
@@ -87,19 +87,8 @@
     <v-app-bar bottom dense app color="primary" dark>
       <v-row align="center" dense justify="space-between">
         <v-col class="text-left"
-          ><small>{{ socketUrl() }}</small></v-col
+          ><small>{{ socketUri }}</small></v-col
         >
-        {{ socketInfo }}
-        <!-- <v-col v-if="inDevelopment">
-          <v-select
-            v-model="route"
-            :items="routes"
-            dense
-            hide-details
-            color="primary darken=5"
-            dark
-          ></v-select
-        ></v-col> -->
         <v-col class="text-right">
           <small>V {{ build }} </small>
         </v-col>
@@ -109,7 +98,7 @@
 </template>
 
 <script>
-// import update from '@/mixins/update.js';
+import update from '@/mixins/update.js';
 
 export default {
   name: 'App',
@@ -127,7 +116,7 @@ export default {
   data: () => ({
     routes: ['room'],
     socketInfo: '',
-    // socketUrl: '',
+    socketUri: '',
     rating: 3,
     links: [
       {
@@ -150,26 +139,26 @@ export default {
       }
     },
   },
-  // sockets: {
-  //   // socket.io reserved events
-  //   connect() {
-  //     // wait until a real Room connection or Visitor connection shows up
-  //     if (this.$socket.io.opts.query) {
-  //       const { id, nsp } = this.$socket.io.opts.query;
-  //       this.socketInfo = `${id}`;
-  //       const uri = this.$socket.io.uri;
-  //       const url = uri.endsWith('/')
-  //         ? `${uri}${nsp ? nsp : ''}`
-  //         : `${uri}/${nsp ? nsp : ''}`;
-  //       this.socketUrl = url;
-  //     }
-  //   },
-  //   disconnect() {
-  //     this.socketUrl = `Disconnected`;
-  //   },
-  // },
+  sockets: {
+    // socket.io reserved events
+    connect() {
+      // wait until a real Room connection or Visitor connection shows up
+      if (this.$socket.io.opts.query) {
+        const { id, nsp } = this.$socket.io.opts.query;
+        this.socketInfo = `${id}`;
+        const uri = this.$socket.io.uri;
+        const url = uri.endsWith('/')
+          ? `${uri}${nsp ? nsp : ''}`
+          : `${uri}/${nsp ? nsp : ''}`;
+        this.socketUri = url;
+      }
+    },
+    disconnect() {
+      this.socketUri = `Disconnected`;
+    },
+  },
 
-  // mixins: [update],
+  mixins: [update],
 
   // watch: {
   //   route(val) {

@@ -4,29 +4,16 @@
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
 
-    <!-- PWA support 
-    see update mixin for details-->
-    <v-snackbar
-      top
-      :value="updateExists"
-      :timeout="-1"
-      color="primary"
-      vertical
-    >
-      An update is available for Rooms. This will not effect your data in local
-      storage.
-      <template v-slot:action="{ attrs }">
-        <v-btn color="white" text v-bind="attrs" @click="refreshApp">
-          Update
-        </v-btn>
-      </template>
-    </v-snackbar>
-
     <roomIntroCard />
 
-    <roomIdentityCard :log="log" :trace="trace" />
+    <roomIdentityCard :log="log" :trace="trace" @open="panel1 = 0" />
 
-    <v-expansion-panels v-if="messages.length">
+    <v-expansion-panels
+      v-if="messages.length"
+      v-model="panelState"
+      multiple
+      popout
+    >
       <v-expansion-panel>
         <v-expansion-panel-header color="secondary lighten-3">
           Visits
@@ -64,10 +51,6 @@ const { printJson, getNow } = helpers;
 
 import ErrorService from '@/Services/ErrorService';
 
-// PWA Support
-// see mixins: below
-import update from '@/mixins/update.js';
-
 import Message from '@/models/Message';
 import State from '@/models/State';
 
@@ -103,7 +86,12 @@ export default {
     // systemBarBottom,
     auditTrailCard,
   },
+
   computed: {
+    panelState() {
+      return [this.panel1, this.panel2];
+    },
+
     state: {
       get() {
         let s = State.query().first();
@@ -148,6 +136,8 @@ export default {
   },
 
   data: () => ({
+    panel1: 2,
+    panel2: 2,
     overlay: true,
 
     visitFormat: 'HH:mm on ddd, MMM DD',
@@ -402,9 +392,6 @@ export default {
 
     //#endregion
   },
-
-  // PWA support (see import above)
-  mixins: [update],
 
   async created() {},
 
