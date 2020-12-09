@@ -309,6 +309,8 @@ export default {
       // newVal is set to null when deleting a visitor
       if (!newVal) {
         Visitor.delete(oldVal.id);
+        this.log(`Deleted ${oldVal} and disconnected ${this.$socket.id}`);
+        this.$socket.disconnect(true);
         // deleting the last Visitor will leave Visitor entity null...
         if (!Visitor.exists()) {
           // ...so reinitialize it back in play wo we don't fail at onUpdateVisitor() above

@@ -80,8 +80,8 @@ export default {
     warningTypes() {
       return [
         'LCT warned me of possible exposure',
-        'I tested tested Positive for COVID',
-        'I was close to a Positive subject',
+        'I tested Positive for COVID',
+        'I was near a Positive subject',
         'I present COVID symptoms',
       ];
     },

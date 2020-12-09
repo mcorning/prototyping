@@ -23,7 +23,7 @@
         >
       </v-row>
     </v-app-bar>
-    <!-- <v-snackbar
+    <v-snackbar
       centered
       :value="updateExists"
       :timeout="-1"
@@ -38,7 +38,7 @@
           Update
         </v-btn>
       </template>
-    </v-snackbar> -->
+    </v-snackbar>
     <v-main>
       <router-view></router-view>
     </v-main>
@@ -87,9 +87,8 @@
     <v-app-bar bottom dense app color="primary" dark>
       <v-row align="center" dense justify="space-between">
         <v-col class="text-left"
-          ><small>{{ socketUrl() }}</small></v-col
+          ><small>{{ socketUri }}</small></v-col
         >
-        {{ socketInfo }}
         <!-- <v-col v-if="inDevelopment">
           <v-select
             v-model="route"
@@ -109,7 +108,7 @@
 </template>
 
 <script>
-// import update from '@/mixins/update.js';
+import update from '@/mixins/update.js';
 
 export default {
   name: 'App',
@@ -125,10 +124,10 @@ export default {
   },
 
   data: () => ({
+    socketUri: '',
     route: 'visitor',
     routes: ['visitor'],
     socketInfo: '',
-    // socketUrl: '',
     rating: 3,
     links: [
       {
@@ -138,8 +137,12 @@ export default {
     ],
   }),
 
-  methods: {
-    socketUrl() {
+  methods: {},
+
+  sockets: {
+    // socket.io reserved events
+    connect() {
+      // wait until a real Room connection or Visitor connection shows up
       if (this.$socket.io.opts.query) {
         const { id, nsp } = this.$socket.io.opts.query;
         this.socketInfo = `${id}`;
@@ -147,30 +150,15 @@ export default {
         const url = uri.endsWith('/')
           ? `${uri}${nsp ? nsp : ''}`
           : `${uri}/${nsp ? nsp : ''}`;
-        return url;
+        this.socketUri = url;
       }
     },
+    disconnect() {
+      this.socketUri = `Disconnected`;
+    },
   },
-  // sockets: {
-  //   // socket.io reserved events
-  //   connect() {
-  //     // wait until a real Room connection or Visitor connection shows up
-  //     if (this.$socket.io.opts.query) {
-  //       const { id, nsp } = this.$socket.io.opts.query;
-  //       this.socketInfo = `${id}`;
-  //       const uri = this.$socket.io.uri;
-  //       const url = uri.endsWith('/')
-  //         ? `${uri}${nsp ? nsp : ''}`
-  //         : `${uri}/${nsp ? nsp : ''}`;
-  //       this.socketUrl = url;
-  //     }
-  //   },
-  //   disconnect() {
-  //     this.socketUrl = `Disconnected`;
-  //   },
-  // },
 
-  // mixins: [update],
+  mixins: [update],
 
   // watch: {
   //   route(val) {

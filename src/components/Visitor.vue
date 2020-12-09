@@ -5,15 +5,6 @@
     </v-overlay>
 
     <diaryCard />
-    <!-- PWA support 
-        see update mixin 
-     note use of :value instead of v-model (because updateExists gets it value from the mixin -->
-    <!-- <v-snackbar top right :value="updateExists" :timeout="-1" color="primary">
-      An update is available for Visitors.
-      <v-btn text @click="refreshApp">
-        Update
-      </v-btn>
-    </v-snackbar> -->
 
     <!-- note use of v-model (because this snackbar will come and go, as necessary) -->
     <v-snackbar
@@ -95,7 +86,12 @@
         /></v-col>
       </v-row>
 
-      <v-expansion-panels v-if="messages.length">
+      <v-expansion-panels
+        v-if="messages.length"
+        v-model="panelState"
+        multiple
+        popout
+      >
         <v-expansion-panel>
           <v-expansion-panel-header color="secondary lighten-3">
             Visits
@@ -120,10 +116,6 @@
 
 <script>
 import base64id from 'base64id';
-
-// PWA Support
-// see mixins: below
-import update from '@/mixins/update.js';
 
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
@@ -173,6 +165,10 @@ export default {
     speedDial,
   },
   computed: {
+    panelState() {
+      return [this.panel1, this.panel2];
+    },
+
     showDetails() {
       return this.messages.length;
     },
@@ -261,26 +257,11 @@ export default {
         console.log(newVal);
       },
     },
-
-    userAgent() {
-      let ua = navigator.userAgent;
-      let userAgent;
-      if (ua.includes('Edg')) {
-        userAgent = 'Edge';
-      } else if (ua.includes('Chrome')) {
-        userAgent = 'Chrome';
-      } else if (ua.includes('Firefox/82')) {
-        userAgent = 'Firefox Dev';
-      } else if (ua.includes('Firefox') || ua.includes('KHTML')) {
-        userAgent = 'Firefox';
-      } else {
-        userAgent = 'Unknown';
-      }
-      return userAgent;
-    },
   },
 
   data: () => ({
+    panel1: 2,
+    panel2: 2,
     overlay: true,
     snackBar: true,
     connectionMessage: 'Provide a name to Connect to the Server.',
@@ -482,6 +463,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     },
 
     onRoomSelected(selectedRoom) {
+      this.panel1 = 0;
       this.enabled.room = selectedRoom;
       this.showEntryRoomCard = true;
       this.connectionMessage = null;
@@ -631,9 +613,6 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       });
     },
   },
-
-  // PWA support (see import above)
-  mixins: [update],
 
   //#endregion
   watch: {
