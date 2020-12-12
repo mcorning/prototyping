@@ -6,7 +6,7 @@
 
     <roomIntroCard />
 
-    <roomIdentityCard :log="log" :trace="trace" @open="panel1 = 0" />
+    <roomIdentityCard :log="log" :trace="trace" @open="onRoomSelected" />
 
     <v-expansion-panels
       v-if="messages.length"
@@ -88,10 +88,6 @@ export default {
   },
 
   computed: {
-    panelState() {
-      return [this.panel1, this.panel2];
-    },
-
     state: {
       get() {
         let s = State.query().first();
@@ -136,8 +132,7 @@ export default {
   },
 
   data: () => ({
-    panel1: 2,
-    panel2: 2,
+    panelState: [],
     overlay: true,
 
     visitFormat: 'HH:mm on ddd, MMM DD',
@@ -336,6 +331,10 @@ export default {
       this.messages = msg;
     },
 
+    onRoomSelected() {
+      this.panelState = [0, 2];
+    },
+
     groupMessagesByDateAndVisitor(payload) {
       const { array, prop, val, visitor } = payload;
       console.log('groupMessagesByDateAndVisitor - payload:');
@@ -400,7 +399,7 @@ export default {
     // await Room.$fetch();
     // await Visitor.$fetch();
     await State.$fetch();
-    console.log('Room.vue mounted');
+    // console.log('Room.vue mounted');
     this.overlay = false;
   },
 };

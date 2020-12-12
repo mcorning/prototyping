@@ -23,9 +23,9 @@ console.log(process.env.NODE_ENV);
 console.log(' ');
 Vue.use(
   new VueSocketIO({
-    debug: false,
+    debug: true,
     connection: url,
-    // each vue will create and open its own connection
+    // we assign a query with the id we generate so socket.io server will defer to that for the new socket.id
     autoConnect: false,
   })
 );

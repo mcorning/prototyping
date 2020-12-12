@@ -12,6 +12,7 @@ export default class State extends Model {
       managerId: this.string(''),
       organization: this.string(''),
       roomId: this.string(''),
+      roomClosed: this.boolean(true),
       visitorId: this.string(''),
       zipcode: this.string(''),
       namespace: this.string('/'),
@@ -34,9 +35,9 @@ export default class State extends Model {
     return p;
   }
 
-  static async changeRoomId(val) {
+  static async changeRoom(id, closed) {
     let p = await this.$update({
-      data: { id: 0, roomId: val },
+      data: { id: 0, roomId: id, roomClosed: closed },
     });
     return p;
   }
