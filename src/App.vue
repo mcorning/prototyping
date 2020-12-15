@@ -1,5 +1,7 @@
 <template>
   <v-app>
+    <pwa-install></pwa-install>
+
     <v-app-bar app color="primary" dense dark>
       <v-row align="center" justify="end" dense>
         <!-- <v-col cols="auto">
@@ -99,6 +101,7 @@
 
 <script>
 import update from '@/mixins/update.js';
+import '@pwabuilder/pwainstall';
 
 export default {
   name: 'App',

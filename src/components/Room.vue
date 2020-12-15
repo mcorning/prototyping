@@ -54,8 +54,8 @@ import ErrorService from '@/Services/ErrorService';
 import Message from '@/models/Message';
 import State from '@/models/State';
 
-import roomIntroCard from '@/components/cards/room/roomIntroCard';
-import roomIdentityCard from '@/components/cards/room/roomIdentityCard';
+import roomIntroCard from '@/components/cards/roomIntroCard';
+import roomIdentityCard from '@/components/cards/roomIdentityCard';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 

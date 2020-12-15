@@ -5,4 +5,7 @@ module.exports = {
   configureWebpack: {
     devtool: 'source-map',
   },
+  pwa: {
+    manifestOptions: { start_url: '/' },
+  },
 };
