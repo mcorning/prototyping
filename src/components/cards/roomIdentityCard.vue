@@ -202,8 +202,7 @@ export default {
 
       const { room, id, nsp, closed } = this.$socket.io.opts.query;
       console.group('onConnect');
-      const state = this.roomStateToText(closed);
-      console.log(`${room} is ${state}`);
+      console.log(`Connecting ${room}`);
       this.log(
         `Server connected using Id: ${id}, Room: ${room}, and nsp ${nsp} `,
         'roomIdentityCard.vue'
@@ -213,7 +212,7 @@ export default {
       State.changeRoom(id, closed);
       // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
-      this.hint = `ID: ${this.selectedRoom.id} is ${state}`;
+      this.hint = `ID: ${this.selectedRoom.id}`;
       this.feedbackMessage = `Open ${room} now?`;
       this.btnLabels = ['Yes', 'No'];
       this.openSnackbar = true;
@@ -418,6 +417,9 @@ export default {
       };
       this.emit(payload);
       this.resetSnackbar();
+      this.hint = `ID: ${this.selectedRoom.id} is ${
+        this.closed ? 'closed' : 'open'
+      }`;
       State.changeRoom(this.selectedRoom.id, this.closed);
     },
 
@@ -442,6 +444,10 @@ export default {
       };
       this.emit(payload);
       this.resetSnackbar();
+      this.hint = `ID: ${this.selectedRoom.id} is ${
+        this.closed ? 'closed' : 'open'
+      }`;
+      State.changeRoom(this.selectedRoom.id, this.closed);
     },
     //#endregion
 
