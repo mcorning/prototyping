@@ -48,8 +48,8 @@
                   @deleted="onDeleteVisitor()"
                 />
               </span>
-            </template>
             <span>Visitor Tasks</span>
+            </template>
           </v-tooltip> -->
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -121,7 +121,6 @@ export default {
       let allvisitors = Visitor.all();
       return allvisitors;
     },
-
     visitor() {
       let v = Visitor.find(this.selectedVisitor?.id) || '';
       return v;
@@ -137,6 +136,7 @@ export default {
 
   data() {
     return {
+      hint: '',
       newVisitor: false,
       mainIcon: 'mdi-account-outline',
       // used by onUpdateVisitor() below
@@ -155,6 +155,7 @@ export default {
         this.$socket.disconnect();
         return;
       }
+
       const { visitor, id, nsp } = this.$socket.io.opts.query;
       console.group('onConnect');
 

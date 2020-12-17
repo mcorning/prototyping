@@ -165,10 +165,6 @@ export default {
     speedDial,
   },
   computed: {
-    panelState() {
-      return [this.panel1, this.panel2];
-    },
-
     showDetails() {
       return this.messages.length;
     },
@@ -260,8 +256,8 @@ export default {
   },
 
   data: () => ({
-    panel1: 2,
-    panel2: 2,
+    panelState: [],
+
     overlay: true,
     snackBar: true,
     connectionMessage: 'Provide a name to Connect to the Server.',
@@ -463,7 +459,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     },
 
     onRoomSelected(selectedRoom) {
-      this.panel1 = 0;
+      this.panelState = [0, 2];
       this.enabled.room = selectedRoom;
       this.showEntryRoomCard = true;
       this.connectionMessage = null;
