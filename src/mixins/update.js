@@ -19,7 +19,7 @@ export default {
       if (this.refreshing) return;
       this.refreshing = true;
       // Here the actual reload of the page occurs
-      window.location.reload();
+      window.location.reload(true);
     });
   },
 
@@ -39,6 +39,17 @@ export default {
       if (!this.registration || !this.registration.waiting) return;
       // send message to SW to skip the waiting and activate the new SW
       this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    },
+    forceSWupdate() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then(function(registrations) {
+            for (let registration of registrations) {
+              registration.update();
+            }
+          });
+      }
     },
   },
 };
