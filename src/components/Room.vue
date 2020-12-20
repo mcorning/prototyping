@@ -396,8 +396,6 @@ export default {
 
   async mounted() {
     await Message.$fetch();
-    // await Room.$fetch();
-    // await Visitor.$fetch();
     await State.$fetch();
     // console.log('Room.vue mounted');
     this.overlay = false;

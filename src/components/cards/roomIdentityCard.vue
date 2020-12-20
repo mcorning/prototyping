@@ -30,23 +30,31 @@
               :prepend-icon="statusIcon"
               persistent-hint
               :hint="hint"
+              clearable
             ></v-select>
           </v-col>
-          <v-col cols="1" class="text-center">
+          <v-col cols="1">
             <v-tooltip bottom>
               <template v-slot:activator="{ on, attrs }">
-                <span v-bind="attrs" v-on="on" class="text-center">
-                  <speedDial
-                    :room="true"
-                    :mainIcon="mainIcon"
-                    @added="onAddRoom"
-                    @deleted="onDeleteRoom"
-                    @open="onOpen"
-                    @close="onClose"
-                  />
+                <span v-bind="attrs" v-on="on" class="text-center ">
+                  <v-fab-transition>
+                    <v-btn
+                      :disabled="buttonIsDisabled"
+                      :key="activeFab.icon"
+                      :color="activeFab.color"
+                      fab
+                      large
+                      bottom
+                      left
+                      class="v-btn--example"
+                      @click="act()"
+                    >
+                      <v-icon>{{ activeFab.icon }}</v-icon>
+                    </v-btn>
+                  </v-fab-transition>
                 </span>
               </template>
-              <span>Room Tasks</span>
+              <span>{{ activeFab.tip }}</span>
             </v-tooltip>
           </v-col>
           <v-spacer></v-spacer>
@@ -81,7 +89,7 @@
         <v-btn color="white" text v-bind="attrs" @click="onOpen()">
           {{ btnLabels[0] }}
         </v-btn>
-        <v-btn color="white" text v-bind="attrs" @click="resetSnackbar">
+        <v-btn color="white" text v-bind="attrs" @click="enableButton()">
           {{ btnLabels[1] }}
         </v-btn>
       </template>
@@ -97,7 +105,7 @@ import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
 import firstTimeCard from '@/components/cards/firstTimeCard';
-import speedDial from '@/components/cards/SpeedDial';
+// import speedDial from '@/components/cards/SpeedDial';
 
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
@@ -112,9 +120,28 @@ export default {
     },
   },
 
-  components: { firstTimeCard, speedDial },
+  components: {
+    firstTimeCard,
+    //  speedDial
+  },
 
   computed: {
+    buttonIsDisabled() {
+      return !this.selectedRoom.room || this.disableButton;
+    },
+
+    activeFab() {
+      if (this.closed) {
+        return { color: 'success', icon: 'mdi-door-open', tip: 'Open Room' };
+      } else {
+        return {
+          color: 'orange',
+          icon: 'mdi-door-closed-lock',
+          tip: 'Close Room',
+        };
+      }
+    },
+
     query() {
       return this.$socket.io.opts.query;
     },
@@ -160,6 +187,8 @@ export default {
 
   data() {
     return {
+      disableButton: true,
+
       timeout: 10000,
       reconnected: false,
       btnLabels: ['', 'Close'],
@@ -196,7 +225,6 @@ export default {
       // ignore any non-Room sockets
       if (!this.$socket.io.opts.query || this.$socket.io.opts.query.id == '') {
         this.$socket.disconnect(true);
-        console.log('ID:', this.$socket.id);
         return;
       }
 
@@ -277,6 +305,14 @@ export default {
   },
 
   methods: {
+    act() {
+      if (this.closed) {
+        this.onOpen();
+      } else {
+        this.onClose();
+      }
+    },
+
     roomStateToText(closed = this.closed) {
       return closed ? 'Closed' : 'Open';
     },
@@ -398,6 +434,7 @@ export default {
     onOpen() {
       const room = this.selectedRoom.room;
       this.closed = false;
+      this.enableButton();
       const msg = {
         room: room,
         message: 'Open',
@@ -422,9 +459,14 @@ export default {
       }`;
       State.changeRoom(this.selectedRoom.id, this.closed);
     },
-
+    enableButton() {
+      this.disableButton = false;
+      this.resetSnackbar();
+    },
     onClose(room = this.selectedRoom.room) {
       this.closed = true;
+      this.enableButton();
+
       const msg = {
         room: room,
         message: 'Closed',
@@ -519,6 +561,10 @@ export default {
           console.log('self.selectedRoom', self.selectedRoom);
         }
       });
+      // if we deleted the last saved Room, reset the v-model
+      if (!this.selectedRoom) {
+        this.selectedRoom = { room: '', id: '' };
+      }
     },
 
     findRoomWithId(id = this.selectedRoom?.id) {
@@ -564,10 +610,6 @@ export default {
 
       if (!newVal) {
         this.deleteRoom(oldVal);
-        // if we deleted the last saved Room, reset the v-model
-        if (!this.selectedRoom) {
-          this.selectedRoom = { room: '', id: '' };
-        }
         return;
       }
 

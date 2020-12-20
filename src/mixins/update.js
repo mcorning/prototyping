@@ -15,7 +15,7 @@ export default {
     });
 
     // Prevent multiple refreshes
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
+    navigator.serviceWorker?.addEventListener('controllerchange', () => {
       if (this.refreshing) return;
       this.refreshing = true;
       // Here the actual reload of the page occurs

@@ -5,11 +5,10 @@
     :right="right"
     :left="left"
     :direction="direction"
-    :open-on-hover="hover"
     :transition="transition"
   >
     <template v-slot:activator>
-      <v-btn v-model="fab" color="primary darken-2" dark fab>
+      <v-btn v-model="fab" color="primary darken-2" fab>
         <v-icon v-if="fab">
           mdi-close
         </v-icon>
@@ -18,12 +17,11 @@
         </v-icon>
       </v-btn>
     </template>
-
     <div v-if="room" class="text-center">
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <span v-bind="attrs" v-on="on" class="text-center pb-3">
-            <v-btn fab dark small color="green" @click="$emit('open')">
+            <v-btn fab :large="!closed" color="green" @click="isClosed(false)">
               <v-icon>mdi-door-open</v-icon>
             </v-btn>
           </span>
@@ -33,7 +31,7 @@
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <span v-bind="attrs" v-on="on" class="text-center pb-3">
-            <v-btn fab dark small color="orange" @click="$emit('close')">
+            <v-btn :large="closed" fab color="orange" @click="isClosed(true)">
               <v-icon>mdi-door-closed-lock</v-icon>
             </v-btn>
           </span>
@@ -41,12 +39,17 @@
         <span>Close Room</span>
       </v-tooltip>
     </div>
-    <v-btn fab dark small color="green" @click="$emit('added')">
-      <v-icon>mdi-plus</v-icon>
-    </v-btn>
-    <v-btn fab dark small color="orange" @click="$emit('deleted')">
-      <v-icon>mdi-delete</v-icon>
-    </v-btn>
+
+    <v-tooltip bottom>
+      <template v-slot:activator="{ on, attrs }">
+        <span v-bind="attrs" v-on="on" class="text-center pb-3">
+          <v-btn fab small color="red" @click="$emit('deleted')">
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+        </span>
+      </template>
+      <span>Delete Room</span>
+    </v-tooltip>
   </v-speed-dial>
 </template>
 
@@ -58,7 +61,9 @@ export default {
       type: String,
     },
   },
+  computed: {},
   data: () => ({
+    state: 'closed',
     direction: 'left',
     fab: false,
     hover: true,
@@ -69,5 +74,16 @@ export default {
     // transition: 'scale',
     transition: 'slide-y-reverse-transition',
   }),
+  methods: {
+    isClosed(closed) {
+      this.state = closed ? 'closed' : 'open';
+
+      if (closed) {
+        this.$emit('close');
+      } else {
+        this.$emit('open');
+      }
+    },
+  },
 };
 </script>

@@ -119,7 +119,7 @@ export default {
   data: () => ({
     routes: ['room'],
     socketInfo: '',
-    socketUri: '',
+    socketUri: 'Cannot connect to server.',
     rating: 3,
     links: [
       {
