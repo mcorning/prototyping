@@ -11,7 +11,7 @@
     </v-card-subtitle>
     <v-card-text>
       <v-row class="child-flex" align="center" justify="space-between">
-        <v-col cols="6">
+        <v-col cols="8">
           <v-text-field
             v-if="newVisitor"
             label="Enter your nickname:"
@@ -37,20 +37,7 @@
           >
           </v-select>
         </v-col>
-        <v-col class="text-center">
-          <!-- <v-tooltip bottom>
-            <template v-slot:activator="{ on, attrs }">
-              <span v-bind="attrs" v-on="on">
-                <speedDial
-                  :room="false"
-                  :mainIcon="mainIcon"
-                  @added="onAddVisitor()"
-                  @deleted="onDeleteVisitor()"
-                />
-              </span>
-            <span>Visitor Tasks</span>
-            </template>
-          </v-tooltip> -->
+        <v-col cols="4">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
               <span v-bind="attrs" v-on="on">
@@ -72,7 +59,7 @@
             <span>Delete Visitor</span>
           </v-tooltip>
         </v-col>
-        <v-spacer></v-spacer>
+        <!-- <v-spacer></v-spacer> -->
       </v-row>
       <v-row align="center" justify="space-between">
         <v-col v-if="$socket.connected" class="text-center ">
@@ -102,7 +89,9 @@ import Visitor from '@/models/Visitor';
 import State from '@/models/State';
 
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
-// import speedDial from '@/components/cards/SpeedDial';
+
+import helpers from '@/components/js/helpers.js';
+const { printJson, getNow } = helpers;
 
 export default {
   props: {
@@ -112,7 +101,6 @@ export default {
     },
   },
   components: {
-    // speedDial,
     warnRoomCard,
   },
   computed: {
@@ -136,6 +124,7 @@ export default {
 
   data() {
     return {
+      reconnected: false,
       hint: '',
       newVisitor: false,
       mainIcon: 'mdi-account-outline',
@@ -150,26 +139,63 @@ export default {
   sockets: {
     //#region socket.io reserved events
     connect() {
+      console.group('Step 0: connect()');
+      console.warn(
+        this.$socket.id,
+        this.$socket.connected,
+        this.$socket.io.opts
+      );
+
+      console.groupEnd();
+      console.log(' ');
+
+      if (this.reconnected) {
+        this.log('Reconnected. No need to connect(). Returning');
+        return;
+      }
+
       // ignore any non-Visitor sockets
-      if (!this.$socket.io.opts.query) {
-        this.$socket.disconnect();
+      if (!this.$socket.io.opts.query || this.$socket.io.opts.query.id == '') {
+        this.$socket.disconnect(true);
         return;
       }
 
       const { visitor, id, nsp } = this.$socket.io.opts.query;
       console.group('onConnect');
+      console.log(`Connecting ${visitor}`);
 
       this.log(
         `Server connected using Id: ${id}, Visitor: ${visitor}, and nsp ${nsp} `,
         'visitorIdentityCard.vue'
       );
       console.groupEnd();
+
       // cache last Room used
       State.changeVisitorId(id);
       // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
-      this.$emit('visitor', this.selectedVisitor);
       this.hint = this.selectedVisitor.id;
+      this.$emit('visitor', this.selectedVisitor);
+    },
+
+    reconnect(reason) {
+      console.group('onReconnect');
+      console.warn(
+        `[${getNow()}] ${printJson(
+          this.$socket.io.opts.query
+        )} Recconnect ${reason}`,
+        'visitorIdentityCard.vue'
+      );
+      const msg = {
+        visitor: this.$socket.io.opts.query.visitor,
+        message: 'Reconnected',
+        sentTime: new Date().toISOString(),
+      };
+      this.messages = msg;
+      this.log(`Reconnect ${reason}`, 'visitorIdentityCard.vue');
+      console.groupEnd();
+
+      this.onVisitorSelected();
     },
 
     //#region Other connection events
@@ -187,10 +213,7 @@ export default {
     connect_timeout(reason) {
       this.log(`Connect_timeout ${reason}`, 'Visitor.vue');
     },
-    reconnect(reason) {
-      this.log(`Recconnect ${reason}`, 'Visitor.vue');
-      this.onVisitorSelected();
-    },
+
     reconnect_attempt(reason) {
       this.log(`Reconnect_attempt ${reason}`, 'Visitor.vue');
     },
@@ -211,6 +234,24 @@ export default {
   },
 
   methods: {
+    deleteVisitor(visitor) {
+      const self = this;
+      Visitor.delete(visitor.id).then((allVisitors) => {
+        this.log(
+          `Deleted ${printJson(visitor)} and disconnected ${this.$socket.id}`
+        );
+        this.$socket.disconnect(true);
+        if (allVisitors.length == 0) {
+          console.log('self.selectedVisitor', self.selectedVisitor);
+        }
+      });
+      // if we deleted the last saved Room, reset the v-model
+      if (!this.selectedVisitor) {
+        this.selectedVisitor = { visitor: '', id: '' };
+      }
+      this.newVisitor = this.noVisitors;
+    },
+
     onAddVisitor() {
       this.newVisitor = true;
     },
@@ -248,12 +289,17 @@ export default {
     },
 
     onVisitorSelected() {
+      console.warn('Step 4: onVisitorSelected');
+
       try {
+        this.reconnected = false;
+
         if (this.$socket.connected) {
           console.log(`${this.$socket.io.opts.query.visitor} is  connected`);
           if (
             this.$socket.io.opts.query.visitor == this.selectedVisitor.visitor
           ) {
+            // if client and server are in sync, no need for further actions
             return;
           }
           console.log(
@@ -277,6 +323,8 @@ export default {
     },
 
     selectedVisitorInit() {
+      console.warn('Step 2: selectedVisitorInit');
+
       let id = State.find(0)?.visitorId;
       let v = this.findVisitorWithId(id);
       if (v) {
@@ -290,22 +338,27 @@ export default {
   },
   watch: {
     selectedVisitor(newVal, oldVal) {
+      console.group('Step 3: selectedRoom watch');
+      console.warn(
+        this.$socket.id,
+        this.$socket.connected,
+        this.$socket.io.opts
+      );
+      console.groupEnd();
+      console.log(' ');
+
       if (!newVal) {
-        const self = this;
-        Visitor.delete(oldVal.id).then((allVisitors) => {
-          console.log('self.selectedVisitor :>> ', self.selectedVisitor);
-          console.log('Visitors after delete:', allVisitors);
-          if (allVisitors.length == 0) {
-            console.log('self.selectedVisitor', self.selectedVisitor);
-          }
-          this.$socket.disconnect();
-          this.newVisitor = this.noVisitors;
-        });
+        this.deleteVisitor(oldVal);
+        return;
       }
+
       if (!this.selectedVisitor) {
         this.selectedVisitor = { visitor: '', id: '' };
       }
+
+      this.onVisitorSelected();
     },
+
     selectedVisitorOrig(newVal, oldVal) {
       // newVal is set to null when deleting a visitor
       if (!newVal) {
@@ -321,9 +374,22 @@ export default {
       }
     },
   },
+
+  created() {
+    console.group('Step -1: created()');
+    console.warn(this.$socket.id, this.$socket.connected, this.$socket.io.opts);
+    console.groupEnd();
+    console.log(' ');
+  },
+
   async mounted() {
     await State.$fetch();
     await Visitor.$fetch();
+
+    console.group('Step 1: mounted()');
+    console.warn(this.$socket.id, this.$socket.connected, this.$socket.io.opts);
+    console.groupEnd();
+    console.log(' ');
     this.selectedVisitorInit();
   },
 };

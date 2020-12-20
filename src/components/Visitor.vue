@@ -79,6 +79,7 @@
       <v-row v-if="showEntryRoomCard">
         <v-col>
           <roomEntryCard
+            ref="button"
             :roomName="roomName"
             :log="log"
             :occupancy="occupancy"
@@ -93,7 +94,7 @@
         popout
       >
         <v-expansion-panel>
-          <v-expansion-panel-header color="secondary lighten-3">
+          <v-expansion-panel-header color="secondary lighten-3" ref="visits">
             Visits
           </v-expansion-panel-header>
           <v-expansion-panel-content>
@@ -117,6 +118,8 @@
 <script>
 import base64id from 'base64id';
 
+import * as easings from 'vuetify/es5/services/goto/easing-patterns';
+
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
 
@@ -133,8 +136,6 @@ import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
-
-import speedDial from '@/components/cards/SpeedDial';
 
 import clc from 'cli-color';
 // const success = clc.green.bold;
@@ -162,7 +163,6 @@ export default {
     roomEntryCard,
     dataTableCard,
     auditTrailCard,
-    speedDial,
   },
   computed: {
     showDetails() {
@@ -256,6 +256,9 @@ export default {
   },
 
   data: () => ({
+    easing: 'easeInOutCubic',
+    easings: Object.keys(easings),
+
     panelState: [],
 
     overlay: true,
@@ -438,6 +441,14 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       };
       this.messages = msg;
 
+      if (this.$refs.visits) {
+        this.$vuetify.goTo(this.$refs.visits, {
+          duration: 300,
+          offset: 0,
+          easing: this.easing,
+        });
+      }
+
       let event = checkedOut ? 'enterRoom' : 'leaveRoom';
 
       this.emit({
@@ -463,6 +474,13 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       this.enabled.room = selectedRoom;
       this.showEntryRoomCard = true;
       this.connectionMessage = null;
+      if (this.$refs.visits) {
+        this.$vuetify.goTo(this.$refs.button, {
+          duration: 300,
+          offset: 0,
+          easing: this.easing,
+        });
+      }
       console.log(printJson(this.enabled.room));
     },
 

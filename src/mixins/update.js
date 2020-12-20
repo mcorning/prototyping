@@ -15,11 +15,13 @@ export default {
     });
 
     // Prevent multiple refreshes
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
+    navigator.serviceWorker?.addEventListener('controllerchange', () => {
+      console.log('Refreshing...');
       if (this.refreshing) return;
       this.refreshing = true;
       // Here the actual HARD reload of the page occurs
       window.location.reload(true);
+      console.log('...refreshed');
     });
   },
 

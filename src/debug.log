@@ -142,3 +142,28 @@
 [1210/141542.464:ERROR:crash_report_database_win.cc(496)] failed to stat report
 [1210/141542.465:ERROR:crash_report_database_win.cc(496)] failed to stat report
 [1210/141542.465:ERROR:crash_report_database_win.cc(496)] failed to stat report
+[1218/161635.255:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1218/194317.438:ERROR:process_info.cc(118)] ReadProcessMemory bool __cdecl crashpad::(anonymous namespace)::ReadStruct(HANDLE, crashpad::WinVMAddress, T *) [T = crashpad::process_types::LDR_DATA_TABLE_ENTRY<crashpad::process_types::internal::Traits64>]: Only part of a ReadProcessMemory or WriteProcessMemory request was completed. (0x12B)
+[1218/194317.447:ERROR:process_info.cc(118)] ReadProcessMemory bool __cdecl crashpad::(anonymous namespace)::ReadStruct(HANDLE, crashpad::WinVMAddress, T *) [T = crashpad::process_types::LDR_DATA_TABLE_ENTRY<crashpad::process_types::internal::Traits64>]: Only part of a ReadProcessMemory or WriteProcessMemory request was completed. (0x12B)
+[1218/194317.476:ERROR:process_memory_win.cc(73)] ReadMemory at 0x420040 of 132 bytes failed: Only part of a ReadProcessMemory or WriteProcessMemory request was completed. (0x12B)
+[1218/194317.478:ERROR:process_memory_win.cc(73)] ReadMemory at 0x1a0008 of 132 bytes failed: Only part of a ReadProcessMemory or WriteProcessMemory request was completed. (0x12B)
+[1218/194317.479:ERROR:process_memory_win.cc(73)] ReadMemory at 0x6000ca2ac of 132 bytes failed: Only part of a ReadProcessMemory or WriteProcessMemory request was completed. (0x12B)
+[1218/194317.487:WARNING:process_subrange_reader.cc(81)] attempt to read outside of  range 0x18901fe1310 + 0x0 (64) at range 0x18901fe1310 + 0x40 (64)
+[1218/194317.487:WARNING:pe_image_reader.cc(340)] could not read dos header from 
+[1218/194317.487:WARNING:process_subrange_reader.cc(81)] attempt to read outside of  range 0x18901fe1310 + 0x0 (64) at range 0x18901fe1310 + 0x40 (64)
+[1218/194317.487:WARNING:pe_image_reader.cc(340)] could not read dos header from 
+[1218/194317.498:WARNING:process_subrange_reader.cc(81)] attempt to read outside of  range 0x18901fe1310 + 0x0 (64) at range 0x18901fe1310 + 0x40 (64)
+[1218/194317.498:WARNING:pe_image_reader.cc(340)] could not read dos header from 
+[1218/194317.505:WARNING:process_subrange_reader.cc(81)] attempt to read outside of  range 0x18901fe1310 + 0x0 (64) at range 0x18901fe1310 + 0x40 (64)
+[1218/194317.505:WARNING:pe_image_reader.cc(340)] could not read dos header from 
+[1218/194317.505:WARNING:process_subrange_reader.cc(81)] attempt to read outside of  range 0x18901fe1310 + 0x0 (64) at range 0x18901fe1310 + 0x40 (64)
+[1218/194317.505:WARNING:pe_image_reader.cc(340)] could not read dos header from 
+[1218/194318.164:WARNING:process_subrange_reader.cc(81)] attempt to read outside of  range 0x18901fe1310 + 0x0 (64) at range 0x18901fe1310 + 0x40 (64)
+[1218/194318.164:WARNING:pe_image_reader.cc(340)] could not read dos header from 
+[1218/194318.172:WARNING:process_subrange_reader.cc(81)] attempt to read outside of  range 0x18901fe1310 + 0x0 (64) at range 0x18901fe1310 + 0x40 (64)
+[1218/194318.172:WARNING:pe_image_reader.cc(340)] could not read dos header from 
+[1218/194318.175:WARNING:process_subrange_reader.cc(81)] attempt to read outside of  range 0x18901fe1310 + 0x0 (64) at range 0x18901fe1310 + 0x40 (64)
+[1218/194318.175:WARNING:pe_image_reader.cc(340)] could not read dos header from 
+[1219/123500.116:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1219/125128.227:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[1220/114233.346:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)

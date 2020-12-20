@@ -5,7 +5,6 @@
     :right="right"
     :left="left"
     :direction="direction"
-    :open-on-hover="hover"
     :transition="transition"
   >
     <template v-slot:activator>
