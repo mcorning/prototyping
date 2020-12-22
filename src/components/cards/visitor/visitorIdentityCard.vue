@@ -33,7 +33,7 @@
             single-line
             autofocus
             :prepend-icon="statusIcon"
-            @change="onVisitorSelected()"
+            @change="onVisitorSelected('select')"
           >
           </v-select>
         </v-col>
@@ -93,6 +93,15 @@ import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
 
+import clc from 'cli-color';
+// const success = clc.green.bold;
+// const error = clc.red.bold;
+// const warn = clc.yellow;
+// const info = clc.cyan;
+// const notice = clc.blue;
+const highlight = clc.magenta;
+// const bold = clc.bold;
+
 export default {
   props: {
     log: {
@@ -140,10 +149,8 @@ export default {
     //#region socket.io reserved events
     connect() {
       console.group('Step 0: connect()');
-      console.warn(
-        this.$socket.id,
-        this.$socket.connected,
-        this.$socket.io.opts
+      console.log(
+        highlight(this.$socket.id, this.$socket.connected, this.$socket.io.opts)
       );
 
       console.groupEnd();
@@ -180,11 +187,13 @@ export default {
 
     reconnect(reason) {
       console.group('onReconnect');
-      console.warn(
-        `[${getNow()}] ${printJson(
-          this.$socket.io.opts.query
-        )} Recconnect ${reason}`,
-        'visitorIdentityCard.vue'
+      console.log(
+        highlight(
+          `[${getNow()}] ${printJson(
+            this.$socket.io.opts.query
+          )} Recconnect ${reason}`,
+          'visitorIdentityCard.vue'
+        )
       );
       const msg = {
         visitor: this.$socket.io.opts.query.visitor,
@@ -195,7 +204,7 @@ export default {
       this.log(`Reconnect ${reason}`, 'visitorIdentityCard.vue');
       console.groupEnd();
 
-      this.onVisitorSelected();
+      this.onVisitorSelected('reconnect');
     },
 
     //#region Other connection events
@@ -282,28 +291,30 @@ export default {
       )
         .then((v) => {
           console.log('New Visitor:', v);
-          this.onVisitorSelected();
+          this.onVisitorSelected('updateVisitor');
           this.newVisitor = false;
         })
         .catch((e) => console.log(e));
     },
 
-    onVisitorSelected() {
-      console.warn('Step 4: onVisitorSelected');
+    onVisitorSelected(caller) {
+      console.log(highlight(`Step 4: onVisitorSelected ${caller}`));
 
       try {
         this.reconnected = false;
 
         if (this.$socket.connected) {
           console.log(`${this.$socket.io.opts.query.visitor} is  connected`);
+          // is this a newly selected visitor?
           if (
             this.$socket.io.opts.query.visitor == this.selectedVisitor.visitor
           ) {
             // if client and server are in sync, no need for further actions
             return;
           }
+
           console.log(
-            `${this.selectedVisitor.visitor} is not connected. Disconnecting ${this.$socket.io.opts.query.visitor}`
+            `${this.selectedVisitor.visitor} is not connected yet. Disconnecting previous Visitor, ${this.$socket.io.opts.query.visitor}`
           );
           this.$socket.disconnect();
         }
@@ -315,21 +326,22 @@ export default {
           id: this.selectedVisitor.id,
           nsp: '',
         };
+
         this.$socket.connect();
-        // }
       } catch (error) {
-        console.info('onVisitorSelected:', error);
+        console.error('onVisitorSelected:', error);
       }
     },
 
     selectedVisitorInit() {
-      console.warn('Step 2: selectedVisitorInit');
+      console.log(highlight('Step 2: selectedVisitorInit'));
 
       let id = State.find(0)?.visitorId;
       let v = this.findVisitorWithId(id);
       if (v) {
+        // setting selectedVisitor will trigger watch that calls onVisitorSelected that connects to Server
+
         this.selectedVisitor = v;
-        this.onVisitorSelected();
       } else {
         this.selectedVisitor = { room: '', id: '' };
         this.newVisitor = true;
@@ -339,10 +351,8 @@ export default {
   watch: {
     selectedVisitor(newVal, oldVal) {
       console.group('Step 3: selectedRoom watch');
-      console.warn(
-        this.$socket.id,
-        this.$socket.connected,
-        this.$socket.io.opts
+      console.log(
+        highlight(this.$socket.id, this.$socket.connected, this.$socket.io.opts)
       );
       console.groupEnd();
       console.log(' ');
@@ -356,28 +366,15 @@ export default {
         this.selectedVisitor = { visitor: '', id: '' };
       }
 
-      this.onVisitorSelected();
-    },
-
-    selectedVisitorOrig(newVal, oldVal) {
-      // newVal is set to null when deleting a visitor
-      if (!newVal) {
-        Visitor.delete(oldVal.id);
-        this.log(`Deleted ${oldVal} and disconnected ${this.$socket.id}`);
-        this.$socket.disconnect(true);
-        // deleting the last Visitor will leave Visitor entity null...
-        if (!Visitor.exists()) {
-          // ...so reinitialize it back in play wo we don't fail at onUpdateVisitor() above
-          this.selectedVisitor = { visitor: '', id: '' };
-          return;
-        }
-      }
+      this.onVisitorSelected('watch');
     },
   },
 
   created() {
     console.group('Step -1: created()');
-    console.warn(this.$socket.id, this.$socket.connected, this.$socket.io.opts);
+    console.log(
+      highlight(this.$socket.id, this.$socket.connected, this.$socket.io.opts)
+    );
     console.groupEnd();
     console.log(' ');
   },
@@ -387,7 +384,9 @@ export default {
     await Visitor.$fetch();
 
     console.group('Step 1: mounted()');
-    console.warn(this.$socket.id, this.$socket.connected, this.$socket.io.opts);
+    console.log(
+      highlight(this.$socket.id, this.$socket.connected, this.$socket.io.opts)
+    );
     console.groupEnd();
     console.log(' ');
     this.selectedVisitorInit();
