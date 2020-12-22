@@ -3,7 +3,7 @@
     <v-card>
       <v-card-title>Manage Your Rooms</v-card-title>
       <v-card-subtitle
-        >Visitors can log in to open Rooms only. Manage your Room with the Home
+        >Visitors can log in to open Rooms only. Toggle Room Open/Close using
         button below.
       </v-card-subtitle>
 
@@ -109,6 +109,15 @@ import firstTimeCard from '@/components/cards/firstTimeCard';
 
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
+
+import clc from 'cli-color';
+// const success = clc.green.bold;
+// const error = clc.red.bold;
+// const warn = clc.yellow;
+// const info = clc.cyan;
+// const notice = clc.blue;
+const highlight = clc.magenta;
+// const bold = clc.bold;
 
 export default {
   props: {
@@ -337,28 +346,31 @@ export default {
     // onRoomSelected called by:
     //    onUpdateRoom() when user adds a Room
     //    selectedRoomInit() method called by mounted()
-    //    and when the Room changes
+    //    NOTE: build 12.21.12.21 deprecated multiple Room support
     //
     // onRoomSelected() handles connection options.
     //    it ignores connect() when the connected Room tries to connect again (for what ever reason)
     //    if the selectedRoom changes, it disconnects the old Room and connects the new Room
-    //    otherwise i updates the query (including the open/closed state of the Room)
-    onRoomSelected() {
-      console.warn('Step 4: onRoomSelected');
+    //    otherwise it updates the query (including the open/closed state of the Room) and conects to Server
+    onRoomSelected(caller) {
+      console.log(highlight(`Step 4: onRoomSelected ${caller}`));
 
       try {
         this.reconnected = false;
+
         if (this.$socket.connected) {
           console.log(`${this.$socket.io.opts.query.room} is  connected`);
           if (this.$socket.io.opts.query.room == this.selectedRoom.room) {
             // if client and server are in sync, no need for further actions
             return;
           }
+
           console.log(
             `This socket does not belong to ${this.selectedRoom.room}. Disconnecting ${this.$socket.io.opts.query.room}`
           );
           this.$socket.disconnect();
         }
+
         this.log(`Connecting ${this.selectedRoom.room} to Server...`);
 
         this.$socket.io.opts.query = {
@@ -367,9 +379,10 @@ export default {
           closed: this.state?.roomClosed,
           nsp: '',
         };
+
         this.$socket.connect();
       } catch (error) {
-        console.warn(error);
+        console.error('onRoomSelected:', error);
       }
     },
 
@@ -578,8 +591,8 @@ export default {
       let id = State.find(0)?.roomId;
       let r = this.findRoomWithId(id);
       if (r) {
+        // setting selectedRoom will trigger watch that calls onRoomSelected that connects to Server
         this.selectedRoom = r;
-        this.onRoomSelected();
       } else {
         this.selectedRoom = { room: '', id: '', closed: true };
       }

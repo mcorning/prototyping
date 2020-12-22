@@ -67,6 +67,7 @@ import clc from 'cli-color';
 // const notice = clc.blue;
 const highlight = clc.magenta;
 const bold = clc.bold;
+
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
   console.log(error.stack);
