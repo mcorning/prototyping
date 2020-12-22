@@ -33,10 +33,11 @@
             single-line
             autofocus
             :prepend-icon="statusIcon"
-            @change="onVisitorSelected('select')"
           >
+            <!-- @change="onVisitorSelected('select')" -->
           </v-select>
         </v-col>
+
         <v-col cols="4">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -59,7 +60,41 @@
             <span>Delete Visitor</span>
           </v-tooltip>
         </v-col>
-        <!-- <v-spacer></v-spacer> -->
+        <v-col v-if="$socket.disconnected">
+          <v-dialog v-model="dialog" max-width="340">
+            <v-card>
+              <v-card-title class="headline"
+                >Connect {{ defaultVisitor }} to LCT?</v-card-title
+              >
+              <v-card-subtitle
+                >[Connect later] to use another Visitor alias</v-card-subtitle
+              >
+              <v-card-subtitle>
+                <template>
+                  Before you can select an open Room, you must
+                  <ul>
+                    <li>have internet access</li>
+                    <li>
+                      establish a connection to the server
+                    </li>
+                  </ul>
+                </template>
+              </v-card-subtitle>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+
+                <v-btn color="green darken-1" text @click="connectToServer()">
+                  Connect now
+                </v-btn>
+
+                <v-btn color="green darken-2" text @click="dialog = false">
+                  Connect later
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </v-col>
       </v-row>
       <v-row align="center" justify="space-between">
         <v-col v-if="$socket.connected" class="text-center ">
@@ -122,6 +157,10 @@ export default {
       let v = Visitor.find(this.selectedVisitor?.id) || '';
       return v;
     },
+    defaultVisitor() {
+      let v = Visitor.find(this.selectedVisitor?.id)?.visitor || '';
+      return v;
+    },
 
     isLctSocket() {
       return this.$socket.io.opts.query ? true : false;
@@ -133,22 +172,21 @@ export default {
 
   data() {
     return {
+      dialog: false,
+      deferConnection: false,
       reconnected: false,
       hint: '',
       newVisitor: false,
       mainIcon: 'mdi-account-outline',
-      // used by onUpdateVisitor() below
-      // but what does nsp mean for a Visitor
-      // if a Visitor can visit Rooms in any available nsp?
-      nsp: '',
-      selectedVisitor: this.parentSelectedVisitor,
       statusIcon: 'mdi-lan-disconnect',
+      nsp: '',
+      selectedVisitor: {},
     };
   },
   sockets: {
     //#region socket.io reserved events
     connect() {
-      console.group('Step 0: connect()');
+      console.group('Step 0: connect() at', Date.now());
       console.log(
         highlight(this.$socket.id, this.$socket.connected, this.$socket.io.opts)
       );
@@ -163,6 +201,11 @@ export default {
 
       // ignore any non-Visitor sockets
       if (!this.$socket.io.opts.query || this.$socket.io.opts.query.id == '') {
+        console.log(
+          highlight(
+            `Inside connect(), but disconnecting non-LCT socket ${this.$socket.idt}`
+          )
+        );
         this.$socket.disconnect(true);
         return;
       }
@@ -243,6 +286,17 @@ export default {
   },
 
   methods: {
+    connectToServer() {
+      this.dialog = false;
+      this.$socket.io.opts.query = {
+        visitor: this.selectedVisitor.visitor,
+        id: this.selectedVisitor.id,
+        nsp: '',
+      };
+
+      this.$socket.connect();
+    },
+
     deleteVisitor(visitor) {
       const self = this;
       Visitor.delete(visitor.id).then((allVisitors) => {
@@ -328,6 +382,10 @@ export default {
         };
 
         this.$socket.connect();
+        console.log(
+          'Called connect(). Leaving onVisitorSelected() at ',
+          Date.now()
+        );
       } catch (error) {
         console.error('onVisitorSelected:', error);
       }
@@ -340,12 +398,12 @@ export default {
       let v = this.findVisitorWithId(id);
       if (v) {
         // setting selectedVisitor will trigger watch that calls onVisitorSelected that connects to Server
-
         this.selectedVisitor = v;
       } else {
         this.selectedVisitor = { room: '', id: '' };
         this.newVisitor = true;
       }
+      this.dialog = this.$socket.disconnected;
     },
   },
   watch: {

@@ -89,16 +89,7 @@
         <v-col class="text-left"
           ><small>{{ socketUri }}</small></v-col
         >
-        <!-- <v-col v-if="inDevelopment">
-          <v-select
-            v-model="route"
-            :items="routes"
-            dense
-            hide-details
-            color="primary darken=5"
-            dark
-          ></v-select
-        ></v-col> -->
+        <v-col class="text-center"> </v-col>
         <v-col class="text-right">
           <small>V {{ build }} </small>
         </v-col>

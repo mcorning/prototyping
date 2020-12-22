@@ -30,12 +30,15 @@ export default {
     // We use `updateExists` to control whatever alert, toast, dialog, etc we want to use
     // To alert the user there is an update they need to refresh for
     updateAvailable(event) {
+      console.log('Inside updateAvailable(): updateExists==true');
+      console.log('event:', event);
       this.registration = event.detail;
       this.updateExists = true;
     },
 
     // Called when the user accepts the update
     refreshApp() {
+      console.log('Inside refreshApp()');
       this.updateExists = false;
       // Make sure we only send a 'skip waiting' message if the SW is waiting
       if (!this.registration || !this.registration.waiting) return;
