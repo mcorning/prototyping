@@ -57,22 +57,41 @@
               <span>{{ activeFab.tip }}</span>
             </v-tooltip>
           </v-col>
-          <v-spacer></v-spacer>
-          <!-- <v-col class="col-md-4 pl-10">
-            <div v-if="selectedRoom.id" class="text-center">
-              <v-btn
-                :color="closed ? 'success' : 'warning'"
-                fab
-                dark
-                @click="act"
-              >
-                <v-icon>{{ btnType }}</v-icon>
-              </v-btn>
-              <span class="pl-3">
-                {{ closed ? 'Open Room' : 'Close Room' }}
-              </span>
-            </div>
-          </v-col> -->
+          <v-col v-if="$socket.disconnected">
+            <v-dialog v-model="dialog" max-width="340">
+              <v-card>
+                <v-card-title class="headline"
+                  >Connect {{ defaultVisitor }} to LCT?</v-card-title
+                >
+                <v-card-subtitle
+                  >[Connect later] to use another Visitor alias</v-card-subtitle
+                >
+                <v-card-subtitle>
+                  <template>
+                    Before you can select an open Room, you must
+                    <ul>
+                      <li>have internet access</li>
+                      <li>
+                        establish a connection to the server
+                      </li>
+                    </ul>
+                  </template>
+                </v-card-subtitle>
+
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+
+                  <v-btn color="green darken-1" text @click="connectToServer()">
+                    Connect now
+                  </v-btn>
+
+                  <v-btn color="green darken-2" text @click="dialog = false">
+                    Connect later
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+          </v-col>
         </v-row>
       </v-card-text>
     </v-card>
@@ -196,6 +215,8 @@ export default {
 
   data() {
     return {
+      dialog: false,
+
       disableButton: true,
 
       timeout: 10000,
@@ -314,6 +335,18 @@ export default {
   },
 
   methods: {
+    connectToServer() {
+      this.dialog = false;
+      this.$socket.io.opts.query = {
+        room: this.selectedRoom.room,
+        id: this.selectedRoom.id,
+        nsp: '',
+        closed: this.state?.roomClosed,
+      };
+
+      this.$socket.connect();
+    },
+
     act() {
       if (this.closed) {
         this.onOpen();
@@ -596,6 +629,7 @@ export default {
       } else {
         this.selectedRoom = { room: '', id: '', closed: true };
       }
+      this.dialog = this.$socket.disconnected;
     },
   },
 

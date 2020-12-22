@@ -1,6 +1,6 @@
 {
   "name": "lct.room",
-  "version": "12.21.12.22",
+  "version": "112.21.21.12",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
