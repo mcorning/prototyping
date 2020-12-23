@@ -1,5 +1,40 @@
 <template>
   <div>
+    <!-- dialog: {{ dialog }} connected: {{ $socket.connected }} status:
+    {{ socketStatus }} -->
+    <v-dialog v-model="dialog" max-width="340">
+      <v-card>
+        <v-card-title class="headline"
+          >Connect {{ visitorName }} to LCT?</v-card-title
+        >
+        <v-card-subtitle
+          >[Connect later] to use another Visitor alias</v-card-subtitle
+        >
+        <v-card-subtitle>
+          <template>
+            Before you can select an open Room, you must
+            <ul>
+              <li>have internet access</li>
+              <li>
+                establish a connection to the server
+              </li>
+            </ul>
+          </template>
+        </v-card-subtitle>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+
+          <v-btn color="green darken-1" text @click="connectToServer()">
+            Connect now
+          </v-btn>
+
+          <v-btn color="green darken-2" text @click="dialog = false">
+            Connect later
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-card>
       <v-card-title>Manage Your Rooms</v-card-title>
       <v-card-subtitle
@@ -57,44 +92,11 @@
               <span>{{ activeFab.tip }}</span>
             </v-tooltip>
           </v-col>
-          <v-col v-if="$socket.disconnected">
-            <v-dialog v-model="dialog" max-width="340">
-              <v-card>
-                <v-card-title class="headline"
-                  >Connect {{ defaultVisitor }} to LCT?</v-card-title
-                >
-                <v-card-subtitle
-                  >[Connect later] to use another Visitor alias</v-card-subtitle
-                >
-                <v-card-subtitle>
-                  <template>
-                    Before you can select an open Room, you must
-                    <ul>
-                      <li>have internet access</li>
-                      <li>
-                        establish a connection to the server
-                      </li>
-                    </ul>
-                  </template>
-                </v-card-subtitle>
-
-                <v-card-actions>
-                  <v-spacer></v-spacer>
-
-                  <v-btn color="green darken-1" text @click="connectToServer()">
-                    Connect now
-                  </v-btn>
-
-                  <v-btn color="green darken-2" text @click="dialog = false">
-                    Connect later
-                  </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-          </v-col>
+          <v-spacer></v-spacer>
         </v-row>
       </v-card-text>
     </v-card>
+
     <v-snackbar
       v-model="openSnackbar"
       :timeout="timeout"
@@ -131,7 +133,7 @@ const { printJson, getNow } = helpers;
 
 import clc from 'cli-color';
 // const success = clc.green.bold;
-// const error = clc.red.bold;
+const error = clc.red.bold;
 // const warn = clc.yellow;
 // const info = clc.cyan;
 // const notice = clc.blue;
@@ -154,6 +156,14 @@ export default {
   },
 
   computed: {
+    isConnected() {
+      return this.$socket.connected;
+    },
+
+    visitorName() {
+      return this.selectedRoom?.room;
+    },
+
     buttonIsDisabled() {
       return !this.selectedRoom.room || this.disableButton;
     },
@@ -215,6 +225,7 @@ export default {
 
   data() {
     return {
+      socketStatus: '',
       dialog: false,
 
       disableButton: true,
@@ -222,7 +233,7 @@ export default {
       timeout: 10000,
       reconnected: false,
       btnLabels: ['', 'Close'],
-      openSnackbar: true,
+      openSnackbar: false,
       feedbackMessage:
         'Thanks for making us safer together using Local Contact Tracing...',
       closed: true,
@@ -237,6 +248,8 @@ export default {
   sockets: {
     //#region socket.io reserved events
     connect() {
+      this.socketStatus = `query.id: ${this.$socket.io.opts.query.id} socket.id: ${this.$socket.id}`;
+
       console.group('Step 0: connect()');
       console.warn(
         this.$socket.id,
@@ -252,12 +265,23 @@ export default {
         return;
       }
 
+      // service workers, apparently, are messing up the socket connections so the socket.id doesn't match the Room
+      // when that happens, we explicitly connect to server through the dialog
+      if (
+        this.$socket.io.opts.query &&
+        this.$socket.io.opts.query.id != this.$socket.id
+      ) {
+        this.status = `query.id: ${this.$socket.io.opts.query.id} socket.id: ${this.$socket.id}`;
+        this.$socket.disconnect(true);
+        this.dialog = true;
+        return;
+      }
       // ignore any non-Room sockets
       if (!this.$socket.io.opts.query || this.$socket.io.opts.query.id == '') {
         this.$socket.disconnect(true);
         return;
       }
-
+      this.dialog = false;
       const { room, id, nsp, closed } = this.$socket.io.opts.query;
       console.group('onConnect');
       console.log(`Connecting ${room}`);
@@ -271,9 +295,12 @@ export default {
       // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
       this.hint = `ID: ${this.selectedRoom.id}`;
-      this.feedbackMessage = `Open ${room} now?`;
+      this.feedbackMessage = `Open ${room} now? `;
+      this.secondMessage = `${
+        this.$socket.connected ? this.$socket.io.uri : 'Disconnected'
+      }`;
       this.btnLabels = ['Yes', 'No'];
-      this.openSnackbar = true;
+      this.openSnackbar = this.$socket.connected;
       this.timeout = -1;
     },
 
@@ -304,7 +331,9 @@ export default {
     //#region Other reserved events
     disconnect(reason) {
       this.statusIcon = 'mdi-lan-disconnect';
-
+      if (reason != 'io client disconnect') {
+        console.log(error(reason));
+      }
       this.log(`Disconnect: ${reason}`, 'roomIdentityCard.vue');
     },
     error(reason) {
@@ -629,7 +658,8 @@ export default {
       } else {
         this.selectedRoom = { room: '', id: '', closed: true };
       }
-      this.dialog = this.$socket.disconnected;
+      // note: we are opening dialog now in connect() when query.id != socket.id
+      // this.dialog = this.$socket.disconnected;
     },
   },
 
@@ -645,6 +675,12 @@ export default {
 */
 
   watch: {
+    isConnected(newVal) {
+      if (!newVal) {
+        this.dialog = true;
+      }
+    },
+
     selectedRoom(newVal, oldVal) {
       console.group('Step 3: selectedRoom watch');
       console.warn(
@@ -665,16 +701,10 @@ export default {
         this.onOpen(newVal);
         return;
       }
-
       this.onRoomSelected();
     },
   },
-  created() {
-    console.group('Step -1: created()');
-    console.warn(this.$socket.id, this.$socket.connected, this.$socket.io.opts);
-    console.groupEnd();
-    console.log(' ');
-  },
+  created() {},
 
   async mounted() {
     // let self = this;

@@ -6,7 +6,7 @@ import moment from 'moment';
 export default {
   daysBack: 14,
   today: 'YYYY-MM-DD',
-  visitFormat: 'HH:mm:ss on ddd, MMM DD',
+  visitFormat: 'HH:mm:SSS on ddd, MMM DD',
 
   openMyRoom: function(yourID) {
     let payload = {
@@ -30,7 +30,7 @@ export default {
 
   getNow() {
     // const shortDateTimeFormat = 'lll';
-    const timeFormat = 'HH:MM:SS';
+    const timeFormat = 'HH:mm:SSS';
     return moment().format(timeFormat);
   },
 

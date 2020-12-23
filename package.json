@@ -1,6 +1,6 @@
 {
-  "name": "lct.room",
-  "version": "112.21.21.12",
+  "name": "room.lct",
+  "version": "12.22.21.22",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@vuex-orm/core": "^0.36.3",
-    "axios": "^0.19.2",
     "cli-color": "^2.0.0",
     "core-js": "^3.6.5",
     "moment": "^2.27.0",
