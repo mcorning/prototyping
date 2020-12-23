@@ -1,120 +1,127 @@
 <template>
-  <v-card>
-    <v-card-title>Connect to Local Contact Tracing</v-card-title>
-    <v-card-subtitle
-      >Currently, you're
-      {{
-        $socket.connected
-          ? 'connected. Pick an open Room below.'
-          : 'disconnected. '
-      }}
-    </v-card-subtitle>
-    <v-card-text>
-      <v-row class="child-flex" align="center" justify="space-between">
-        <v-col cols="8">
-          <v-text-field
-            v-if="newVisitor"
-            label="Enter your nickname:"
-            hint="How do you want to be seen?"
-            persistent-hint
-            clearable
-            @change="onUpdateVisitor($event)"
-          />
-          <v-select
-            v-else
-            v-model="selectedVisitor"
-            :items="visitors"
-            item-text="visitor"
-            item-value="id"
-            label="Pick your nickname"
-            :hint="hint"
-            persistent-hint
-            return-object
-            single-line
-            autofocus
-            :prepend-icon="statusIcon"
-          >
-            <!-- @change="onVisitorSelected('select')" -->
-          </v-select>
-        </v-col>
+  <div>
+    <v-dialog v-model="dialog" max-width="340">
+      <v-card>
+        <v-card-title class="headline"
+          >Connect {{ defaultVisitor }} to LCT?</v-card-title
+        >
+        <v-card-subtitle
+          >[Connect later] to use another Visitor alias</v-card-subtitle
+        >
+        <v-card-subtitle>
+          <template>
+            Before you can select an open Room, you must
+            <ul>
+              <li>have internet access</li>
+              <li>
+                establish a connection to the server
+              </li>
+            </ul>
+          </template>
+        </v-card-subtitle>
 
-        <v-col cols="4">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on, attrs }">
-              <span v-bind="attrs" v-on="on">
-                <v-btn fab dark small color="green" @click="onAddVisitor()">
-                  <v-icon>mdi-plus</v-icon>
-                </v-btn>
-              </span>
-            </template>
-            <span>Add Visitor</span>
-          </v-tooltip>
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on, attrs }">
-              <span v-bind="attrs" v-on="on">
-                <v-btn fab dark small color="orange" @click="onDeleteVisitor()">
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
-              </span>
-            </template>
-            <span>Delete Visitor</span>
-          </v-tooltip>
-        </v-col>
-        <v-col v-if="$socket.disconnected">
-          <v-dialog v-model="dialog" max-width="340">
-            <v-card>
-              <v-card-title class="headline"
-                >Connect {{ defaultVisitor }} to LCT?</v-card-title
-              >
-              <v-card-subtitle
-                >[Connect later] to use another Visitor alias</v-card-subtitle
-              >
-              <v-card-subtitle>
-                <template>
-                  Before you can select an open Room, you must
-                  <ul>
-                    <li>have internet access</li>
-                    <li>
-                      establish a connection to the server
-                    </li>
-                  </ul>
-                </template>
-              </v-card-subtitle>
+        <v-card-actions>
+          <v-spacer></v-spacer>
 
-              <v-card-actions>
-                <v-spacer></v-spacer>
+          <v-btn color="green darken-1" text @click="connectToServer()">
+            Connect now
+          </v-btn>
 
-                <v-btn color="green darken-1" text @click="connectToServer()">
-                  Connect now
-                </v-btn>
+          <v-btn color="green darken-2" text @click="dialog = false">
+            Connect later
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-card>
+      <v-card-title>Connect to Local Contact Tracing</v-card-title>
+      <v-card-subtitle
+        >Currently, you're
+        {{
+          $socket.connected
+            ? 'connected. Pick an open Room below.'
+            : 'disconnected. '
+        }}
+      </v-card-subtitle>
+      <v-card-text>
+        <v-row class="child-flex" align="center" justify="space-between">
+          <v-col cols="8">
+            <v-text-field
+              v-if="newVisitor"
+              label="Enter your nickname:"
+              hint="How do you want to be seen?"
+              persistent-hint
+              clearable
+              @change="onUpdateVisitor($event)"
+            />
+            <v-select
+              v-else
+              v-model="selectedVisitor"
+              :items="visitors"
+              item-text="visitor"
+              item-value="id"
+              label="Pick your nickname"
+              :hint="hint"
+              persistent-hint
+              return-object
+              single-line
+              autofocus
+              :prepend-icon="statusIcon"
+            >
+              <!-- @change="onVisitorSelected('select')" -->
+            </v-select>
+          </v-col>
 
-                <v-btn color="green darken-2" text @click="dialog = false">
-                  Connect later
-                </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-        </v-col>
-      </v-row>
-      <v-row align="center" justify="space-between">
-        <v-col v-if="$socket.connected" class="text-center ">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on, attrs }">
-              <span v-bind="attrs" v-on="on" class="text-center">
-                <warnRoomCard
-                  :visitor="selectedVisitor"
-                  :log="log"
-                  @warned="onWarned($event)"
-                  @connect="onVisitorSelected()"
-                />
-              </span>
-            </template>
-            <span>Warn Rooms</span>
-          </v-tooltip>
-        </v-col>
-      </v-row>
-    </v-card-text>
-  </v-card>
+          <v-col cols="4">
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <span v-bind="attrs" v-on="on">
+                  <v-btn fab dark small color="green" @click="onAddVisitor()">
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>
+                </span>
+              </template>
+              <span>Add Visitor</span>
+            </v-tooltip>
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <span v-bind="attrs" v-on="on">
+                  <v-btn
+                    fab
+                    dark
+                    small
+                    color="orange"
+                    @click="onDeleteVisitor()"
+                  >
+                    <v-icon>mdi-delete</v-icon>
+                  </v-btn>
+                </span>
+              </template>
+              <span>Delete Visitor</span>
+            </v-tooltip>
+          </v-col>
+          <v-spacer></v-spacer>
+        </v-row>
+        <v-row align="center" justify="space-between">
+          <v-col v-if="$socket.connected" class="text-center ">
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <span v-bind="attrs" v-on="on" class="text-center">
+                  <warnRoomCard
+                    :visitor="selectedVisitor"
+                    :log="log"
+                    @warned="onWarned($event)"
+                    @connect="onVisitorSelected()"
+                  />
+                </span>
+              </template>
+              <span>Warn Rooms</span>
+            </v-tooltip>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+  </div>
 </template>
 
 <script>
@@ -196,6 +203,18 @@ export default {
 
       if (this.reconnected) {
         this.log('Reconnected. No need to connect(). Returning');
+        return;
+      }
+
+      // service workers, apparently, are messing up the socket connections so the socket.id doesn't match the Room
+      // when that happens, we explicitly connect to server through the dialog
+      if (
+        this.$socket.io.opts.query &&
+        this.$socket.io.opts.query.id != this.$socket.id
+      ) {
+        this.status = `query.id: ${this.$socket.io.opts.query.id} socket.id: ${this.$socket.id}`;
+        this.$socket.disconnect(true);
+        this.dialog = true;
         return;
       }
 
