@@ -5,13 +5,13 @@
       >Visitors enter Rooms. Rooms, then, must have a public name that everybody
       will recognize.</v-card-text
     >
-    <v-card-text>
+    <!-- <v-card-text>
       You can manage more than one Room, but you can only open one Room at a
       time.
-    </v-card-text>
+    </v-card-text> -->
     <v-card-text>
-      When you open a Room, the Server adds your Room to Visitor pages so they
-      can enter.
+      When you open a Room, the Server adds your Room to a list on Visitor pages
+      so they can choose your Room and enter.
     </v-card-text>
   </v-card>
 </template>

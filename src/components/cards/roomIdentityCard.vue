@@ -2,36 +2,21 @@
   <div>
     <!-- dialog: {{ dialog }} connected: {{ $socket.connected }} status:
     {{ socketStatus }} -->
-    <v-dialog v-model="dialog" max-width="340">
+    <v-dialog v-if="!firstTime" v-model="dialog" max-width="340">
       <v-card>
         <v-card-title class="headline"
-          >Connect {{ visitorName }} to LCT?</v-card-title
+          >Connecting {{ visitorName }} to LCT</v-card-title
         >
-        <v-card-subtitle
-          >[Connect later] to use another Visitor alias</v-card-subtitle
-        >
-        <v-card-subtitle>
-          <template>
-            Before you can select an open Room, you must
-            <ul>
-              <li>have internet access</li>
-              <li>
-                establish a connection to the server
-              </li>
-            </ul>
-          </template>
-        </v-card-subtitle>
-
         <v-card-actions>
           <v-spacer></v-spacer>
 
           <v-btn color="green darken-1" text @click="connectToServer()">
-            Connect now
+            OK
           </v-btn>
 
-          <v-btn color="green darken-2" text @click="dialog = false">
+          <!-- <v-btn color="green darken-2" text @click="dialog = false">
             Connect later
-          </v-btn>
+          </v-btn> -->
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -53,8 +38,18 @@
               clearable
               @change="onUpdateRoom($event)"
             />
-            <v-select
+            <v-text-field
               v-if="rooms.length && !newRoom"
+              v-model="selectedRoom.room"
+              :label="roomSelectedLabel"
+              :prepend-icon="statusIcon"
+              persistent-hint
+              :hint="hint"
+              clearable
+              @change="onUpdateRoomName($event)"
+            ></v-text-field>
+            <v-select
+              v-if="false"
               v-model="selectedRoom"
               :items="rooms"
               item-text="room"
@@ -98,6 +93,7 @@
     </v-card>
 
     <v-snackbar
+      v-if="!firstTime"
       v-model="openSnackbar"
       :timeout="timeout"
       color="primary"
@@ -126,7 +122,6 @@ import Message from '@/models/Message';
 import Room from '@/models/Room';
 import State from '@/models/State';
 import firstTimeCard from '@/components/cards/firstTimeCard';
-// import speedDial from '@/components/cards/SpeedDial';
 
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
@@ -192,7 +187,8 @@ export default {
     },
 
     roomSelectedLabel() {
-      return 'Select your Room';
+      // return 'Select your Room';
+      return `Your Room's public name:`;
     },
     btnType() {
       return this.closed ? 'mdi-door-open' : 'mdi-door-closed-lock';
@@ -248,7 +244,26 @@ export default {
   sockets: {
     //#region socket.io reserved events
     connect() {
-      this.socketStatus = `query.id: ${this.$socket.io.opts.query.id} socket.id: ${this.$socket.id}`;
+      // service workers, apparently, are messing up the socket connections so the socket.id doesn't match the Room
+      // when that happens, we explicitly connect to server through the dialog
+      if (
+        this.$socket.io.opts.query &&
+        this.$socket.io.opts.query.id != this.$socket.id
+      ) {
+        this.status = `query.id: ${this.$socket.io.opts.query.id} socket.id: ${this.$socket.id}`;
+        console.log(error(this.status));
+        this.$socket.disconnect(true);
+        // this.connectToServer();
+        this.dialog = true;
+        return;
+      }
+      // ignore any non-Room sockets
+      if (!this.$socket.io.opts.query || this.$socket.io.opts.query.id == '') {
+        this.$socket.disconnect(true);
+        this.dialog = true;
+
+        return;
+      }
 
       console.group('Step 0: connect()');
       console.warn(
@@ -265,22 +280,6 @@ export default {
         return;
       }
 
-      // service workers, apparently, are messing up the socket connections so the socket.id doesn't match the Room
-      // when that happens, we explicitly connect to server through the dialog
-      if (
-        this.$socket.io.opts.query &&
-        this.$socket.io.opts.query.id != this.$socket.id
-      ) {
-        this.status = `query.id: ${this.$socket.io.opts.query.id} socket.id: ${this.$socket.id}`;
-        this.$socket.disconnect(true);
-        this.dialog = true;
-        return;
-      }
-      // ignore any non-Room sockets
-      if (!this.$socket.io.opts.query || this.$socket.io.opts.query.id == '') {
-        this.$socket.disconnect(true);
-        return;
-      }
       this.dialog = false;
       const { room, id, nsp, closed } = this.$socket.io.opts.query;
       console.group('onConnect');
@@ -305,6 +304,9 @@ export default {
     },
 
     reconnect(reason) {
+      if (!this.$socket.io.opts.query.id) {
+        return;
+      }
       this.reconnected = true;
       this.feedbackMessage = `Server has reconnected you automagically.
       Do you want to be Open or Closed?`;
@@ -397,6 +399,26 @@ export default {
 
       this.selectedRoom.room = newVal;
       this.selectedRoom.id = base64id.generateId();
+      Room.update(this.selectedRoom.room, this.selectedRoom.id, this.nsp)
+        .then((r) => {
+          console.log('New Room:', r);
+          this.onRoomSelected();
+        })
+        .catch((e) => console.log(e));
+    },
+    onUpdateRoomName(newName) {
+      if (!newName) {
+        if (confirm('You are about to delete')) {
+          this.selectedRoom = {};
+        }
+        return;
+      }
+      this.newRoom = false;
+
+      this.selectedRoom.room = newName;
+      if (!this.selectedRoom.id) {
+        this.selectedRoom.id = base64id.generateId();
+      }
       Room.update(this.selectedRoom.room, this.selectedRoom.id, this.nsp)
         .then((r) => {
           console.log('New Room:', r);
@@ -559,6 +581,8 @@ export default {
           this.alert = true;
         },
       };
+      console.log('onClose() payload:');
+      console.log(printJson(payload));
       this.emit(payload);
       this.resetSnackbar();
       this.hint = `ID: ${this.selectedRoom.id} is ${
@@ -626,20 +650,12 @@ export default {
     },
 
     deleteRoom(room) {
-      const self = this;
-      Room.delete(room.id).then((allRooms) => {
+      Room.delete(room.id).then(() => {
+        this.$socket.disconnect(true);
         this.log(
           `Deleted ${printJson(room)} and disconnected ${this.$socket.id}`
         );
-        this.$socket.disconnect(true);
-        if (allRooms.length == 0) {
-          console.log('self.selectedRoom', self.selectedRoom);
-        }
       });
-      // if we deleted the last saved Room, reset the v-model
-      if (!this.selectedRoom) {
-        this.selectedRoom = { room: '', id: '' };
-      }
     },
 
     findRoomWithId(id = this.selectedRoom?.id) {
@@ -701,7 +717,7 @@ export default {
         this.onOpen(newVal);
         return;
       }
-      this.onRoomSelected();
+      this.onRoomSelected('watch');
     },
   },
   created() {},
