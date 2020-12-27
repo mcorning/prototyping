@@ -314,7 +314,7 @@ export default {
     },
 
     reconnect(reason) {
-      if (!this.$socket.io.opts.query.id) {
+      if (!this.$socket.io.opts.query) {
         return;
       }
       this.reconnected = true;
