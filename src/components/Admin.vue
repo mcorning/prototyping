@@ -705,17 +705,10 @@ export default {
   watch: {
     selectedRoom(newVal, oldVal) {
       if (!newVal) {
-        const self = this;
-        Room.delete(oldVal.id).then((allRooms) => {
-          console.log('self.selectedRoom :>> ', self.selectedRoom);
-          console.log('Rooms after delete:', allRooms);
-          if (allRooms.length == 0) {
-            console.log('self.selectedRoom', self.selectedRoom);
-          }
-        });
+        Room.delete(oldVal.id);
       }
       if (!this.selectedRoom) {
-        this.selectedRoom = { room: '', id: '' };
+        this.selectedRoom = {};
       }
     },
   },

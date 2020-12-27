@@ -1,11 +1,9 @@
 <template>
-  <div>
-    <!-- dialog: {{ dialog }} connected: {{ $socket.connected }} status:
-    {{ socketStatus }} -->
+  <v-container>
     <v-dialog v-if="!firstTime" v-model="dialog" max-width="340">
-      <v-card>
+      <v-card color="secondary">
         <v-card-title class="headline"
-          >Connecting {{ visitorName }} to LCT</v-card-title
+          >Connecting {{ room.room }} to LCT</v-card-title
         >
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -13,44 +11,74 @@
           <v-btn color="green darken-1" text @click="connectToServer()">
             OK
           </v-btn>
-
-          <!-- <v-btn color="green darken-2" text @click="dialog = false">
-            Connect later
-          </v-btn> -->
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-card>
+
+    <v-dialog v-model="deleteDialog" max-width="260">
+      <v-card>
+        <v-card-title class="headline"
+          >Delete Room {{ room.room }}?</v-card-title
+        >
+        <v-card-text
+          >Be careful. If you delete a Room you will not see exposure warnings
+          from past Visitors.</v-card-text
+        >
+        <v-card-actions>
+          <v-spacer></v-spacer>
+
+          <v-btn color="green darken-1" text @click="deleteRoom()">
+            Yes
+          </v-btn>
+
+          <v-btn color="green darken-2" text @click="deleteDialog = false">
+            Cancel
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-card v-if="firstTime">
+      <v-card-title>First time (or starting over)?</v-card-title>
+      <v-card-text
+        >Visitors enter Rooms. Rooms, then, must have a public name that
+        everybody will recognize.</v-card-text
+      >
+      <!-- <v-card-text>
+      You can manage more than one Room, but you can only open one Room at a
+      time.
+    </v-card-text> -->
+      <v-card-text>
+        When you open a Room, the Server adds your Room to a list on Visitor
+        pages so they can choose your Room and enter.
+      </v-card-text>
+    </v-card>
+
+    <v-card v-else>
       <v-card-title>Manage Your Rooms</v-card-title>
       <v-card-subtitle
         >Visitors can log in to open Rooms only. Toggle Room Open/Close using
         button below.
       </v-card-subtitle>
+    </v-card>
 
+    <v-card>
       <v-card-text>
         <v-row align="center" justify="space-between">
           <v-col cols="8">
             <v-text-field
-              v-if="newRoom || !rooms.length"
-              label="Enter your Room name:"
-              hint="Use a unique name you could use to invite in someone from your community."
-              persistent-hint
-              clearable
-              @change="onUpdateRoom($event)"
-            />
-            <v-text-field
-              v-if="rooms.length && !newRoom"
-              v-model="selectedRoom.room"
+              v-model="room.room"
               :label="roomSelectedLabel"
               :prepend-icon="statusIcon"
               persistent-hint
               :hint="hint"
               clearable
-              @change="onUpdateRoomName($event)"
+              @change="onUpdateRoom($event)"
             ></v-text-field>
-            <v-select
-              v-if="false"
-              v-model="selectedRoom"
+
+            <!-- deprecated multi Room support -->
+            <!-- <v-select
+              v-model="room"
               :items="rooms"
               item-text="room"
               item-value="id"
@@ -61,9 +89,12 @@
               persistent-hint
               :hint="hint"
               clearable
-            ></v-select>
+            ></v-select> -->
+            <!-- deprecated multi Room support -->
           </v-col>
+
           <v-col cols="1">
+            <!-- Open/Close Room button -->
             <v-tooltip bottom>
               <template v-slot:activator="{ on, attrs }">
                 <span v-bind="attrs" v-on="on" class="text-center ">
@@ -111,17 +142,12 @@
         </v-btn>
       </template>
     </v-snackbar>
-    <firstTimeCard v-if="firstTime" />
-  </div>
+  </v-container>
 </template>
 
 <script>
-import base64id from 'base64id';
-
 import Message from '@/models/Message';
 import Room from '@/models/Room';
-import State from '@/models/State';
-import firstTimeCard from '@/components/cards/firstTimeCard';
 
 import helpers from '@/components/js/helpers.js';
 const { printJson, getNow } = helpers;
@@ -145,22 +171,13 @@ export default {
     },
   },
 
-  components: {
-    firstTimeCard,
-    //  speedDial
-  },
-
   computed: {
     isConnected() {
       return this.$socket.connected;
     },
 
-    visitorName() {
-      return this.selectedRoom?.room;
-    },
-
     buttonIsDisabled() {
-      return !this.selectedRoom.room || this.disableButton;
+      return !this.room || this.disableButton;
     },
 
     activeFab() {
@@ -183,30 +200,22 @@ export default {
     },
 
     connectedMessage() {
-      return `you are connected. Open ${this.selectedRoom.room} below so Visitors can use LCT.`;
+      return `you are connected. Open ${this.room} below so Visitors can use LCT.`;
     },
 
     roomSelectedLabel() {
-      // return 'Select your Room';
       return `Your Room's public name:`;
     },
     btnType() {
       return this.closed ? 'mdi-door-open' : 'mdi-door-closed-lock';
     },
 
-    firstTime() {
-      return this.rooms.length < 1;
-    },
-
-    // source for selectedRoom dropdown
-    rooms() {
-      let allRooms = Room.all();
-      return allRooms;
-    },
-
-    state() {
-      return State.find(0);
-    },
+    // deprecated multi Room support
+    // source for room dropdown
+    // rooms() {
+    //   let allRooms = Room.all();
+    //   return allRooms;
+    // },
 
     messages: {
       get() {
@@ -221,6 +230,8 @@ export default {
 
   data() {
     return {
+      deleteDialog: false,
+      firstTime: false,
       socketStatus: '',
       dialog: false,
 
@@ -234,8 +245,7 @@ export default {
         'Thanks for making us safer together using Local Contact Tracing...',
       closed: true,
       mainIcon: 'mdi-home-outline',
-      newRoom: false,
-      selectedRoom: {},
+      room: {},
       statusIcon: 'mdi-lan-disconnect',
       hint: '',
     };
@@ -281,7 +291,7 @@ export default {
       }
 
       this.dialog = false;
-      const { room, id, nsp, closed } = this.$socket.io.opts.query;
+      const { room, id, nsp } = this.$socket.io.opts.query;
       console.group('onConnect');
       console.log(`Connecting ${room}`);
       this.log(
@@ -290,10 +300,10 @@ export default {
       );
       console.groupEnd();
       // cache last Room used
-      State.changeRoom(id, closed);
+      // State.changeRoom(id, closed);
       // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
-      this.hint = `ID: ${this.selectedRoom.id}`;
+      this.hint = `ID: ${this.room.id}`;
       this.feedbackMessage = `Open ${room} now? `;
       this.secondMessage = `${
         this.$socket.connected ? this.$socket.io.uri : 'Disconnected'
@@ -330,7 +340,8 @@ export default {
       this.log(`Reconnect ${reason}`, 'roomIdentityCard.vue');
       console.groupEnd();
     },
-    //#region Other reserved events
+
+    //
     disconnect(reason) {
       this.statusIcon = 'mdi-lan-disconnect';
       if (reason != 'io client disconnect') {
@@ -338,6 +349,8 @@ export default {
       }
       this.log(`Disconnect: ${reason}`, 'roomIdentityCard.vue');
     },
+
+    //#region Other reserved events
     error(reason) {
       this.log(`Error ${reason}`, 'roomIdentityCard.vue');
     },
@@ -366,13 +379,29 @@ export default {
   },
 
   methods: {
+    setFirstTime(val) {
+      if (val == true) {
+        this.hint =
+          'Use a unique name you could use to invite in someone from your community.';
+      } else {
+        this.hint = `ID: ${this.room.id} is ${this.closed ? 'closed' : 'open'}`;
+      }
+      this.firstTime = val;
+    },
+
     connectToServer() {
+      // do we need this check?
+      if (!this.room.id) {
+        this.setFirstTime(true);
+        return;
+      }
+
       this.dialog = false;
+      this.firstTime = false;
       this.$socket.io.opts.query = {
-        room: this.selectedRoom.room,
-        id: this.selectedRoom.id,
+        room: this.room.room,
+        id: this.room.id,
         nsp: '',
-        closed: this.state?.roomClosed,
       };
 
       this.$socket.connect();
@@ -386,81 +415,76 @@ export default {
       }
     },
 
-    roomStateToText(closed = this.closed) {
-      return closed ? 'Closed' : 'Open';
-    },
-    // onUpdateRoom() called by:
-    //    newRoom's text-field component
+    // onNewRoom() called by:
+    //    Room name's text-field component
     //
     //    it adds a Room to the Room entity (including a new id for the server to use during connection there)
     //    then it connects to the server
     onUpdateRoom(newVal) {
-      this.newRoom = false;
-
-      this.selectedRoom.room = newVal;
-      this.selectedRoom.id = base64id.generateId();
-      Room.update(this.selectedRoom.room, this.selectedRoom.id, this.nsp)
+      Room.update(newVal, this.room.id, this.nsp)
         .then((r) => {
+          // update returns an array
+          console.assert(r.length, 'Expected an array of Room objects');
+          this.room = r[0];
+
           console.log('New Room:', r);
-          this.onRoomSelected();
+          this.connectToServer();
         })
         .catch((e) => console.log(e));
     },
+
+    // called by Room text-field to edit a Room's name without changing its ID'
     onUpdateRoomName(newName) {
       if (!newName) {
-        if (confirm('You are about to delete')) {
-          this.selectedRoom = {};
-        }
+        this.deleteDialog = true;
         return;
       }
-      this.newRoom = false;
 
-      this.selectedRoom.room = newName;
-      if (!this.selectedRoom.id) {
-        this.selectedRoom.id = base64id.generateId();
-      }
-      Room.update(this.selectedRoom.room, this.selectedRoom.id, this.nsp)
+      // if (!this.room.id) {
+      //   this.room.id = ;
+      // }
+      Room.update(newName, this.room.id, this.nsp)
         .then((r) => {
-          console.log('New Room:', r);
-          this.onRoomSelected();
+          this.room = r;
+          console.log('Updated Room:', r);
+          this.onRoomSelected('onUpdateRoomName');
         })
         .catch((e) => console.log(e));
     },
 
     // onRoomSelected called by:
-    //    onUpdateRoom() when user adds a Room
+    //    onNewRoom() when user adds a Room
     //    selectedRoomInit() method called by mounted()
     //    NOTE: build 12.21.12.21 deprecated multiple Room support
     //
     // onRoomSelected() handles connection options.
     //    it ignores connect() when the connected Room tries to connect again (for what ever reason)
-    //    if the selectedRoom changes, it disconnects the old Room and connects the new Room
+    //    if the room changes, it disconnects the old Room and connects the new Room
     //    otherwise it updates the query (including the open/closed state of the Room) and conects to Server
     onRoomSelected(caller) {
       console.log(highlight(`Step 4: onRoomSelected ${caller}`));
-
+      console.assert(this.room.room, `Corrupt room: ${printJson(this.room)}`);
       try {
         this.reconnected = false;
 
         if (this.$socket.connected) {
           console.log(`${this.$socket.io.opts.query.room} is  connected`);
-          if (this.$socket.io.opts.query.room == this.selectedRoom.room) {
+          if (this.$socket.io.opts.query.room == this.room.room) {
             // if client and server are in sync, no need for further actions
             return;
           }
 
           console.log(
-            `This socket does not belong to ${this.selectedRoom.room}. Disconnecting ${this.$socket.io.opts.query.room}`
+            `This socket does not belong to ${this.room.room}. Disconnecting ${this.$socket.io.opts.query.room}`
           );
           this.$socket.disconnect();
         }
 
-        this.log(`Connecting ${this.selectedRoom.room} to Server...`);
+        this.log(`Connecting ${this.room.room} to Server...`);
 
         this.$socket.io.opts.query = {
-          room: this.selectedRoom.room,
-          id: this.selectedRoom.id,
-          closed: this.state?.roomClosed,
+          room: this.room.room,
+          id: this.room.id,
           nsp: '',
         };
 
@@ -470,66 +494,63 @@ export default {
       }
     },
 
-    onChangeRoom(val) {
-      // should this go later in the function?
-      State.changeRoom(this.selectedRoom.id, this.closed);
+    // deprecated multi Room support
+    // onChangeRoom(val) {
+    //   // should this go later in the function?
+    //   State.changeRoom(this.room.id, this.closed);
 
-      let msg;
-      if (!val || this.rooms.length > 1) {
-        msg = {
-          room: this.selectedRoom.id,
-          // TODO why deleted?
-          message: val ? 'Closed' : 'Deleted',
-          sentTime: new Date().toISOString(),
-        };
-        this.emit({
-          event: 'closeRoom',
-          message: msg,
-          ack: (ack) => {
-            // TODO why length?
-            this.closed = ack.error.length;
-            let msg = `${ack.message}  ${ack.error}`;
-            this.alertMessage = msg;
-            this.alertColor = val ? 'success' : 'warning';
-            this.alert = true;
-            this.log(`Closed Room ${this.selectedRoom.id}`);
-          },
-        });
-      }
-      if (val && this.rooms.length) {
-        msg = {
-          room: this.selectedRoom.room,
-          id: this.selectedRoom.id,
-          message: 'Opened',
-          state: this.closed,
-          sentTime: new Date().toISOString(),
-        };
-        this.emit({
-          event: 'openRoom',
-          message: msg,
-          ack: (ack) => {
-            this.closed = ack.error.length;
-            let msg = `${ack.message}  ${ack.error}`;
-            this.alertMessage = msg;
-            this.alertColor = 'success';
-            this.alert = true;
-            this.log('Opened Room');
-          },
-        });
-      }
-    },
+    //   let msg;
+    //   if (!val || this.rooms.length > 1) {
+    //     msg = {
+    //       room: this.room.id,
+    //       // TODO why deleted?
+    //       message: val ? 'Closed' : 'Deleted',
+    //       sentTime: new Date().toISOString(),
+    //     };
+    //     this.emit({
+    //       event: 'closeRoom',
+    //       message: msg,
+    //       ack: (ack) => {
+    //         // TODO why length?
+    //         this.closed = ack.error.length;
+    //         let msg = `${ack.message}  ${ack.error}`;
+    //         this.alertMessage = msg;
+    //         this.alertColor = val ? 'success' : 'warning';
+    //         this.alert = true;
+    //         this.log(`Closed Room ${this.room.id}`);
+    //       },
+    //     });
+    //   }
+    //   if (val && this.rooms.length) {
+    //     msg = {
+    //       room: this.room.room,
+    //       id: this.room.id,
+    //       message: 'Opened',
+    //       state: this.closed,
+    //       sentTime: new Date().toISOString(),
+    //     };
+    //     this.emit({
+    //       event: 'openRoom',
+    //       message: msg,
+    //       ack: (ack) => {
+    //         this.closed = ack.error.length;
+    //         let msg = `${ack.message}  ${ack.error}`;
+    //         this.alertMessage = msg;
+    //         this.alertColor = 'success';
+    //         this.alert = true;
+    //         this.log('Opened Room');
+    //       },
+    //     });
+    //   }
+    // },
 
-    onAddRoom() {
-      this.newRoom = true;
-    },
-
-    onDeleteRoom() {
-      this.selectedRoom = null;
+    enableButton() {
+      this.disableButton = false;
+      this.resetSnackbar();
     },
 
     //#region  handlers for speedDial
-    onOpen() {
-      const room = this.selectedRoom.room;
+    onOpen(room = this.room.room) {
       this.closed = false;
       this.enableButton();
       const msg = {
@@ -551,16 +572,11 @@ export default {
       };
       this.emit(payload);
       this.resetSnackbar();
-      this.hint = `ID: ${this.selectedRoom.id} is ${
-        this.closed ? 'closed' : 'open'
-      }`;
-      State.changeRoom(this.selectedRoom.id, this.closed);
+      this.hint = `ID: ${this.room.id} is ${this.closed ? 'closed' : 'open'}`;
+      // State.changeRoom(this.room.id, this.closed);
     },
-    enableButton() {
-      this.disableButton = false;
-      this.resetSnackbar();
-    },
-    onClose(room = this.selectedRoom.room) {
+
+    onClose(room = this.room.room) {
       this.closed = true;
       this.enableButton();
 
@@ -585,17 +601,17 @@ export default {
       console.log(printJson(payload));
       this.emit(payload);
       this.resetSnackbar();
-      this.hint = `ID: ${this.selectedRoom.id} is ${
-        this.closed ? 'closed' : 'open'
-      }`;
-      State.changeRoom(this.selectedRoom.id, this.closed);
+      this.hint = `ID: ${this.room.id} is ${this.closed ? 'closed' : 'open'}`;
+
+      // are we still updating Room state for closed?
+      //this.onUpdateRoom();
     },
     //#endregion
 
     // called by Open/Close Room button
     // act(action) {
     //   const msg = {
-    //     room: this.selectedRoom.room,
+    //     room: this.room.room,
     //     message: this.closed ? 'Opened' : 'Closed',
     //     sentTime: new Date().toISOString(),
     //   };
@@ -649,39 +665,37 @@ export default {
       this.timeout = 10000;
     },
 
-    deleteRoom(room) {
-      Room.delete(room.id).then(() => {
+    deleteRoom() {
+      Room.delete(this.room.id).then(() => {
         this.$socket.disconnect(true);
         this.log(
-          `Deleted ${printJson(room)} and disconnected ${this.$socket.id}`
+          `Deleted ${printJson(this.room)} and disconnected ${this.$socket.id}`
         );
+        this.deleteDialog = false;
+        this.room = {};
       });
-    },
-
-    findRoomWithId(id = this.selectedRoom?.id) {
-      let v = Room.find(id) || '';
-      return v;
     },
 
     selectedRoomInit() {
       console.warn('Step 2: selectedRoomInit');
 
-      let id = State.find(0)?.roomId;
-      let r = this.findRoomWithId(id);
-      if (r) {
-        // setting selectedRoom will trigger watch that calls onRoomSelected that connects to Server
-        this.selectedRoom = r;
-      } else {
-        this.selectedRoom = { room: '', id: '', closed: true };
+      this.room = Room.query().first();
+      if (this.room) {
+        this.setFirstTime(false);
+
+        console.log('Found Room. Connecting to server...');
+        this.connectToServer();
+        return;
       }
-      // note: we are opening dialog now in connect() when query.id != socket.id
-      // this.dialog = this.$socket.disconnected;
+      this.room = {};
+      console.log('First time');
+      this.setFirstTime(true);
     },
   },
 
   /*
     Managing Rooms
-    this.selectedRoom is the v-model for the Room dropdown
+    this.room is the v-model for the Room dropdown
     The first thing we do is check for a delete intention (newVal is null)
     Otherwise, we try to close the current Room (oldVal) and open the selected Room (newVal)
     Otherwise, if oldVal is null, we have a new Room, so we skip the close Room operation
@@ -691,45 +705,47 @@ export default {
 */
 
   watch: {
-    isConnected(newVal) {
-      if (!newVal) {
-        this.dialog = true;
+    room(newVal, oldVal) {
+      console.group('Step 3: room watch');
+      if (!this.$socket.id) {
+        console.log('Initializing socket. Leaving watch.');
+        return;
       }
-    },
 
-    selectedRoom(newVal, oldVal) {
-      console.group('Step 3: selectedRoom watch');
-      console.warn(
-        this.$socket.id,
-        this.$socket.connected,
-        this.$socket.io.opts
-      );
+      // deleted Room (viz., Room text field is blank?
+      if (!newVal.room) {
+        console.log('No newVal for Room. Delete continues...');
+        return;
+      }
+
+      // change the Room's name
+      if (oldVal?.id) {
+        console.log('oldVal and newVal means updating Room name');
+        console.log('Close Room with old name');
+        this.onClose(oldVal.room);
+        console.log('Open Room with new name');
+        this.onOpen(newVal.room);
+        console.log('Done');
+        return;
+      }
+
+      this.onRoomSelected('watch');
       console.groupEnd();
       console.log(' ');
-
-      if (!newVal) {
-        this.deleteRoom(oldVal);
-        return;
-      }
-
-      if (oldVal?.id) {
-        this.onClose(oldVal);
-        this.onOpen(newVal);
-        return;
-      }
-      this.onRoomSelected('watch');
     },
   },
+
   created() {},
 
   async mounted() {
-    // let self = this;
     await Message.$fetch();
-    await State.$fetch();
     await Room.$fetch();
 
     console.group('Step 1: mounted()');
-    console.warn(this.$socket.id, this.$socket.connected, this.$socket.io.opts);
+    console.warn(
+      `Socket: id=${this.$socket.id} connected = ${this.$socket.connected} query=${this.$socket.io.opts.query}`
+    );
+    console.log('Initializing socket...');
     console.groupEnd();
     console.log(' ');
 

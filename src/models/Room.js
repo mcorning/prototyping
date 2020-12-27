@@ -1,4 +1,5 @@
 import { Model } from '@vuex-orm/core';
+import base64id from 'base64id';
 
 export default class Room extends Model {
   static entity = 'rooms';
@@ -14,6 +15,9 @@ export default class Room extends Model {
   }
 
   static async update(room, id, nsp) {
+    if (!id) {
+      id = base64id.generateId();
+    }
     console.log(`Updating room ${room}`);
     let p = await this.$create({
       data: { room: room, id: id, nsp: nsp },
@@ -22,10 +26,7 @@ export default class Room extends Model {
     return p;
   }
   static async delete(val) {
-    console.log('Rooms before', this.all());
     console.log('Deleting Room ID', val);
     await this.$delete(val);
-    console.log('Remaining Rooms', this.all());
-    return this.all();
   }
 }

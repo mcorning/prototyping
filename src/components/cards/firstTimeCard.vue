@@ -13,5 +13,13 @@
       When you open a Room, the Server adds your Room to a list on Visitor pages
       so they can choose your Room and enter.
     </v-card-text>
+    <v-text-field
+      v-if="firstTime"
+      label="Enter your Room name:"
+      hint="Use a unique name you could use to invite in someone from your community."
+      persistent-hint
+      clearable
+      @change="onNewRoom($event)"
+    />
   </v-card>
 </template>
