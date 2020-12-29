@@ -20,13 +20,13 @@ let url =
     : config.ngrokUrlUbuntu;
 console.log('url:', url);
 console.log(process.env.NODE_ENV);
-console.log(' ');
+console.log('--------------------------------------');
 Vue.use(
   new VueSocketIO({
     debug: true,
     connection: url,
     // we assign a query with the id we generate so socket.io server will defer to that for the new socket.id
-    autoConnect: false,
+    autoConnect: true,
   })
 );
 

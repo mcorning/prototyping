@@ -1,19 +1,20 @@
 <template>
   <v-container>
-    <v-dialog v-if="!firstTime" v-model="dialog" max-width="340">
-      <v-card color="secondary">
+    <!-- believe autoconnect=true obviates connectToServer -->
+    <!-- <v-dialog v-if="!firstTime" v-model="dialog" max-width="340">
+      <v-card>
         <v-card-title class="headline"
           >Connecting {{ room.room }} to LCT</v-card-title
         >
         <v-card-actions>
           <v-spacer></v-spacer>
 
-          <v-btn color="green darken-1" text @click="connectToServer()">
+          <v-btn text @click="connectToServer()">
             OK
           </v-btn>
         </v-card-actions>
       </v-card>
-    </v-dialog>
+    </v-dialog> -->
 
     <v-dialog v-model="deleteDialog" max-width="260">
       <v-card>
@@ -158,7 +159,7 @@ const error = clc.red.bold;
 // const warn = clc.yellow;
 // const info = clc.cyan;
 // const notice = clc.blue;
-const highlight = clc.magenta;
+// const highlight = clc.magenta;
 // const bold = clc.bold;
 
 export default {
@@ -195,17 +196,19 @@ export default {
     query() {
       return this.$socket.io.opts.query;
     },
-    roomIsClosed() {
-      return this.$socket.io.opts.query.closed;
+
+    socketIsGood() {
+      return this.query && this.query.id == this.$socket.id;
     },
 
-    connectedMessage() {
-      return `you are connected. Open ${this.room} below so Visitors can use LCT.`;
+    roomIsClosed() {
+      return this.$socket.io.opts.query.closed;
     },
 
     roomSelectedLabel() {
       return `Your Room's public name:`;
     },
+
     btnType() {
       return this.closed ? 'mdi-door-open' : 'mdi-door-closed-lock';
     },
@@ -233,7 +236,7 @@ export default {
       deleteDialog: false,
       firstTime: false,
       socketStatus: '',
-      dialog: false,
+      // dialog: false,
 
       disableButton: true,
 
@@ -254,28 +257,12 @@ export default {
   sockets: {
     //#region socket.io reserved events
     connect() {
-      // service workers, apparently, are messing up the socket connections so the socket.id doesn't match the Room
-      // when that happens, we explicitly connect to server through the dialog
-      if (
-        this.$socket.io.opts.query &&
-        this.$socket.io.opts.query.id != this.$socket.id
-      ) {
-        this.status = `query.id: ${this.$socket.io.opts.query.id} socket.id: ${this.$socket.id}`;
-        console.log(error(this.status));
-        this.$socket.disconnect(true);
-        // this.connectToServer();
-        this.dialog = true;
-        return;
-      }
-      // ignore any non-Room sockets
-      if (!this.$socket.io.opts.query || this.$socket.io.opts.query.id == '') {
-        this.$socket.disconnect(true);
-        this.dialog = true;
-
+      if (this.badSocket()) {
+        console.log(error('Bad socket. Leaving connect().'));
         return;
       }
 
-      console.group('Step 0: connect()');
+      console.group('Step X: connect()');
       console.warn(
         this.$socket.id,
         this.$socket.connected,
@@ -290,7 +277,7 @@ export default {
         return;
       }
 
-      this.dialog = false;
+      // this.dialog = false;
       const { room, id, nsp } = this.$socket.io.opts.query;
       console.group('onConnect');
       console.log(`Connecting ${room}`);
@@ -298,19 +285,19 @@ export default {
         `Server connected using Id: ${id}, Room: ${room}, and nsp ${nsp} `,
         'roomIdentityCard.vue'
       );
-      console.groupEnd();
-      // cache last Room used
-      // State.changeRoom(id, closed);
-      // set icon to indicate connect() handled
+
       this.statusIcon = 'mdi-lan-connect';
       this.hint = `ID: ${this.room.id}`;
-      this.feedbackMessage = `Open ${room} now? `;
-      this.secondMessage = `${
-        this.$socket.connected ? this.$socket.io.uri : 'Disconnected'
-      }`;
-      this.btnLabels = ['Yes', 'No'];
-      this.openSnackbar = this.$socket.connected;
-      this.timeout = -1;
+      console.log('Connected?', this.$socket.connected);
+      if (this.$socket.connected) {
+        this.configureSnackbar(
+          `Open ${room} now? `,
+          ['Yes', 'No'],
+          5000,
+          this.onOpen
+        );
+      }
+      console.groupEnd();
     },
 
     reconnect(reason) {
@@ -318,11 +305,11 @@ export default {
         return;
       }
       this.reconnected = true;
-      this.feedbackMessage = `Server has reconnected you automagically.
+      let feedbackMessage = `Server has reconnected you automagically.
       Do you want to be Open or Closed?`;
-      this.btnLabels = ['Open', 'Closed'];
-      this.timeout = -1;
-      this.openSnackbar = true;
+      let btnLabels = ['Open', 'Closed'];
+      let timeout = -1;
+      this.configureSnackbar(feedbackMessage, btnLabels, timeout, this.onOpen);
 
       console.group('onReconnect');
       console.warn(
@@ -379,6 +366,57 @@ export default {
   },
 
   methods: {
+    badSocket() {
+      // ignore any non-Room sockets
+      if (!this.query || this.query.id != this.$socket.id) {
+        this.$socket.disconnect(true);
+        setTimeout(() => {
+          console.log('Non-LCT socket. Left connect(). Connecting to Server');
+          this.$socket.connect();
+        }, 2000);
+
+        return true;
+      }
+      return false;
+
+      // if (
+      //   this.$socket.io.opts.query &&
+      //   this.$socket.io.opts.query.id != this.$socket.id
+      // ) {
+      //   let status = `query.id: ${this.$socket.io.opts.query.id} != socket.id: ${this.$socket.id}`;
+      //   console.log(error(this.status));
+      //   this.$socket.disconnect(true);
+      //   setTimeout(() => {
+      //     console.log(
+      //       'Socket.id != LCT socket.id. Left connect(). Connecting to Server'
+      //     );
+      //     this.$socket.connect();
+      //   }, 2000);
+
+      //   return true;
+      // }
+    },
+
+    configureSnackbar(message, buttons, timeout, callback) {
+      this.feedbackMessage = message;
+      this.btnLabels = buttons;
+      this.timeout = timeout;
+
+      this.openSnackbar = true;
+      setTimeout(() => {
+        console.log(`Timed out.`);
+        if (callback) {
+          callback();
+        }
+      }, this.timeout);
+    },
+
+    resetSnackbar() {
+      this.btnLabels = ['Yes'];
+      this.openSnackbar = false;
+      this.timeout = 10000;
+    },
+
     setFirstTime(val) {
       if (val == true) {
         this.hint =
@@ -396,7 +434,7 @@ export default {
         return;
       }
 
-      this.dialog = false;
+      // this.dialog = false;
       this.firstTime = false;
       this.$socket.io.opts.query = {
         room: this.room.room,
@@ -461,38 +499,38 @@ export default {
     //    it ignores connect() when the connected Room tries to connect again (for what ever reason)
     //    if the room changes, it disconnects the old Room and connects the new Room
     //    otherwise it updates the query (including the open/closed state of the Room) and conects to Server
-    onRoomSelected(caller) {
-      console.log(highlight(`Step 4: onRoomSelected ${caller}`));
-      console.assert(this.room.room, `Corrupt room: ${printJson(this.room)}`);
-      try {
-        this.reconnected = false;
+    // onRoomSelected(caller) {
+    //   console.log(highlight(`Step 4: onRoomSelected ${caller}`));
+    //   console.assert(this.room.room, `Corrupt room: ${printJson(this.room)}`);
+    //   try {
+    //     this.reconnected = false;
 
-        if (this.$socket.connected) {
-          console.log(`${this.$socket.io.opts.query.room} is  connected`);
-          if (this.$socket.io.opts.query.room == this.room.room) {
-            // if client and server are in sync, no need for further actions
-            return;
-          }
+    //     if (this.$socket.connected) {
+    //       console.log(`${this.$socket.io.opts.query.room} is  connected`);
+    //       if (this.$socket.io.opts.query.room == this.room.room) {
+    //         // if client and server are in sync, no need for further actions
+    //         return;
+    //       }
 
-          console.log(
-            `This socket does not belong to ${this.room.room}. Disconnecting ${this.$socket.io.opts.query.room}`
-          );
-          this.$socket.disconnect();
-        }
+    //       console.log(
+    //         `This socket does not belong to ${this.room.room}. Disconnecting ${this.$socket.io.opts.query.room}`
+    //       );
+    //       this.$socket.disconnect();
+    //     }
 
-        this.log(`Connecting ${this.room.room} to Server...`);
+    //     this.log(`Connecting ${this.room.room} to Server...`);
 
-        this.$socket.io.opts.query = {
-          room: this.room.room,
-          id: this.room.id,
-          nsp: '',
-        };
+    //     this.$socket.io.opts.query = {
+    //       room: this.room.room,
+    //       id: this.room.id,
+    //       nsp: '',
+    //     };
 
-        this.$socket.connect();
-      } catch (error) {
-        console.error('onRoomSelected:', error);
-      }
-    },
+    //     this.$socket.connect();
+    //   } catch (error) {
+    //     console.error('onRoomSelected:', error);
+    //   }
+    // },
 
     // deprecated multi Room support
     // onChangeRoom(val) {
@@ -659,12 +697,6 @@ export default {
       return status;
     },
 
-    resetSnackbar() {
-      this.btnLabels = ['Yes'];
-      this.openSnackbar = false;
-      this.timeout = 10000;
-    },
-
     deleteRoom() {
       Room.delete(this.room.id).then(() => {
         this.$socket.disconnect(true);
@@ -677,8 +709,7 @@ export default {
     },
 
     selectedRoomInit() {
-      console.warn('Step 2: selectedRoomInit');
-
+      console.group('Step 2: selectedRoomInit');
       this.room = Room.query().first();
       if (this.room) {
         this.setFirstTime(false);
@@ -690,6 +721,8 @@ export default {
       this.room = {};
       console.log('First time');
       this.setFirstTime(true);
+
+      console.groupEnd();
     },
   },
 
@@ -707,10 +740,10 @@ export default {
   watch: {
     room(newVal, oldVal) {
       console.group('Step 3: room watch');
-      if (!this.$socket.id) {
-        console.log('Initializing socket. Leaving watch.');
-        return;
-      }
+      // if (!this.$socket.id) {
+      //   console.log('Initializing socket. Leaving watch.');
+      //   return;
+      // }
 
       // deleted Room (viz., Room text field is blank?
       if (!newVal.room) {
@@ -729,7 +762,9 @@ export default {
         return;
       }
 
-      this.onRoomSelected('watch');
+      // TODO do we need this call?
+      //this.onRoomSelected('watch');
+
       console.groupEnd();
       console.log(' ');
     },

@@ -39,8 +39,8 @@
           :headers="messageHeaders"
           :items="visits"
           multi-sort
-          :sort-by="['sentTime', 'room', 'visitor']"
-          :sort-desc="[true, true, true]"
+          :sort-by="['sentTime', 'visitor']"
+          :sort-desc="[true, true]"
           item-key="id"
           dense
           :items-per-page="15"
@@ -137,8 +137,8 @@ export default {
 
     loaded: false,
     messageHeaders: [
-      { text: 'Sent  ', value: 'sentTime' },
       { text: 'Room', value: 'room' },
+      { text: 'Sent  ', value: 'sentTime' },
       { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
       { text: 'Delete', value: 'action' },

@@ -52,20 +52,4 @@ export default class Message extends Model {
     let p = await this.$deleteAll();
     return p;
   }
-
-  //   visitorCheckins() {
-  //   return this.messages.filter(
-  //     (v) =>
-  //       v.visitor == this.enabled.visitor.visitor && v.message == 'Entered'
-  //   );
-  // },
-  static visitorCheckins(visitor) {
-    console.log(visitor);
-    const visitorCheckins = this.query()
-      .where((visitor) => {
-        return this.visitor === visitor;
-      })
-      .get();
-    return visitorCheckins;
-  }
 }
