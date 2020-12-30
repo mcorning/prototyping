@@ -6,7 +6,7 @@
 
     <roomIntroCard />
 
-    <roomIdentityCard :log="log" :trace="trace" @open="onRoomSelected" />
+    <roomIdentityCard :log="log" :trace="trace" @open="onOpen" />
 
     <v-expansion-panels
       v-if="messages.length"
@@ -332,8 +332,9 @@ export default {
       this.messages = msg;
     },
 
-    onRoomSelected() {
+    onOpen() {
       this.panelState = [0, 2];
+      this.overlay = false;
     },
 
     groupMessagesByDateAndVisitor(payload) {
@@ -399,7 +400,6 @@ export default {
     await Message.$fetch();
     await State.$fetch();
     // console.log('Room.vue mounted');
-    this.overlay = false;
   },
 };
 </script>

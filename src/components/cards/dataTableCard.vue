@@ -2,7 +2,7 @@
   <v-card>
     <v-card-text v-if="loaded">
       <v-list dense>
-        <v-row align="center" justify="space-between" dense>
+        <v-row align="center" justify="space-between" no-gutters>
           <v-col cols="6">
             <span
               >{{ daysBack == 0 ? 'Today' : 'All' }} {{ entered }} visits
@@ -18,7 +18,11 @@
           ></v-col>
           <v-col cols="12" v-if="allVisits && messages.length">
             <div class="text-center">
-              <v-btn color="warning" block @click="deleteAllMessages"
+              <v-btn
+                color="red accent-3"
+                class="white--text"
+                block
+                @click="deleteAllMessages"
                 >Delete all visits</v-btn
               >
             </div></v-col
