@@ -1,6 +1,6 @@
 <template>
-  <v-card dark color="secondary">
-    <v-list-item color="rgba(0, 0, 0, .4)" dark>
+  <v-card class="black--text" color="secondary lighten-1">
+    <v-list-item>
       <v-list-item-content>
         <v-list-item-title class="title">
           Your Travel Diary
