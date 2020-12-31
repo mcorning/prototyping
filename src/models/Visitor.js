@@ -10,12 +10,19 @@ export default class Visitor extends Model {
       visitor: this.string(''),
       id: this.string(''),
       nsp: this.string('/'),
+      lastVisit: this.number(Date.now()),
     };
   }
 
-  static async update(visitor, id, nsp) {
+  static async update(visitor, id, nsp, now) {
     let p = await this.$create({
-      data: { visitor: visitor, id: id, nsp: nsp },
+      data: { visitor: visitor, id: id, nsp: nsp, lastVisit: now },
+    });
+    return p;
+  }
+  static async updateLastVisit(id) {
+    let p = await this.$update({
+      data: { id: id, lastVisit: Date.now() },
     });
     return p;
   }

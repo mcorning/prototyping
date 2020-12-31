@@ -21,32 +21,7 @@
         </v-btn>
       </template>
     </v-snackbar>
-    <!-- 
 
-    <firstTimeCard
-      v-if="firstTime"
-      :log="log"
-      @visitor="onVisitorReady($event)"
-    />
-    -->
-    <!-- <v-card v-if="firstTime">
-      <v-card-title>First Time?</v-card-title>
-      <v-card-text
-        >Enter your nickname in the field above. We enable more than one
-        nickname to use the same instance of the app or device.
-      </v-card-text>
-
-      <v-card-text
-        >You can only visit an open Room. The Room dropdown gets its values from
-        the Server.</v-card-text
-      >
-      <v-card-text
-        >When you see the Room you want is open, select it.</v-card-text
-      >
-      <v-card-text>A selected room enables your Check-in button.</v-card-text>
-    </v-card> -->
-
-    <!-- <v-container v-else fluid> -->
     <v-container fluid>
       <v-row dense justify="space-between" class="child-flex">
         <v-col
@@ -130,7 +105,6 @@ import State from '@/models/State';
 import Visitor from '@/models/Visitor';
 
 import diaryCard from '@/components/cards/visitor/diaryCard';
-import firstTimeCard from '@/components/cards/visitor/firstTimeCard';
 import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
 import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
 import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
@@ -157,7 +131,6 @@ export default {
   name: 'LctVisitor',
   components: {
     diaryCard,
-    firstTimeCard,
     visitorIdentityCard,
     roomIdentityCard,
     roomEntryCard,

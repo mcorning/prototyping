@@ -1,6 +1,5 @@
 <template>
   <div>
-    {{ dialog }}
     <v-dialog v-model="dialog" max-width="340">
       <v-card>
         <v-card-title class="headline"
@@ -69,7 +68,6 @@
               autofocus
               :prepend-icon="statusIcon"
             >
-              <!-- @change="onVisitorSelected('select')" -->
             </v-select>
           </v-col>
 
@@ -129,7 +127,6 @@
 import base64id from 'base64id';
 
 import Visitor from '@/models/Visitor';
-import State from '@/models/State';
 
 import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
 
@@ -156,10 +153,6 @@ export default {
     warnRoomCard,
   },
   computed: {
-    getNickName() {
-      return prompt("What's your nickname?");
-    },
-
     // source for Visitor dropdown
     visitors() {
       let allvisitors = Visitor.all();
@@ -170,13 +163,13 @@ export default {
       return v;
     },
     defaultVisitor() {
-      let v = Visitor.find(this.selectedVisitor?.id)?.visitor || '';
-      return v;
+      if (this.selectedVisitor.id) {
+        let v = Visitor.find(this.selectedVisitor?.id)?.visitor || '';
+        return v;
+      }
+      return '';
     },
 
-    isLctSocket() {
-      return this.query ? true : false;
-    },
     noVisitors() {
       return this.visitors.length == 0;
     },
@@ -184,8 +177,6 @@ export default {
 
   data() {
     return {
-      query: {},
-
       dialog: false,
       deferConnection: false,
       reconnected: false,
@@ -200,17 +191,17 @@ export default {
   sockets: {
     //#region socket.io reserved events
     connect() {
-      if (this.$socket.connected && !this.query.id) {
-        let visitor = this.getName();
-        this.query = {
-          id: this.$socket.id,
-          visitor: visitor,
-          nsp: '',
-        };
-        this.$socket.io.opts.query = this.query;
-      }
-      const { visitor, id, nsp } = this.query;
+      const { visitor, id, nsp } = this.getQuery();
 
+      console.log(this.$socket.id, visitor, id, this.$socket.query);
+
+      // OBX sends a socket with an ID generated on the server and copied in the query options
+      if (this.$socket.connected && !id) {
+        this.newVisitor = this.noVisitors;
+        return;
+      }
+
+      // set the selectedVisitor object
       if (!this.selectedVisitor.visitor) {
         this.selectedVisitor = { visitor: visitor, id: id, nsp: nsp };
       }
@@ -239,27 +230,26 @@ export default {
       console.groupEnd();
       console.log(' ');
 
-      // cache last Room used
-      State.changeVisitorId(id);
       // set icon to indicate connect() handled
       this.statusIcon = 'mdi-lan-connect';
-      this.hint = this.$socket.id;
+      this.hint = id;
       this.$emit('visitor', this.selectedVisitor);
     },
 
     reconnect(reason) {
-      if (!this.query) {
+      if (!this.getQuery()) {
         return;
       }
+      // this.query = this.parseParams(this.$socket.io.opts.query);
       console.group('onReconnect');
       console.log(
         highlight(
-          `[${getNow()}] ${printJson(this.query)} Recconnect ${reason}`,
+          `[${getNow()}] ${this.printQuery()} Recconnect ${reason}`,
           'visitorIdentityCard.vue'
         )
       );
       const msg = {
-        visitor: this.query.visitor,
+        visitor: this.getQuery().visitor,
         message: 'Reconnected',
         sentTime: new Date().toISOString(),
       };
@@ -272,7 +262,6 @@ export default {
 
     //#region Other connection events
     disconnect(reason) {
-      this.disconnectedFromServer = true;
       this.log(`Disconnect: ${reason}`, 'Visitor.vue');
       this.statusIcon = 'mdi-lan-disconnect';
     },
@@ -325,17 +314,6 @@ export default {
       return obj;
     },
 
-    connectToServer() {
-      this.dialog = false;
-      this.query = {
-        visitor: this.selectedVisitor.visitor,
-        id: this.selectedVisitor.id,
-        nsp: '',
-      };
-
-      this.$socket.connect();
-    },
-
     deleteVisitor(visitor) {
       const self = this;
       Visitor.delete(visitor.id).then((allVisitors) => {
@@ -352,6 +330,10 @@ export default {
         this.selectedVisitor = { visitor: '', id: '' };
       }
       this.newVisitor = this.noVisitors;
+    },
+
+    onChangeSocket() {
+      this.$socket.disconnect(true);
     },
 
     onAddVisitor() {
@@ -371,130 +353,124 @@ export default {
       return v;
     },
 
+    connectToServer() {
+      this.dialog = false;
+      const { visitor, id, nsp } = this.selectedVisitor;
+
+      console.log('Inside connectToServer()');
+      const query = {
+        visitor: visitor,
+        id: id,
+        nsp: nsp,
+      };
+      this.$socket.io.opts.query = query;
+
+      console.log(
+        highlight(
+          'Connecting with query options:',
+          printJson(this.$socket.io.opts.query)
+        )
+      );
+
+      this.$socket.connect();
+    },
+
+    getQuery() {
+      let query = this.$socket.io.opts.query || {
+        visitor: '',
+        id: '',
+        nsp: '',
+      };
+      return query;
+    },
+
+    printQuery() {
+      return printJson(this.$socket.io.opts.query);
+    },
+
     // update IndexedDb and set values for selection
     onUpdateVisitor(newVal) {
       console.assert(this.selectedVisitor, 'Missing selectedVisitor object.');
       this.selectedVisitor.visitor = newVal;
-      this.selectedVisitor.id = base64id.generateId();
+      // OBX provides a Visitor ID
+      // But one added in the UI does not, so generate one here
+      if (this.newVisitor) {
+        this.selectedVisitor.id = base64id.generateId();
+      }
       // static update function on Visitor model
       Visitor.update(
         this.selectedVisitor.visitor,
         this.selectedVisitor.id,
-        this.nsp
-      )
-        .then((v) => {
-          console.log('New Visitor:', v);
-          this.onVisitorSelected('updateVisitor');
-          this.newVisitor = false;
-        })
-        .catch((e) => console.log(e));
+        this.nsp,
+        Date.now()
+      ).then((v) => {
+        console.log('New Visitor:', v);
+        this.onVisitorSelected('updateVisitor');
+        this.newVisitor = false;
+      });
     },
 
     onVisitorSelected(caller) {
-      console.log(highlight(`Step 4: onVisitorSelected ${caller}`));
-
       try {
         this.reconnected = false;
-
-        if (this.$socket.connected) {
-          console.log(`${this.query.visitor} is  connected`);
-          // is this a newly selected visitor?
-          if (this.query.visitor == this.selectedVisitor.visitor) {
-            // if client and server are in sync, no need for further actions
-            return;
-          }
-
-          console.log(
-            `${this.selectedVisitor.visitor} is not connected yet. Disconnecting previous Visitor, ${this.query.visitor}`
-          );
-          this.$socket.disconnect();
+        if (
+          !this.selectedVisitor.id ||
+          this.getQuery().id == this.selectedVisitor.id
+        ) {
+          return;
         }
+
+        console.group(`Step 4: onVisitorSelected ${caller}`);
+
+        console.log(highlight('Old query:', this.printQuery()));
+
+        this.onChangeSocket();
 
         this.log(`Connecting ${this.selectedVisitor.visitor} to Server...`);
 
-        this.query = {
-          visitor: this.selectedVisitor.visitor,
-          id: this.selectedVisitor.id,
-          nsp: '',
-        };
-
-        this.$socket.connect();
-        console.log(
-          'Called connect(). Leaving onVisitorSelected() at ',
-          Date.now()
-        );
+        // this.dialog = true;
+        this.connectToServer();
+        console.log('Leaving onVisitorSelected() at ', Date.now());
+        console.groupEnd();
       } catch (error) {
         console.error('onVisitorSelected:', error);
       }
     },
-
-    selectedVisitorInit() {
-      console.log(highlight('Step 2: selectedVisitorInit'));
-      this.query = this.parseParams(this.$socket.io.opts.query);
-
-      // let id = State.find(0)?.query.id;
-      // let v = this.findVisitorWithId(id);
-      // if (v) {
-      //   // setting selectedVisitor will trigger watch that calls onVisitorSelected that connects to Server
-      //   this.selectedVisitor = v;
-      // } else {
-      //   this.selectedVisitor = { room: '', id: '' };
-      //   this.newVisitor = true;
-      // }
-      //this.dialog = this.$socket.disconnected;
-    },
   },
-  watch: {
-    query(newVal, oldVal) {
-      console.log(newVal);
-      console.log(oldVal);
-    },
 
+  watch: {
     selectedVisitor(newVal, oldVal) {
-      console.group('Step 3: selectedRoom watch');
-      console.log(
-        highlight(this.$socket.id, this.$socket.connected, this.$socket.io.opts)
-      );
-      console.groupEnd();
-      console.log(' ');
+      console.groupCollapsed('Step 3: selectedRoom watch');
 
       if (!newVal) {
+        console.log('Deleting', oldVal.visitor);
         this.deleteVisitor(oldVal);
         return;
       }
 
       if (!this.selectedVisitor) {
+        console.log('Resetting selectedVisitor');
         this.selectedVisitor = { visitor: '', id: '' };
+        return;
       }
+
+      console.log('Changing selectedVisitor');
+      console.groupEnd();
+      console.log(' ');
 
       this.onVisitorSelected('watch');
     },
   },
 
-  created() {
-    console.group('Step -1: created()');
-    console.log(
-      highlight(this.$socket.id, this.$socket.connected, this.$socket.io.opts)
-    );
-    console.groupEnd();
-    console.log(' ');
-  },
+  created() {},
 
   async mounted() {
-    await State.$fetch();
     await Visitor.$fetch();
 
     console.group('Step 1: mounted()');
-    console.log(
-      highlight(
-        this.$socket.id,
-        this.$socket.connected,
-        printJson(this.$socket.io.opts.query)
-      )
-    );
+    console.log(highlight('First query:', this.printQuery()));
     console.groupEnd();
     console.log(' ');
-    this.selectedVisitorInit();
   },
 };
 </script>

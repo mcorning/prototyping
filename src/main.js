@@ -12,7 +12,6 @@ import config from '@/config.json';
 import SoteriaIcon from './components/svg/SoteriaLogo.vue';
 
 import Visitor from '@/models/Visitor';
-import State from '@/models/State';
 
 Vue.component('soteria-icon', SoteriaIcon);
 
@@ -25,37 +24,35 @@ let url =
     ? config.ioServerUrl
     : config.ngrokUrlUbuntu;
 
-State.$fetch()
-  .then(() => {
-    return State.query().first();
-  })
-  .then((state) => {
-    Visitor.$fetch().then(() => {
-      const lastVisitor = Visitor.query().find(state.visitorId);
-      const { visitor, id, nsp } = lastVisitor ? lastVisitor : nullVisitor;
-      console.log('---------------main.js-----------------------');
-      url += `?visitor=${visitor}&id=${id}&nsp=${nsp}`;
+Visitor.$fetch().then(() => {
+  console.log('---------------main.js-----------------------');
 
-      console.log('url:', url);
-      console.log('query:', lastVisitor || nullVisitor);
-      console.log(process.env.NODE_ENV);
-      console.log('--------------------------------------------');
+  const lastVisitor = Visitor.query()
+    .orderBy('lastVisit')
+    .first();
 
-      Vue.use(
-        new VueSocketIO({
-          debug: false,
-          connection: url,
-          // autoConnect: false,
-        })
-      );
+  // const { visitor, id, nsp } = lastVisitor ? lastVisitor : nullVisitor;
+  // url += `?visitor=${visitor}&id=${id}&nsp=${nsp}`;
 
-      // Vue.config.errorHandler = (error) => ErrorService.onError(error);
-      Vue.prototype.$showDetails = false;
-      new Vue({
-        router,
-        store,
-        vuetify,
-        render: (h) => h(App),
-      }).$mount('#app');
-    });
-  });
+  console.log('url:', url);
+  console.log('query:', lastVisitor || nullVisitor);
+  console.log(process.env.NODE_ENV);
+  console.log('--------------------------------------------');
+
+  Vue.use(
+    new VueSocketIO({
+      debug: false,
+      connection: url,
+      autoConnect: false,
+    })
+  );
+
+  // Vue.config.errorHandler = (error) => ErrorService.onError(error);
+  Vue.prototype.$showDetails = false;
+  new Vue({
+    router,
+    store,
+    vuetify,
+    render: (h) => h(App),
+  }).$mount('#app');
+});

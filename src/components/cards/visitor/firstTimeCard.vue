@@ -29,7 +29,6 @@
 </template>
 
 <script>
-import State from '@/models/State';
 import Visitor from '@/models/Visitor';
 
 import base64id from 'base64id';
