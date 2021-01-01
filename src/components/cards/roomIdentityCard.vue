@@ -15,7 +15,6 @@
         </v-card-actions>
       </v-card>
     </v-dialog> -->
-
     <v-dialog v-model="deleteDialog" max-width="260">
       <v-card>
         <v-card-title class="headline">Delete Room?</v-card-title>
@@ -31,6 +30,26 @@
           </v-btn>
 
           <v-btn color="green darken-2" text @click="deleteDialog = false">
+            Cancel
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="newDialog" max-width="260">
+      <v-card>
+        <v-card-title class="headline">Add a Room to LCT?</v-card-title>
+        <v-card-text
+          >After you add a Room, you will connect to the LCT server. Open the
+          Room to enable Visitors to enter.</v-card-text
+        >
+        <v-card-actions>
+          <v-spacer></v-spacer>
+
+          <v-btn color="green darken-1" text @click="addRoom()">
+            Yes
+          </v-btn>
+
+          <v-btn color="green darken-2" text @click="newDialog = false">
             Cancel
           </v-btn>
         </v-card-actions>
@@ -159,7 +178,7 @@ const error = clc.red.bold;
 // const warn = clc.yellow;
 // const info = clc.cyan;
 // const notice = clc.blue;
-// const highlight = clc.magenta;
+const highlight = clc.magenta;
 // const bold = clc.bold;
 
 export default {
@@ -225,6 +244,7 @@ export default {
 
   data() {
     return {
+      newDialog: false,
       query: {},
       deleteDialog: false,
       firstTime: false,
@@ -359,6 +379,24 @@ export default {
   },
 
   methods: {
+    // TODO move next three methods to helpers
+    getQuery() {
+      let query = this.$socket.io.opts.query || {
+        visitor: '',
+        id: '',
+        nsp: '',
+      };
+      return query;
+    },
+
+    printQuery() {
+      const query = this.getQuery();
+      if (!query.id) {
+        return 'Empty query';
+      }
+      return printJson(query);
+    },
+
     parseParams(querystring) {
       // parse query string
       const params = new URLSearchParams(querystring);
@@ -440,6 +478,8 @@ export default {
     //    it adds a Room to the Room entity (including a new id for the server to use during connection there)
     //    then it connects to the server
     onUpdateRoom(newVal) {
+      console.log('Old Room', this.getQuery().id);
+      this.$socket.disconnect(true);
       Room.update(newVal, this.room.id, this.nsp)
         .then((r) => {
           // update returns an array
@@ -447,102 +487,10 @@ export default {
           this.room = r[0];
 
           console.log('New Room:', r);
-          this.connectToServer();
+          // this.connectToServer();
         })
         .catch((e) => console.log(e));
     },
-
-    // onRoomSelected called by:
-    //    onNewRoom() when user adds a Room
-    //    selectedRoomInit() method called by mounted()
-    //    NOTE: build 12.21.12.21 deprecated multiple Room support
-    //
-    // onRoomSelected() handles connection options.
-    //    it ignores connect() when the connected Room tries to connect again (for what ever reason)
-    //    if the room changes, it disconnects the old Room and connects the new Room
-    //    otherwise it updates the query (including the open/closed state of the Room) and conects to Server
-    // onRoomSelected(caller) {
-    //   console.log(highlight(`Step 4: onRoomSelected ${caller}`));
-    //   console.assert(this.room.room, `Corrupt room: ${printJson(this.room)}`);
-    //   try {
-    //     this.reconnected = false;
-
-    //     if (this.$socket.connected) {
-    //       console.log(`${this.$socket.io.opts.query.room} is  connected`);
-    //       if (this.$socket.io.opts.query.room == this.room.room) {
-    //         // if client and server are in sync, no need for further actions
-    //         return;
-    //       }
-
-    //       console.log(
-    //         `This socket does not belong to ${this.room.room}. Disconnecting ${this.$socket.io.opts.query.room}`
-    //       );
-    //       this.$socket.disconnect();
-    //     }
-
-    //     this.log(`Connecting ${this.room.room} to Server...`);
-
-    //     this.$socket.io.opts.query = {
-    //       room: this.room.room,
-    //       id: this.room.id,
-    //       nsp: '',
-    //     };
-
-    //     this.$socket.connect();
-    //   } catch (error) {
-    //     console.error('onRoomSelected:', error);
-    //   }
-    // },
-
-    // deprecated multi Room support
-    // onChangeRoom(val) {
-    //   // should this go later in the function?
-    //   State.changeRoom(this.room.id, this.closed);
-
-    //   let msg;
-    //   if (!val || this.rooms.length > 1) {
-    //     msg = {
-    //       room: this.room.id,
-    //       // TODO why deleted?
-    //       message: val ? 'Closed' : 'Deleted',
-    //       sentTime: new Date().toISOString(),
-    //     };
-    //     this.emit({
-    //       event: 'closeRoom',
-    //       message: msg,
-    //       ack: (ack) => {
-    //         // TODO why length?
-    //         this.closed = ack.error.length;
-    //         let msg = `${ack.message}  ${ack.error}`;
-    //         this.alertMessage = msg;
-    //         this.alertColor = val ? 'success' : 'warning';
-    //         this.alert = true;
-    //         this.log(`Closed Room ${this.room.id}`);
-    //       },
-    //     });
-    //   }
-    //   if (val && this.rooms.length) {
-    //     msg = {
-    //       room: this.room.room,
-    //       id: this.room.id,
-    //       message: 'Opened',
-    //       state: this.closed,
-    //       sentTime: new Date().toISOString(),
-    //     };
-    //     this.emit({
-    //       event: 'openRoom',
-    //       message: msg,
-    //       ack: (ack) => {
-    //         this.closed = ack.error.length;
-    //         let msg = `${ack.message}  ${ack.error}`;
-    //         this.alertMessage = msg;
-    //         this.alertColor = 'success';
-    //         this.alert = true;
-    //         this.log('Opened Room');
-    //       },
-    //     });
-    //   }
-    // },
 
     enableButton() {
       this.disableButton = false;
@@ -607,30 +555,6 @@ export default {
       //this.onUpdateRoom();
     },
     //#endregion
-
-    // called by Open/Close Room button
-    // act(action) {
-    //   const msg = {
-    //     room: this.room.room,
-    //     message: this.closed ? 'Opened' : 'Closed',
-    //     sentTime: new Date().toISOString(),
-    //   };
-    //   this.messages = msg;
-
-    //   const event = this.closed ? 'openRoom' : 'closeRoom';
-    //   const payload = {
-    //     event: event,
-    //     message: msg,
-    //     ack: (ack) => {
-    //       this.alertColor = 'success';
-    //       this.alertMessage = ack.message;
-    //       this.alert = true;
-    //     },
-    //   };
-    //   this.closed = action == 'close';
-    //   this.emit(payload);
-    //   this.resetSnackbar();
-    // },
 
     emit(payload) {
       // open or closed
@@ -703,15 +627,22 @@ export default {
 
   watch: {
     room(newVal, oldVal) {
+      // for some reason, when Room is null, the watch fires with the first character entered in the text-field.
+      // and when the text-field edit is done, it sets this.firsttime to false, so we can proceed past this point then.
+      if (this.firstTime) {
+        return;
+      }
       console.group('Step 3: room watch');
-      // if (!this.$socket.id) {
-      //   console.log('Initializing socket. Leaving watch.');
-      //   return;
-      // }
 
       // deleted Room (viz., Room text field is blank?
       if (!newVal.room || newVal.room == 'null') {
-        console.log('No newVal for Room. Delete continues...');
+        console.log(
+          `${
+            this.firstTime
+              ? 'First time.'
+              : 'No newVal for Room. Delete continues...'
+          }`
+        );
         this.deleteDialog = !this.firstTime;
         return;
       }
@@ -719,14 +650,19 @@ export default {
       // change the Room's name
       if (oldVal?.id) {
         console.log('oldVal and newVal means updating Room name');
-        console.log(`Close Room ${oldVal.room}`);
-        this.onClose(oldVal.room);
         console.log(`Connecting Room ${newVal.room}`);
-        window.location.reload();
-        return;
+        const msg = {
+          room: this.getQuery().room,
+          message: 'Closed',
+          sentTime: new Date().toISOString(),
+        };
+        // update Message entity
+        this.messages = msg;
+        this.printQuery();
+        // window.location.reload();
       }
 
-      console.log('Connecting');
+      console.log('Connection options:');
       this.$socket.io.opts.query = {
         room: this.room.room,
         id: this.room.id,
@@ -747,8 +683,15 @@ export default {
     await Room.$fetch();
 
     console.group('Step 1: mounted()');
-    console.warn('Socket query:', printJson(this.query));
-    console.log('Initializing socket...');
+
+    console.log('Initializing socket with');
+    console.log(
+      highlight(
+        this.$socket.id,
+        this.$socket.connected,
+        printJson(this.$socket.io.opts.query)
+      )
+    );
     console.groupEnd();
     console.log(' ');
 

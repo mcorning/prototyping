@@ -87,7 +87,7 @@
     <v-app-bar bottom dense app color="primary" dark>
       <v-row align="center" dense justify="space-between">
         <v-col class="text-left"
-          ><small>{{ socketUri }}</small></v-col
+          ><small>{{ this.$socket.io.uri }}</small></v-col
         >
         <v-col class="text-right">
           <small>V {{ build }} </small>
