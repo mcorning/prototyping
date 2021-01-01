@@ -128,9 +128,9 @@ import base64id from 'base64id';
 
 import Visitor from '@/models/Visitor';
 
-import warnRoomCard from '@/components/cards/visitor/warnRoomCard';
+import warnRoomCard from '@/components/cards/warnRoomCard';
 
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 const { printJson, getNow } = helpers;
 
 import clc from 'cli-color';

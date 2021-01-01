@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 const { printJson } = helpers;
 
 // This Visitor's version of roomIdentityCard.vue does not use the Room entity.

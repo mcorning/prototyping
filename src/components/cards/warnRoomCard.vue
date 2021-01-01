@@ -66,7 +66,7 @@
 <script>
 import moment from 'moment';
 
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 const { printJson, getNow } = helpers;
 
 import Message from '@/models/Message';

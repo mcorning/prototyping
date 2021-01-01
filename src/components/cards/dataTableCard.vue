@@ -75,7 +75,7 @@
 <script>
 // import moment from 'moment';
 
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 
 import Message from '@/models/Message';
 

@@ -51,7 +51,7 @@
 </template>
 
 <script>
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 
 export default {
   props: {

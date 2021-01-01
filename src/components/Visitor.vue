@@ -88,14 +88,13 @@
     </v-container>
   </div>
 </template>
-<script type="application/javascript" src="@/components/js/helpers.js"></script>
 
 <script>
 import base64id from 'base64id';
 
 import * as easings from 'vuetify/es5/services/goto/easing-patterns';
 
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 const { printJson, getNow } = helpers;
 
 import moment from 'moment';
@@ -104,10 +103,10 @@ import Message from '@/models/Message';
 import State from '@/models/State';
 import Visitor from '@/models/Visitor';
 
-import diaryCard from '@/components/cards/visitor/diaryCard';
-import visitorIdentityCard from '@/components/cards/visitor/visitorIdentityCard';
-import roomIdentityCard from '@/components/cards/visitor/roomIdentityCard';
-import roomEntryCard from '@/components/cards/visitor/roomEntryCard';
+import diaryCard from '@/components/cards/diaryCard';
+import visitorIdentityCard from '@/components/cards/visitorIdentityCard';
+import roomIdentityCard from '@/components/cards/roomIdentityCard';
+import roomEntryCard from '@/components/cards/roomEntryCard';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 

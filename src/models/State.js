@@ -1,5 +1,5 @@
 import { Model } from '@vuex-orm/core';
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 
 export default class State extends Model {
   static entity = 'state';
