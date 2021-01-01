@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-dialog v-model="dialog" max-width="340">
+    <!-- <v-dialog v-model="dialog" max-width="340">
       <v-card>
         <v-card-title class="headline"
           >Connect {{ defaultVisitor }} to LCT?</v-card-title
@@ -32,7 +32,7 @@
           </v-btn>
         </v-card-actions>
       </v-card>
-    </v-dialog>
+    </v-dialog> -->
     <v-card>
       <v-card-title>Connect to Local Contact Tracing</v-card-title>
       <v-card-subtitle
@@ -385,7 +385,11 @@ export default {
     },
 
     printQuery() {
-      return printJson(this.$socket.io.opts.query);
+      const query = this.getQuery();
+      if (!query.id) {
+        return 'Empty query';
+      }
+      return printJson(query);
     },
 
     // update IndexedDb and set values for selection
