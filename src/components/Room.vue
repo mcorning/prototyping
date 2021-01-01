@@ -47,7 +47,7 @@ import base64id from 'base64id';
 
 import moment from 'moment';
 
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 const { printJson, getNow } = helpers;
 
 import ErrorService from '@/Services/ErrorService';

@@ -284,7 +284,7 @@ import Clock from 'vue-clock2';
 
 import base64id from 'base64id';
 
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 
 // PWA Support
 // see mixins: below

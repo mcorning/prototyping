@@ -1,6 +1,3 @@
-// Server on.connection() does not know the name of the new connection.
-// So we fire this event right after connection is made to pass the name of the room to the server.
-// The Server needs this name to alert Visitors.
 import moment from 'moment';
 
 export default {
@@ -8,19 +5,39 @@ export default {
   today: 'YYYY-MM-DD',
   visitFormat: 'HH:mm:ss:SSS on ddd, MMM DD',
 
-  openMyRoom: function(yourID) {
-    let payload = {
-      event: 'openMyRoom',
-      message: yourID,
-      ack: (ack) => {
-        console.log('ACK :>> ', ack);
-        // this.alertColor = 'success';
-        // this.alertMessage = ack;
-        // this.alertIcon = 'mdi-email-open';
-        // this.alert = true;
-      },
+  getQuery() {
+    let query = this.$socket.io.opts.query || {
+      visitor: '',
+      id: '',
+      nsp: '',
     };
-    this.$socket.emit(payload.event, payload.message, payload.ack);
+    return query;
+  },
+
+  printQuery() {
+    const query = this.getQuery();
+    if (!query.id) {
+      return 'Empty query';
+    }
+    return this.printJson(query);
+  },
+
+  parseParams(querystring) {
+    // parse query string
+    const params = new URLSearchParams(querystring);
+
+    const obj = {};
+
+    // iterate over all keys
+    for (const key of params.keys()) {
+      if (params.getAll(key).length > 1) {
+        obj[key] = params.getAll(key);
+      } else {
+        obj[key] = params.get(key);
+      }
+    }
+
+    return obj;
   },
 
   printJson: function(json, spacer = 3) {

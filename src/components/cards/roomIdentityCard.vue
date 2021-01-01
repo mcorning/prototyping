@@ -169,7 +169,7 @@
 import Message from '@/models/Message';
 import Room from '@/models/Room';
 
-import helpers from '@/components/js/helpers.js';
+import helpers from '@/mixins/helpers.js';
 const { printJson, getNow } = helpers;
 
 import clc from 'cli-color';
@@ -379,42 +379,6 @@ export default {
   },
 
   methods: {
-    // TODO move next three methods to helpers
-    getQuery() {
-      let query = this.$socket.io.opts.query || {
-        visitor: '',
-        id: '',
-        nsp: '',
-      };
-      return query;
-    },
-
-    printQuery() {
-      const query = this.getQuery();
-      if (!query.id) {
-        return 'Empty query';
-      }
-      return printJson(query);
-    },
-
-    parseParams(querystring) {
-      // parse query string
-      const params = new URLSearchParams(querystring);
-
-      const obj = {};
-
-      // iterate over all keys
-      for (const key of params.keys()) {
-        if (params.getAll(key).length > 1) {
-          obj[key] = params.getAll(key);
-        } else {
-          obj[key] = params.get(key);
-        }
-      }
-
-      return obj;
-    },
-
     configureSnackbar(message, buttons, timeout, callback) {
       this.feedbackMessage = message;
       this.btnLabels = buttons;
