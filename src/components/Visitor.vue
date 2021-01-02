@@ -48,13 +48,16 @@
 
       <v-row>
         <v-col>
-          <roomIdentityCard :log="log" @roomSelected="onRoomSelected($event)"
+          <roomIdentityCard
+            ref="roomSelect"
+            :log="log"
+            @roomSelected="onRoomSelected($event)"
         /></v-col>
       </v-row>
+      <div ref="checkInBtn"></div>
       <v-row v-if="showEntryRoomCard">
         <v-col>
           <roomEntryCard
-            ref="button"
             :roomName="roomName"
             :log="log"
             :occupancy="occupancy"
@@ -307,7 +310,7 @@ export default {
     onWarned(data) {
       const { rooms, reason } = data;
       console.group(
-        `[${getNow()}] EVENT: onWarned (Visitor.vue) - updating messages for ${
+        `[${getNow()}] EVENT: onWarned (${reason}) - updating messages for ${
           this.enabled.visitor.visitor
         }'s visited Rooms:`
       );
@@ -380,7 +383,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     // handles main incoming Visitor event from Server
     onExposureAlert(data) {
       const { event, message, visitor, room } = data;
-
+      console.log('onExposureAlert:', event);
       // prepare the Alert card content
       this.alert = true;
       this.alertIcon = 'mdi-alert';
@@ -446,8 +449,8 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       this.enabled.room = selectedRoom;
       this.showEntryRoomCard = true;
       this.connectionMessage = null;
-      if (this.$refs.visits) {
-        this.$vuetify.goTo(this.$refs.button, {
+      if (this.$refs.checkInBtn) {
+        this.$vuetify.goTo(this.$refs.checkInBtn, {
           duration: 300,
           offset: 0,
           easing: this.easing,
@@ -457,6 +460,13 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     },
 
     onVisitorReady(visitor) {
+      if (this.$refs.roomSelect) {
+        this.$vuetify.goTo(this.$refs.roomSelect, {
+          duration: 300,
+          offset: 0,
+          easing: this.easing,
+        });
+      }
       // this.enabled holds two objects: room and visitor
       // visitor will be empty during OBX
       if (visitor) {
