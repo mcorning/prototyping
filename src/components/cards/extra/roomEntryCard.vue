@@ -101,12 +101,12 @@ export default {
     },
 
     onChangeRoom() {
-      this.$emit('roomChanged', this.checkedOut);
       //  checkedOut instantiates as true,
       // meaning the default action is to EnterRoom
       // so on the second click, checkedOut will be false
       // and act will Leave Room
       this.checkedOut = !this.checkedOut;
+      this.$emit('roomChanged', this.checkedOut);
     },
 
     changingRoom() {

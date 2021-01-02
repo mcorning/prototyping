@@ -1,6 +1,6 @@
 {
   "name": "lct.visitor",
-  "version": "12.31.18.31",
+  "version": "01.01.17.11",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",

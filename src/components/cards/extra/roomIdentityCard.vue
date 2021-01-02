@@ -15,7 +15,6 @@
         persistent-hint
         return-object
         single-line
-        @change="onChangingRoom"
       ></v-select>
       <!-- </v-col>
       </v-row> -->
@@ -62,7 +61,6 @@ export default {
   data() {
     return {
       openRooms: [],
-      checkedOut: true,
       roomSelected: { room: '', id: '' },
     };
   },
@@ -78,7 +76,7 @@ export default {
     openRoomsExposed(rooms) {
       this.openRooms = rooms;
       console.groupCollapsed('EVENT: openRoomsExposed - Open Rooms:');
-      console.log(this.printJson(rooms));
+      console.log(printJson(rooms));
       const msg = rooms
         ? `roomIdentityCard: ${printJson(this.openRooms)}`
         : 'No open Rooms yet.';
@@ -100,11 +98,13 @@ export default {
     onChangingRoom() {
       // send the Room data back to Visitor so it can add the Visitor data to emit with enterRoom on the Server
       this.log(printJson(this.roomSelected));
-      this.$emit('roomSelected', this.roomSelected);
     },
+  },
 
-    printJson(json) {
-      return JSON.stringify(json, null, 3);
+  watch: {
+    roomSelected(newVal, oldVal) {
+      if (oldVal.id) this.$emit('leaveRoom', oldVal);
+      this.$emit('roomSelected', this.roomSelected);
     },
   },
 

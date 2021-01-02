@@ -48,13 +48,28 @@
 
       <v-row>
         <v-col>
+          <roomCard
+            ref="roomSelect"
+            :roomName="roomName"
+            :occupancy="occupancy"
+            :log="log"
+            @changeRoom="onChangeRoom($event)"
+            @act="onAct($event)"
+        /></v-col>
+      </v-row>
+
+      <!-- <v-row>
+        <v-col>
           <roomIdentityCard
             ref="roomSelect"
             :log="log"
             @roomSelected="onRoomSelected($event)"
+            @leaveRoom="onChangeRoom($event)"
         /></v-col>
-      </v-row>
-      <div ref="checkInBtn"></div>
+      </v-row> -->
+
+      <!-- can't use a ref in a hidden component, so this is the closest we will get after room selection -->
+      <!-- <div ref="checkInBtn"></div>
       <v-row v-if="showEntryRoomCard">
         <v-col>
           <roomEntryCard
@@ -63,7 +78,7 @@
             :occupancy="occupancy"
             @roomChanged="onAct($event)"
         /></v-col>
-      </v-row>
+      </v-row> -->
 
       <v-expansion-panels
         v-if="messages.length"
@@ -108,8 +123,9 @@ import Visitor from '@/models/Visitor';
 
 import diaryCard from '@/components/cards/diaryCard';
 import visitorIdentityCard from '@/components/cards/visitorIdentityCard';
-import roomIdentityCard from '@/components/cards/roomIdentityCard';
-import roomEntryCard from '@/components/cards/roomEntryCard';
+import roomCard from '@/components/cards/roomCard';
+// import roomIdentityCard from '@/components/cards/roomIdentityCard';
+// import roomEntryCard from '@/components/cards/roomEntryCard';
 import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 
@@ -134,8 +150,9 @@ export default {
   components: {
     diaryCard,
     visitorIdentityCard,
-    roomIdentityCard,
-    roomEntryCard,
+    // roomIdentityCard,
+    // roomEntryCard,
+    roomCard,
     dataTableCard,
     auditTrailCard,
   },
@@ -411,7 +428,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       let msg = {
         visitor: this.enabled.visitor,
         room: this.enabled.room.room,
-        message: checkedOut ? 'Entered' : 'Departed',
+        message: checkedOut ? 'Departed' : 'Entered',
         sentTime: new Date().toISOString(),
       };
       this.messages = msg;
@@ -439,24 +456,17 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
         : 'See you next time...';
 
       let m = checkedOut ? 'out of' : 'into';
+      this.checkedOut = checkedOut;
+
       this.log(
         `You checked ${m} ${this.enabled.room.room} {${this.enabled.room.id}}`
       );
     },
 
-    onRoomSelected(selectedRoom) {
+    onChangeRoom(selectedRoom) {
+      console.log('Selected:', selectedRoom);
       this.panelState = [0, 2];
       this.enabled.room = selectedRoom;
-      this.showEntryRoomCard = true;
-      this.connectionMessage = null;
-      if (this.$refs.checkInBtn) {
-        this.$vuetify.goTo(this.$refs.checkInBtn, {
-          duration: 300,
-          offset: 0,
-          easing: this.easing,
-        });
-      }
-      console.log(printJson(this.enabled.room));
     },
 
     onVisitorReady(visitor) {
@@ -618,6 +628,10 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
         setTimeout(() => {
           this.overlay = false;
         }, 10000);
+    },
+
+    selectedRoom(newVal, oldVal) {
+      console.log(newVal, oldVal);
     },
   },
 
