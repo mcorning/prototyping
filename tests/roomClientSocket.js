@@ -1,6 +1,9 @@
+/*
+
+*/
+//#region Preamble
 const SHOW = 0;
 const io = require('socket.io-client');
-const moment = require('moment');
 const clc = require('cli-color');
 const success = clc.green.bold;
 const error = clc.red.bold;
@@ -18,13 +21,13 @@ const {
 } = require('./helpers');
 const { messages, printJson } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
-
-// const INCLUDE = 0;
-let TESTING = 1;
+let testing = 0;
 console.log(highlight(getNow(), 'Starting roomClientSocket.js'));
-console.log(TESTING ? 'Testing' : 'Production');
+const rs = rooms;
+console.log(testing ? `Testing ${rooms.length} Rooms` : 'Production');
+//#endregion Preamble
 
-// methods called by state machine or test code
+//#region  methods called by state machine or test code
 const alertVisitor = (clientSocket, visitor, warning) => {
   const message = {
     visitor: visitor,
@@ -69,9 +72,9 @@ const openRoom = (clientSocket, message) => {
     console.groupEnd();
   });
 };
-// end methods called by state machine
+//#endregion end methods called by state machine
 
-// listeners
+//#region Listeners
 // using named listeners makes it easier to remove listeners from socket event handlers
 const onAvailableRoomsExposed = (message) => {
   console.groupCollapsed(`${getNow()} onAvailableRoomsExposed results:`);
@@ -193,15 +196,15 @@ const onNotifyRoomX = (data, ack) => {
   // if (ack) ack(`${visitor}, ${room} alerted`);
   // console.groupEnd();
 };
-// end listeners
+//#endregion end listeners
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-// Client Socket Event handlers
+//#region  Client socket event handlers
 
 // these match the sockets options in the Room.vue
 // but they are called by state machine on behalf of the Room.vue
 // room is an object {name, id, nsp}
-function OpenRoomConnection(query) {
+function openRoomConnection(query) {
   try {
     let roomMap = new Map();
     const clientSocket = io(socketIoServerUrl, {
@@ -320,10 +323,10 @@ function OpenRoomConnection(query) {
     console.error('OpenRoomConnection hit this:', error);
   }
 }
-// end specialized event handlers
+//#endregion Client socket event handlers
 
 module.exports = {
-  OpenRoomConnection,
+  openRoomConnection,
   alertVisitor,
   closeRoom,
   exposeAvailableRooms,
@@ -331,15 +334,15 @@ module.exports = {
   openRoom,
 };
 
-TESTING = 0;
-async function bvt() {
+//#region Local tests
+async function bvt(rs) {
   // test helpers
   var getConnections = new Promise(function(resolve) {
     let connectionMap = new Map();
-    let rs = rooms;
     let more = rooms.length;
+
     rs.forEach((room) => {
-      let socket = OpenRoomConnection(room);
+      let socket = openRoomConnection(room);
       socket.on('connect', () => {
         connectionMap.set(socket.query.room, socket);
         if (!--more) {
@@ -353,8 +356,9 @@ async function bvt() {
   return await getConnections;
 }
 
-TESTING &&
-  bvt().then((c) => {
+testing &&
+  bvt(rs).then((c) => {
     console.log(info('connectionMap:'));
     console.table(c);
   });
+//#endregion

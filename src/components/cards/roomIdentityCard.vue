@@ -170,7 +170,8 @@ import Message from '@/models/Message';
 import Room from '@/models/Room';
 
 import helpers from '@/mixins/helpers.js';
-const { printJson, getNow } = helpers;
+
+// const { printJson, getNow, parseParams, getQuery } = helpers;
 
 import clc from 'cli-color';
 // const success = clc.green.bold;
@@ -244,6 +245,7 @@ export default {
 
   data() {
     return {
+      openTimeout: '',
       newDialog: false,
       query: {},
       deleteDialog: false,
@@ -299,8 +301,8 @@ export default {
 
       this.statusIcon = 'mdi-lan-connect';
       this.hint = `ID: ${this.room.id}`;
-      console.log('Connected?', this.$socket.connected);
-      if (this.$socket.connected) {
+      console.log('Connected/closed?', this.$socket.connected, this.closed);
+      if (this.$socket.connected && this.closed) {
         this.configureSnackbar(
           `Open ${room} now? `,
           ['Yes', 'No'],
@@ -325,7 +327,7 @@ export default {
 
       console.group('onReconnect');
       console.warn(
-        `[${getNow()}] ${printJson(this.query)} Recconnect ${reason}`,
+        `[${this.getNow()}] ${this.printJson(this.query)} Recconnect ${reason}`,
         'roomIdentityCard.vue'
       );
       const msg = {
@@ -385,7 +387,7 @@ export default {
       this.timeout = timeout;
 
       this.openSnackbar = true;
-      setTimeout(() => {
+      this.openIimeout = setTimeout(() => {
         console.log(`Timed out.`);
         if (callback) {
           callback();
@@ -397,6 +399,7 @@ export default {
       this.btnLabels = ['Yes'];
       this.openSnackbar = false;
       this.timeout = 10000;
+      clearTimeout(this.openIimeout);
     },
 
     setFirstTime(val) {
@@ -442,18 +445,26 @@ export default {
     //    it adds a Room to the Room entity (including a new id for the server to use during connection there)
     //    then it connects to the server
     onUpdateRoom(newVal) {
-      console.log('Old Room', this.getQuery().id);
-      this.$socket.disconnect(true);
-      Room.update(newVal, this.room.id, this.nsp)
-        .then((r) => {
-          // update returns an array
-          console.assert(r.length, 'Expected an array of Room objects');
-          this.room = r[0];
+      try {
+        console.log('Old Room', this.getQuery().id);
+        this.$socket.disconnect(true);
+        if (newVal == 'null') {
+          return;
+        }
+        Room.update(newVal, this.room.id, this.nsp)
+          .then((r) => {
+            // update returns an array
+            console.assert(r.length, 'Expected an array of Room objects');
+            this.room = r[0];
 
-          console.log('New Room:', r);
-          // this.connectToServer();
-        })
-        .catch((e) => console.log(e));
+            console.log('New Room:', r);
+            // we have a new room, now connect it to the server
+            this.connectToServer();
+          })
+          .catch((e) => console.log(e));
+      } catch (error) {
+        this.log(error, 'Error');
+      }
     },
 
     enableButton() {
@@ -510,7 +521,7 @@ export default {
         },
       };
       console.log('onClose() payload:');
-      console.log(printJson(payload));
+      console.log(this.printJson(payload));
       this.emit(payload);
       this.resetSnackbar();
       this.hint = `ID: ${this.room.id} is ${this.closed ? 'closed' : 'open'}`;
@@ -551,7 +562,7 @@ export default {
       Room.delete(this.room.id).then(() => {
         this.$socket.disconnect(true);
         this.log(
-          `Deleted ${printJson(this.query.room)} and disconnected ${
+          `Deleted ${this.printJson(this.query.room)} and disconnected ${
             this.$socket.id
           }`
         );
@@ -562,6 +573,7 @@ export default {
 
     selectedRoomInit() {
       console.group('Step 2: selectedRoomInit');
+      this.socket = this.$socket;
       this.query = this.parseParams(this.$socket.io.opts.query);
       this.room = Room.query().first();
       if (this.room) {
@@ -632,13 +644,14 @@ export default {
         id: this.room.id,
         nsp: '',
       };
-      console.log(printJson(this.$socket.io.opts.query));
+      console.log(this.printJson(this.$socket.io.opts.query));
       this.$socket.connect();
 
       console.groupEnd();
       console.log(' ');
     },
   },
+  mixins: [helpers],
 
   created() {},
 
@@ -653,7 +666,7 @@ export default {
       highlight(
         this.$socket.id,
         this.$socket.connected,
-        printJson(this.$socket.io.opts.query)
+        this.printJson(this.$socket.io.opts.query)
       )
     );
     console.groupEnd();

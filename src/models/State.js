@@ -64,7 +64,7 @@ export default class State extends Model {
   }
 
   static async handleAlert(val) {
-    console.log('STATE: warning now:', helpers.pringJson(val));
+    console.log('STATE: warning now:', helpers.printJson(val));
     let p = await this.$update({
       data: {
         id: 0,

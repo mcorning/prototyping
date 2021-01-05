@@ -80,10 +80,10 @@ export default {
     getIconColor(type) {
       return type == 'alert' ? 'red' : 'gray';
     },
-    visitedDate(date) {
-      return helpers.visitedDate(date);
-    },
   },
+
+  mixins: [helpers],
+
   mounted() {},
 };
 </script>

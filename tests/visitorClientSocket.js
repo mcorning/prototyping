@@ -1,4 +1,11 @@
+//#region Preample
+
 // This code is a wrapper around LCT socket.io server.
+// There are three sections:
+//   1) Room events
+//   2) Room named listeners (that print State)
+//   3) Event handlers (that call the named listeners)
+
 // there is a corresponding file, roomClientSocket.
 // each file has its own closure for Room or Visitor events
 // potential refactor will have a main script that requires both client socket files
@@ -12,7 +19,6 @@
 // other tests include testing for multiple Visitor alerts and Room pending warnings
 const SHOW = 0;
 const io = require('socket.io-client');
-// const moment = require('moment');
 
 const clc = require('cli-color');
 const success = clc.green.bold;
@@ -28,8 +34,9 @@ const { getNow, printJson, socketIoServerUrl } = require('./helpers');
 const TESTING = 1;
 console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
 console.log(TESTING ? 'Testing' : 'Production');
-// Note completed tests for each Visitor event
+//#endregion Preamble
 
+//#region Room events
 const leaveRoom = (clientSocket, message) => {
   clientSocket.emit('leaveRoom', message, (ack) => {
     console.group('Server Acknowledged: Leave Room:');
@@ -106,7 +113,6 @@ const exposeVisitorsRooms = (clientSocket) => {
     console.groupEnd();
   });
 };
-// end: EVENT CONSOLE LOGS                            //
 
 // tested 10.12.20
 const exposureWarning = (clientSocket, message, cb) => {
@@ -125,8 +131,9 @@ const exposureWarning = (clientSocket, message, cb) => {
     }
   });
 };
+//#endregion                            //
 
-// listeners
+//#region  Room named listeners
 // using named listeners makes it easier to remove listeners from socket event handlers
 
 // tested 10.12.20
@@ -162,12 +169,12 @@ const onPendingRoomsExposed = (list = ['No Rooms are online right now.']) => {
   console.groupEnd();
 };
 
-// end listeners
+//#endregion Listeners
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-// Client Socket Event handlers
+//#region  Client Socket Event handlers
 
-function OpenVisitorConnection(query) {
+function openVisitorConnection(query) {
   try {
     const connectionMap = new Map();
 
@@ -178,7 +185,7 @@ function OpenVisitorConnection(query) {
     // these are the sockets options in the Visitor.vue
     clientSocket.on('connect', () => {
       connectionMap.set(clientSocket.query.visitor, clientSocket);
-      console.groupCollapsed(`[${getNow()}] OpenVisitorConnection results:`);
+      console.groupCollapsed(`[${getNow()}] openVisitorConnection results:`);
       console.log(
         success(
           `On ${getNow()}, ${clientSocket.query.visitor} is on socket ${
@@ -246,9 +253,10 @@ function OpenVisitorConnection(query) {
     console.log(error('Cannot find the socket.io server.'));
   }
 }
+//#endregion Client Socket event handlers
 
 module.exports = {
-  OpenVisitorConnection,
+  openVisitorConnection,
   exposureWarning,
   enterRoom,
   exposeOpenRooms,

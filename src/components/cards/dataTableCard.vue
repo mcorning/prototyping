@@ -104,19 +104,18 @@ export default {
       const self = this;
 
       let allVisits = this.messages.filter((v) =>
-        helpers.isBetween(v.sentTime, this.daysBack)
+        this.isBetween(v.sentTime, this.daysBack)
       );
       if (this.daysBack == 0) {
         if (self.roomName) {
           let roomVisits = this.messages.filter(
             (v) =>
-              self.roomName == v.room &&
-              helpers.isToday(v.sentTime, this.daysBack)
+              self.roomName == v.room && this.isToday(v.sentTime, this.daysBack)
           );
           return roomVisits;
         } else {
           let roomVisits = this.messages.filter((v) =>
-            helpers.isToday(v.sentTime, this.daysBack)
+            this.isToday(v.sentTime, this.daysBack)
           );
           return roomVisits;
         }
@@ -217,13 +216,14 @@ export default {
       this.daysBack = this.daysBack ? 0 : 14;
     },
 
-    visitedDate(date) {
-      return helpers.visitedDate(date);
-    },
+    // visitedDate(date) {
+    //   return this.visitedDate(date);
+    // },
   },
   async mounted() {
     await Message.$fetch();
     this.loaded = true;
   },
+  mixins: [helpers],
 };
 </script>

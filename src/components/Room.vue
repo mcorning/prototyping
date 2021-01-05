@@ -48,7 +48,7 @@ import base64id from 'base64id';
 import moment from 'moment';
 
 import helpers from '@/mixins/helpers.js';
-const { printJson, getNow } = helpers;
+// const { printJson, getNow } = helpers;
 
 import ErrorService from '@/Services/ErrorService';
 
@@ -71,7 +71,7 @@ const bold = clc.bold;
 
 window.onerror = function(message, url, lineNo, columnNo, error) {
   /// what you want to do with error here
-  console.log(error.stack);
+  this.log(error.stack, 'Error');
   alert('onerror: ' + error.stack);
 };
 
@@ -210,16 +210,16 @@ export default {
       try {
         //#region notifyRoom
         console.groupCollapsed(
-          `[${getNow()}] EVENT: notifyRoom from [${visitor} to ${room} because ${reason}]`
+          `[${this.getNow()}] EVENT: notifyRoom from [${visitor} to ${room} because ${reason}]`
         );
         // filter exposureDatess for getMessageDates
         const visitors = this.getMessageDates(this.visits);
         //#region Logging
-        console.group(`[${getNow()}] Step 1) Gather the data.`);
+        console.group(`[${this.getNow()}] Step 1) Gather the data.`);
         console.log(`Room's exposure dates:`);
-        console.log(printJson(exposureDates));
+        console.log(this.printJson(exposureDates));
         console.log(`Room's Visitor dates:`);
-        console.log(printJson(visitors));
+        console.log(this.printJson(visitors));
         console.groupEnd();
         //#endregion
 
@@ -233,7 +233,7 @@ export default {
             visitors[visitedOn].forEach((other) => {
               //#region Step 2
               console.group(
-                `[${getNow()}] Step 2) EVENT: notifyRoom from processing alerts for ${
+                `[${this.getNow()}] Step 2) EVENT: notifyRoom from processing alerts for ${
                   other.id
                 }]`
               );
@@ -341,7 +341,7 @@ export default {
     groupMessagesByDateAndVisitor(payload) {
       const { array, prop, val, visitor } = payload;
       console.log('groupMessagesByDateAndVisitor - payload:');
-      console.log(printJson(payload));
+      console.log(this.printJson(payload));
       return array.reduce(function(a, c) {
         let key = moment(c[prop]).format('YYYY-MM-DD');
         if (!a[key]) {
@@ -354,9 +354,9 @@ export default {
 
     getMessageDates(messages) {
       console.groupCollapsed(
-        `[${getNow()}] Room Client: handling onNotifyRoom: Input data:`
+        `[${this.getNow()}] Room Client: handling onNotifyRoom: Input data:`
       );
-      // console.log(printJson(data));
+      // console.log(this.printJson(data));
       let visitors = this.groupMessagesByDateAndVisitor({
         array: messages,
         prop: 'sentTime',
@@ -364,7 +364,7 @@ export default {
         visitor: 'visitor',
       });
       console.log('Room Entered message dates:');
-      console.log(printJson(visitors));
+      console.log(this.printJson(visitors));
       console.groupEnd();
 
       return visitors;
@@ -387,13 +387,15 @@ export default {
     trace(trace) {
       const { caption, msg } = trace;
       console.log(bold(highlight(caption)));
-      console.log(bold(highlight(printJson(msg))));
+      console.log(bold(highlight(this.printJson(msg))));
     },
 
     // end helper methods
 
     //#endregion
   },
+
+  mixins: [helpers],
 
   async created() {},
 

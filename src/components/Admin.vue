@@ -639,10 +639,6 @@ export default {
       });
     },
 
-    visitedDate(date) {
-      return helpers.visitedDate(date);
-    },
-
     getSistersTime() {
       let t = mtz
         .utc()
@@ -700,7 +696,7 @@ export default {
     },
   },
   // PWA support (see import above)
-  mixins: [update],
+  mixins: [update, helpers],
 
   watch: {
     selectedRoom(newVal, oldVal) {

@@ -15,7 +15,6 @@ Each test passes a connectionMap to the next test.
 */
 
 const SHOW = 1;
-const BENCHMARKING = 0;
 
 const clc = require('cli-color');
 const success = clc.green.bold;
@@ -34,7 +33,7 @@ const {
 } = require('./helpers');
 
 const {
-  OpenVisitorConnection,
+  openVisitorConnection,
   exposureWarning,
   enterRoom,
   exposeEventPromise,
@@ -57,7 +56,7 @@ const {
 } = require('./visitorData');
 
 const {
-  OpenRoomConnection,
+  openRoomConnection,
   openRoom,
   alertVisitor,
 } = require('./roomClientSocket');
@@ -69,7 +68,7 @@ let connectionMap = new Map();
 connectionMap.set('rooms', new Map());
 connectionMap.set('visitors', new Map());
 
-async function testOpenRoomConnection() {
+async function testopenRoomConnection() {
   const getConnections = new Promise(function(resolve) {
     let room = pickRoom(rooms);
     room.id = room.id || newId;
@@ -79,7 +78,7 @@ async function testOpenRoomConnection() {
 
     // NOTE: this on connect handler does things that the callee's
     // on connect handler for clientSocket (which has the same socket id) does not
-    let roomSocket = OpenRoomConnection(room, (ack) => logResults.add(ack));
+    let roomSocket = openRoomConnection(room, (ack) => logResults.add(ack));
     roomSocket.on('connect', () => {
       // open Room with every connection to ensure pendingWarnings get sent
       openRoom(roomSocket, room);
@@ -96,7 +95,7 @@ function checkVisitor(v) {
   return v;
 }
 
-async function testOpenVisitorConnection() {
+async function testopenVisitorConnection() {
   // make connection map from some or all cached Visitor data
   const getSocket = new Promise(function(resolve) {
     // first time in, socket is a Room socket
@@ -106,7 +105,7 @@ async function testOpenVisitorConnection() {
       ? 'AirGas Inc'
       : 'Nurse Diesel';
     let visitor = visitors.filter((v) => v.visitor == nextVisitor)[0];
-    let socket = OpenVisitorConnection(checkVisitor(visitor));
+    let socket = openVisitorConnection(checkVisitor(visitor));
     socket.on('connect', () => {
       const name = socket.query.visitor;
       logResults.add({ socket: socket.id, name: name });
@@ -319,8 +318,8 @@ async function getStateOfTheServer(sockets) {
 
 let INCLUDE = 0;
 INCLUDE &&
-  testOpenRoomConnection()
-    .then((connectionMap) => testOpenVisitorConnection(connectionMap))
+  testopenRoomConnection()
+    .then((connectionMap) => testopenVisitorConnection(connectionMap))
     .then((connectionMap) => testEnterRoom(connectionMap))
     .then((results) => report(results))
     .then((results) => testLeaveRoom(results))
@@ -331,25 +330,25 @@ INCLUDE &&
 // then, emit exposureWarning
 // finally, check PENDING Rooms
 INCLUDE &&
-  testOpenVisitorConnection()
+  testopenVisitorConnection()
     .then(() => testExposureWarning())
-    .then(() => testOpenRoomConnection())
+    .then(() => testopenRoomConnection())
     // .then(() => testPendingRooms())
     .then(() => {
       logResults.show();
       console.log(' ');
     });
 // this test now checks that pending rooms see warnings
-// testOpenRoomConnection();
+// testopenRoomConnection();
 
 //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
 
 //                BE SURE SERVER IS RUNNING BEFORE YOU TRY TO TEST!
 
 //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-testOpenRoomConnection()
-  .then((roomSocket) => testOpenVisitorConnection(roomSocket)) // get first Visitor
-  .then((socket) => testOpenVisitorConnection(socket)) // get next Visitor
+testopenRoomConnection()
+  .then((roomSocket) => testopenVisitorConnection(roomSocket)) // get first Visitor
+  .then((socket) => testopenVisitorConnection(socket)) // get next Visitor
   .then((socket) => testExposureWarning(socket)) // Visitor warns Rooms
   .then((socket) => testEnterRoom(socket)) // Visitor enters a room to test pending
   .then((sockets) => getStateOfTheServer(sockets)) // display effect on State of the Server

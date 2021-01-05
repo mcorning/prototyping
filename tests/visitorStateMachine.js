@@ -19,14 +19,14 @@ const {
 const { pickVisitor, groupBy, messages } = require('./visitorData.js');
 const { pickRoom, rooms } = require('./roomData.js');
 const {
-  OpenRoomConnection,
+  openRoomConnection,
   alertVisitor,
   // closeRoom,
   // exposeOccupiedRooms,
   openRoom,
 } = require('./roomClientSocket');
 const {
-  OpenVisitorConnection,
+  openVisitorConnection,
   exposureWarning,
   enterRoom,
   exposeEventPromise,
@@ -53,7 +53,7 @@ console.log(TESTING ? 'TESTING' : 'PRODUCTION');
 // NOTE: if you manually disconnect these sockets, you won't see any results
 // from the server after the run() method finishes
 // since Room and Visitor are objects now pick one of each here (not later)
-const roomSocket = OpenRoomConnection(pickRoom(rooms));
+const roomSocket = openRoomConnection(pickRoom(rooms));
 const ROOM = roomSocket.query;
 console.group(`{${getNow()}]Visitor State Machine Test Results`);
 console.groupCollapsed('Found Visitor');
@@ -71,7 +71,7 @@ function visitorHoF(visitors) {
 
 const visitor = pickVisitor(visitorHoF);
 
-const visitorSocket = OpenVisitorConnection(visitor);
+const visitorSocket = openVisitorConnection(visitor);
 const VISITOR = visitorSocket.query;
 console.table(VISITOR);
 console.groupEnd();
