@@ -1,38 +1,5 @@
 <template>
   <div>
-    <!-- <v-dialog v-model="dialog" max-width="340">
-      <v-card>
-        <v-card-title class="headline"
-          >Connect {{ defaultVisitor }} to LCT?</v-card-title
-        >
-        <v-card-subtitle
-          >[Connect later] to use another Visitor alias</v-card-subtitle
-        >
-        <v-card-subtitle>
-          <template>
-            Before you can select an open Room, you must
-            <ul>
-              <li>have internet access</li>
-              <li>
-                establish a connection to the server
-              </li>
-            </ul>
-          </template>
-        </v-card-subtitle>
-
-        <v-card-actions>
-          <v-spacer></v-spacer>
-
-          <v-btn color="green darken-1" text @click="connectToServer()">
-            Connect now
-          </v-btn>
-
-          <v-btn color="green darken-2" text @click="dialog = false">
-            Connect later
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog> -->
     <v-card>
       <v-card-title>Connect to Local Contact Tracing</v-card-title>
       <v-card-subtitle
@@ -67,6 +34,7 @@
               single-line
               autofocus
               :prepend-icon="statusIcon"
+              :disabled="entered"
             >
             </v-select>
           </v-col>
@@ -144,6 +112,7 @@ const highlight = clc.magenta;
 
 export default {
   props: {
+    entered: { type: Boolean, default: false },
     log: {
       type: Function,
       default: null,
@@ -392,7 +361,8 @@ export default {
       return printJson(query);
     },
 
-    // update IndexedDb and set values for selection
+    // Called by text-field with Visitor's name.
+    //update IndexedDb and set values for selection
     onUpdateVisitor(newVal) {
       console.assert(this.selectedVisitor, 'Missing selectedVisitor object.');
       this.selectedVisitor.visitor = newVal;

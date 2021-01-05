@@ -16,7 +16,7 @@
     >
       {{ feedbackMessage }}
       <template v-slot:action="{ attrs }">
-        <v-btn color="white" text v-bind="attrs" @click="snackbar = false">
+        <v-btn color="white" text v-bind="attrs" @click="snackBar = false">
           Close
         </v-btn>
       </template>
@@ -27,6 +27,7 @@
         <v-col
           ><visitorIdentityCard
             :log="log"
+            :entered="entered"
             @visitor="onVisitorReady($event)"
             @warned="onWarned($event)"
           />
@@ -57,28 +58,6 @@
             @act="onAct($event)"
         /></v-col>
       </v-row>
-
-      <!-- <v-row>
-        <v-col>
-          <roomIdentityCard
-            ref="roomSelect"
-            :log="log"
-            @roomSelected="onRoomSelected($event)"
-            @leaveRoom="onChangeRoom($event)"
-        /></v-col>
-      </v-row> -->
-
-      <!-- can't use a ref in a hidden component, so this is the closest we will get after room selection -->
-      <!-- <div ref="checkInBtn"></div>
-      <v-row v-if="showEntryRoomCard">
-        <v-col>
-          <roomEntryCard
-            :roomName="roomName"
-            :log="log"
-            :occupancy="occupancy"
-            @roomChanged="onAct($event)"
-        /></v-col>
-      </v-row> -->
 
       <v-expansion-panels
         v-if="messages.length"
@@ -248,6 +227,7 @@ export default {
   },
 
   data: () => ({
+    entered: false,
     easing: 'easeInOutCubic',
     easings: Object.keys(easings),
 
@@ -350,10 +330,10 @@ export default {
       this.messageColor = 'success lighten-1';
       this.feedbackMessage = `Server acknowledges warning for Room(s)
         ${roomNames.join(', ')}.`;
+      this.snackBar = true;
 
       this.overlay = false;
 
-      this.snackBar = true;
       console.groupEnd();
       console.warn(
         `End of Visitor's responsibility. Room(s) take over from here...`
@@ -425,6 +405,9 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     //#region Vue event handlers
 
     onAct(checkedOut) {
+      // set the prop for visitorIdentityCard (disable the dropdown if entering a Room)
+      this.entered = !checkedOut;
+
       let msg = {
         visitor: this.enabled.visitor,
         room: this.enabled.room.room,
@@ -441,7 +424,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
         });
       }
 
-      let event = checkedOut ? 'enterRoom' : 'leaveRoom';
+      let event = checkedOut ? 'leaveRoom' : 'enterRoom';
 
       this.emit({
         event: event,
@@ -460,6 +443,12 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
 
       this.log(
         `You checked ${m} ${this.enabled.room.room} {${this.enabled.room.id}}`
+      );
+      Visitor.update(
+        this.enabled.visitor.visitor,
+        this.enabled.visitor.id,
+        this.nsp,
+        Date.now()
       );
     },
 
