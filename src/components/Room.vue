@@ -309,7 +309,7 @@ export default {
         // visitor: { visitor: other.visitor, id: other.id },
         visitor: { visitor: other.visitor, id: other.id },
         message: msg,
-        room: other.id,
+        room: room,
         sentTime: new Date().toISOString(),
       };
       console.log('Alerting other(s) with:');
