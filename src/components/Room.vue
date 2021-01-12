@@ -7,7 +7,12 @@
 
     <roomIntroCard />
 
-    <roomIdentityCard :log="log" :trace="trace" @open="onOpen" />
+    <roomIdentityCard
+      :log="log"
+      :trace="trace"
+      @open="onOpen"
+      @cancel="overlay = false"
+    />
 
     <v-expansion-panels
       v-if="messages.length"
@@ -191,6 +196,31 @@ export default {
   }),
 
   sockets: {
+    //
+    stepTwoServerNotifiesRoom(data, ack) {
+      const { exposureDates, visitor, reason, room } = data;
+
+      exposureDates.forEach((visitedOn) => {
+        const visitors = this.getMessageDates(this.visits);
+        const exposedVisitors = visitors[visitedOn].filter(
+          (v) => v.id != visitor
+        );
+
+        console.log(reason);
+        console.log(
+          `Alerting Visitors on ${visitedOn} (excluding ${visitor}) ${this.printJson(
+            exposedVisitors
+          )}`
+        );
+        this.$socket.emit('stepThreeServerFindsExposedVisitors', {
+          exposedVisitors: exposedVisitors,
+          room: room,
+        });
+
+        if (ack) ack(`${visitor.visitor}, ${room.room} alerted`);
+      });
+    },
+
     // Visitor routine events
     checkIn(msg) {
       this.onCheckIn(msg);
@@ -201,9 +231,10 @@ export default {
     },
 
     // sent from Server after Visitor sends exposureWarning
-    // data contains all the Rooms and dates visited by the subject Visitor
+    // data contains the Rooms and all the dates visited by the subject Visitor
+    notifyRoom() {},
 
-    notifyRoom(data, ack) {
+    notifyRoomX(data, ack) {
       // visitor is an ID
       const { exposureDates, room, visitor, reason } = data;
       console.assert(exposureDates, 'No exposure dates!');

@@ -470,6 +470,7 @@ export default {
     enableButton() {
       this.disableButton = false;
       this.resetSnackbar();
+      this.$emit('cancel')
     },
 
     //#region  handlers for speedDial

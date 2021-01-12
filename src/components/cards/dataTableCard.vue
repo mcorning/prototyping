@@ -169,6 +169,8 @@ export default {
           return 'warning';
         case 'entered':
           return 'primary';
+        case 'noop':
+          return 'pink lighten-2';
         default:
           return 'secondary';
       }
