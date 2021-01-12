@@ -263,6 +263,23 @@ export default {
   }),
 
   sockets: {
+    stepFourServerAlertsVisitor(exposure) {
+      const { room, exposedVisitor } = exposure;
+      const message = `${exposure.exposedVisitor.visitor}, a recent visit to ${exposure.room} may have exposed you to COVID-19. Get tested, and quarantine, if necessary.`;
+      this.messages = {
+        room: room,
+        visitor: exposedVisitor,
+        nsp: '',
+        sentTime: new Date().toISOString(),
+        message: 'ALERTED',
+      };
+      // prepare the Alert card content
+      this.alert = true;
+      this.alertIcon = 'mdi-alert';
+      this.alertColor = 'red darken-4';
+      this.alertMessage = message;
+    },
+
     //#region Socket.io custom events
     availableRoomsExposed(rooms) {
       const msg = rooms
@@ -275,12 +292,9 @@ export default {
     // If the opened Room has a cached warning, send it now.
     openRoomsExposed(rooms) {
       const msg = rooms
-        ? `Visitor sees open Rooms: ${printJson(rooms)}`
+        ? `Visitor sees ${rooms.length} open Rooms `
         : 'No Rooms open at this time.';
       this.log(msg, 'Event: openRoomsExposed');
-      this.connectionMessage = rooms
-        ? ''
-        : 'There are no open Rooms at this time.';
     },
 
     // Event sent from Server to advise Visitor to self-quarantine
@@ -398,7 +412,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
         })
       );
       // log the warning/alert in the Admin View
-      this.log(entry, 'Alert Message');
+      this.log(entry, 'exposureAlert: ACK ');
     },
     //#endregion
 

@@ -73,14 +73,14 @@ export default {
         'Event: availableRoomsExposed'
       );
     },
-    openRoomsExposed(rooms) {
-      this.openRooms = rooms;
-      console.table(rooms);
-      this.log(
-        `roomIdentityCard: ${printJson(this.openRooms)}`,
-        'Event: openRoomsExposed'
-      );
-    },
+    // openRoomsExposed(rooms) {
+    // this.openRooms = rooms;
+    // console.table(rooms);
+    // this.log(
+    //   `roomIdentityCard: ${printJson(this.openRooms)}`,
+    //   'Event: openRoomsExposed'
+    // );
+    // },
   },
 
   methods: {
@@ -117,11 +117,7 @@ export default {
   },
 
   async mounted() {
-    let self = this;
-    console.log('socket connected?', this.$socket.connected);
-    this.log('Mounted', 'roomIdentityCard');
     this.openRooms = await this.exposeEventPromise('exposepenRooms');
-    this.log(`Open Rooms: ${printJson(self.openRooms)}`, 'roomIdentityCard');
   },
 };
 </script>

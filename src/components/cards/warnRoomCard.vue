@@ -3,7 +3,7 @@
     <v-overlay :value="overlay">
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
-    <v-dialog v-model="dialog" persistent dark max-width="350">
+    <v-dialog v-model="dialog" persistent max-width="350">
       <template v-slot:activator="{ on, attrs }" v-slot:extension>
         <v-fab-transition>
           <v-btn color="error" dark v-bind="attrs" v-on="on" fab x-large>
@@ -27,13 +27,29 @@
       <v-card v-else-if="items && items.length">
         <v-card-title class="headline">Exposure Warnings</v-card-title>
         <v-card-subtitle>Dated: {{ dated }}</v-card-subtitle>
+        <v-card-subtitle>Rooms warned: {{ items.length }}</v-card-subtitle>
         <v-card-text>
-          <v-select
+          <v-card class="mx-auto" max-width="400">
+            <v-list>
+              <v-list-item-group v-model="model" mandatory color="primary">
+                <v-list-item v-for="(item, i) in WarningOptions" :key="i">
+                  <v-list-item-icon>
+                    <v-icon v-text="item.icon"></v-icon>
+                  </v-list-item-icon>
+
+                  <v-list-item-content>
+                    <v-list-item-title v-text="item.text"></v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list-item-group>
+            </v-list>
+          </v-card>
+          <!-- <v-select
             v-model="reason"
             :items="warningTypes"
             label="Select your reason to warn Rooms:"
           ></v-select>
-          <v-treeview open-all dense hoverable rounded :items="items" />
+          <v-treeview open-all dense hoverable rounded :items="items" /> -->
         </v-card-text>
         <v-divider class="mx-4"></v-divider>
         <v-card-title class="justify-end">Send warning?</v-card-title>
@@ -145,7 +161,7 @@ export default {
       const msg = {
         sentTime: new Date().toISOString(),
         visitor: this.visitor,
-        reason: this.reason,
+        reason: this.WarningOptions[this.model].text,
         warningsMap: [...this.warningsMap], // apparently it's up to us to serialize a Map before sending it across the wire
       };
 
@@ -154,6 +170,26 @@ export default {
   },
   data() {
     return {
+      WarningOptions: [
+        {
+          icon: 'mdi-wifi',
+          text: 'LCT warned me of possible exposure',
+        },
+        {
+          icon: 'mdi-bluetooth',
+          text: 'I was near a COVID carrier',
+        },
+        {
+          icon: 'mdi-chart-donut',
+          text: 'I present COVID symptoms',
+        },
+        {
+          icon: 'mdi-chart-donut',
+          text: 'This is an LCT Drill...',
+        },
+      ],
+      model: 1,
+
       overlay: false,
       reason: 'LCT warned me of possible exposure',
       dialog: false,
@@ -195,7 +231,8 @@ export default {
 
       // send all visited Rooms and dates to server
       this.emit({
-        event: 'exposureWarning',
+        // event: 'exposureWarning',
+        event: 'stepOneVisitorWarnsRooms',
         message: this.warnings,
         ack: this.onWarnRoomsAck,
       });

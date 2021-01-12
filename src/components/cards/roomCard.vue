@@ -1,5 +1,5 @@
 <template>
-  <v-div>
+  <div>
     <v-card>
       <v-card-title>See Open Rooms</v-card-title>
       <v-card-subtitle>{{ subTitle }}</v-card-subtitle>
@@ -64,13 +64,13 @@
           </v-col> </v-row
       ></v-card-text>
     </v-card>
-  </v-div>
+  </div>
 </template>
 
 <script>
-import helpers from '@/mixins/helpers.js';
+// import helpers from '@/mixins/helpers.js';
 
-const { printJson } = helpers;
+// const { printJson } = helpers;
 
 export default {
   props: {
@@ -85,13 +85,13 @@ export default {
         return {
           color: 'success',
           icon: 'mdi-account-plus',
-          tip: 'Leave Room',
+          tip: 'Enter Room',
         };
       } else {
         return {
           color: 'warning',
           icon: 'mdi-account-minus',
-          tip: 'Enter Room',
+          tip: 'Leave Room',
         };
       }
     },
@@ -135,17 +135,17 @@ export default {
     availableRoomsExposed(rooms) {
       this.availableRooms = rooms;
       this.log(
-        `roomIdentityCard: ${printJson(this.availableRooms)}`,
+        `There are ${this.availableRooms.length} Available Rooms`,
         'Event: availableRoomsExposed'
       );
     },
     openRoomsExposed(rooms) {
       this.openRooms = rooms;
-      console.table(rooms);
-      this.log(
-        `roomIdentityCard: ${printJson(this.openRooms)}`,
-        'Event: openRoomsExposed'
-      );
+      // console.table(rooms);
+      // this.log(
+      //   `roomIdentityCard: ${printJson(this.openRooms)}`,
+      //   'Event: openRoomsExposed'
+      // );
     },
   },
 
@@ -173,12 +173,6 @@ export default {
 
   watch: {},
 
-  async mounted() {
-    let self = this;
-    console.log('socket connected?', this.$socket.connected);
-    this.log('Mounted', 'roomIdentityCard');
-    this.openRooms = await this.exposeEventPromise('exposepenRooms');
-    this.log(`Open Rooms: ${printJson(self.openRooms)}`, 'roomIdentityCard');
-  },
+  async mounted() {},
 };
 </script>

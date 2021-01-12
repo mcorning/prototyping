@@ -4,8 +4,9 @@
 // self-documenting behavior
 // io.VisitorSocket event acknowledgements return state change
 // state change is basis of assertions
-console.clear();
-// require('./oracle')
+
+const UNIT_TEST = 0; // use this to control some log spew
+
 const {
   fire,
   addTestMessage,
@@ -42,13 +43,12 @@ const notice = clc.blue;
 const highlight = clc.magenta;
 const bold = clc.bold;
 
-const TESTING = 0; // use this to control some log spew
 let testCount = 2;
 let visitorsToTest = 1;
 let availableRooms = new Map();
 
 console.log(highlight(getNow(), 'Starting visitorStateMachine.js'));
-console.log(TESTING ? 'TESTING' : 'PRODUCTION');
+console.log(UNIT_TEST ? 'UNIT_TEST' : 'PRODUCTION');
 
 // NOTE: if you manually disconnect these sockets, you won't see any results
 // from the server after the run() method finishes
@@ -57,6 +57,7 @@ const roomSocket = OpenRoomConnection(pickRoom(rooms));
 const ROOM = roomSocket.query;
 console.group(`{${getNow()}]Visitor State Machine Test Results`);
 console.groupCollapsed('Found Visitor');
+
 function visitorHoF(visitors) {
   const visitor = visitors.reduce((a, c, i, v) => {
     if (c.visitor == 'AirGas Inc') {
@@ -79,18 +80,18 @@ console.groupEnd();
 // MODEL ENTRY POINT
 // for state machine is inside socket.io connect event handler
 visitorSocket.on('connect', () => {
-  TESTING &&
+  UNIT_TEST &&
     visitorSocket.emit('exposureWarning', '', (msg) => {
       console.log('visitorSocket', msg);
     });
-  TESTING &&
+  UNIT_TEST &&
     exposureWarning(visitorSocket, '', (msg) => console.log('sm', msg));
 
-  !TESTING && run();
+  !UNIT_TEST && run();
 });
 
 roomSocket.on('connect', () => {
-  TESTING &&
+  UNIT_TEST &&
     roomSocket.emit('alertVisitor', '', (msg) => {
       console.log('roomSocket', msg);
     });

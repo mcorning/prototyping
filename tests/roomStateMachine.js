@@ -22,9 +22,9 @@ const notice = clc.blue;
 const bold = clc.bold;
 const highlight = clc.magenta;
 
-const TESTING = 0;
+const UNIT_TEST = 1;
 console.log(highlight(getNow(), 'Starting roomStateMachine.js'));
-console.log(TESTING ? 'Testing' : 'Production');
+console.log(UNIT_TEST ? 'Testing' : 'Production');
 
 let countDownFrom = 6;
 
@@ -54,7 +54,7 @@ const Room = function(name, visitors, transitions) {
 
   this.change = function(state) {
     // limits number of changes
-    TESTING && console.log('countDownFrom:', countDownFrom);
+    UNIT_TEST && console.log('countDownFrom:', countDownFrom);
     if (!countDownFrom--) return;
     this.currentState = state;
     this.currentState.fireTransition();

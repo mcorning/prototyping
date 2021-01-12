@@ -181,3 +181,14 @@
 [1231/144543.790:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
 [1231/183405.607:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
 [0104/155356.499:ERROR:crash_report_database_win.cc(496)] failed to stat report
+[0108/180548.785:ERROR:crash_report_database_win.cc(496)] failed to stat report
+[0108/180548.786:ERROR:crash_report_database_win.cc(496)] failed to stat report
+[0108/180636.801:ERROR:crash_report_database_win.cc(496)] failed to stat report
+[0108/180636.801:ERROR:crash_report_database_win.cc(496)] failed to stat report
+[0108/181636.802:ERROR:crash_report_database_win.cc(496)] failed to stat report
+[0108/181636.802:ERROR:crash_report_database_win.cc(496)] failed to stat report
+[0108/181636.802:ERROR:filesystem_win.cc(116)] GetFileAttributes C:\Users\mcorn\AppData\Local\Temp\.profile\Crashpad\reports\8365a01c-5278-4886-9ec2-ec97951dc2df.dmp: The system cannot find the file specified. (0x2)
+[0108/181636.803:ERROR:filesystem_win.cc(116)] GetFileAttributes C:\Users\mcorn\AppData\Local\Temp\.profile\Crashpad\reports\1d8d95b7-1de0-47b2-9322-ea1964d2e4a8.dmp: The system cannot find the file specified. (0x2)
+[0108/181636.803:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[0111/115526.701:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)
+[0111/203609.210:ERROR:directory_reader_win.cc(43)] FindFirstFile: The system cannot find the path specified. (0x3)

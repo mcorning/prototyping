@@ -1,6 +1,8 @@
+// Use UNIT_TEST = 1 to ensure roomClientSocket.js works properly
+let UNIT_TEST = 0;
+
 const SHOW = 0;
 const io = require('socket.io-client');
-const moment = require('moment');
 const clc = require('cli-color');
 const success = clc.green.bold;
 const error = clc.red.bold;
@@ -20,9 +22,8 @@ const { messages, printJson } = require('./helpersRoom');
 const { rooms } = require('./roomData.js');
 
 // const INCLUDE = 0;
-let TESTING = 1;
 console.log(highlight(getNow(), 'Starting roomClientSocket.js'));
-console.log(TESTING ? 'Testing' : 'Production');
+console.log(UNIT_TEST ? 'UnitTesting' : 'Production');
 
 // methods called by state machine or test code
 const alertVisitor = (clientSocket, visitor, warning) => {
@@ -331,7 +332,7 @@ module.exports = {
   openRoom,
 };
 
-TESTING = 0;
+UNIT_TEST = 0;
 async function bvt() {
   // test helpers
   var getConnections = new Promise(function(resolve) {
@@ -353,7 +354,7 @@ async function bvt() {
   return await getConnections;
 }
 
-TESTING &&
+UNIT_TEST &&
   bvt().then((c) => {
     console.log(info('connectionMap:'));
     console.table(c);

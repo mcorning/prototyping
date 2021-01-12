@@ -139,8 +139,8 @@ export default {
     messageHeaders: [
       { text: 'Sent  ', value: 'sentTime' },
       { text: 'Room', value: 'room' },
-      { text: 'Visitor', value: 'visitor' },
       { text: 'Message', value: 'message' },
+      { text: 'Visitor', value: 'visitor' },
       { text: 'Delete', value: 'action' },
     ],
   }),

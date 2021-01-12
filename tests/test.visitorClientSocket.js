@@ -1,6 +1,6 @@
 /* Scenarios:
 The app starts in one of two states: new or used. Actually, mu is more accurate than new.
-On the Room vue, once a Room name is given, a socket opens witht eht Room query to stipulate the name, id, and selected (default) namespace.
+On the Room vue, once a Room name is given, a socket opens witht the Room query to stipulate the name, id, and selected (default) namespace.
 Exactly the same thing happens on the Visitor vue, but it's Visitor socket with a Visitor query.
 If the Visitor name is an email address, the socket has an Admin query that gives the socket unlimited access to server state and activity across namespaces
 
@@ -65,6 +65,8 @@ const { pickRoom, rooms } = require('./roomData');
 
 SHOW &&
   console.log(highlight(getNow(), 'Starting visitorClientSocket.Test.js'));
+
+// TODO why three maps?
 let connectionMap = new Map();
 connectionMap.set('rooms', new Map());
 connectionMap.set('visitors', new Map());
@@ -84,9 +86,13 @@ async function testOpenRoomConnection() {
       // open Room with every connection to ensure pendingWarnings get sent
       openRoom(roomSocket, room);
       connectionMap.get('rooms').set(roomSocket.query.room, roomSocket);
+
+      // TODO where is the reject method?
       resolve(roomSocket);
     });
   });
+
+  // TODO and why are we using an async function instead of the Promise alone?
   return await getConnections;
 }
 
@@ -131,34 +137,6 @@ async function testExposureWarning(socket) {
   // logResults.start = 'Testing getVisitorSocket()';
   console.groupCollapsed(`[${getNow()}] testExposureWarning results:`);
 
-  const sample = {
-    // visitor warns  room
-    // BENCHMARKING && console.time('by visitor.length');
-    // const socket = getVisitorSocketByLength();
-    // BENCHMARKING && console.timeEnd('by visitor.length');
-    // WARNING MESSAGE STRUCT:
-    //{
-    //   sentTime: '2020-09-19T00:56:54.570Z',
-    //   visitor: {
-    //     visior: 'Nurse Jackie',
-    //     id: 'FWzLl5dS9sr9FxDsAAAB',
-    //     nsp: 'enduringNet',
-    //   },
-    //   warning: {              // ONE ROOM PER WARNING
-    //     room: {
-    //       room: 'Heathlands Medical',
-    //       id: 'd6QoVa_JZxnM_0BoAAAA',
-    //       nsp: 'enduringNet',
-    //     },
-    //     dates: [
-    //       '2020-09-19T00:33:04.248Z',  // WARNING CAN
-    //       '2020-09-14T02:53:33.738Z',  // HAVE MULTIPLE
-    //       '2020-09-18T07:15:00.00Z',   // VISIT DATES
-    //     ],
-    //   },
-    // };
-  };
-
   console.log({
     step: 'Results from getVisitorSocket()',
     query: socket.query,
@@ -169,34 +147,6 @@ async function testExposureWarning(socket) {
     val: 'sentTime',
   };
   let warnings = groupMessagesByRoomAndDate(payload);
-
-  const sample2 = {
-    // Example warnings collection
-    // [
-    //   ['sentTime', '2020-10-27T19:05:53.082Z'],
-    //   [
-    //     'visitor',
-    //     {
-    //       visitor: 'AirGas Inc',
-    //       id: 'JgvrILSxDwXRWJUpAAAC',
-    //       nsp: 'enduringNet',
-    //     },
-    //   ],
-    //   [
-    //     'warnings',
-    //     {
-    //       d6QoVa_JZxnM_0BoAAAA: {
-    //         room: 'Heathlands Medical',
-    //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
-    //       },
-    //       e1suC3Rdpj_1PuR3AAAB: {
-    //         room: 'Heathlands Cafe',
-    //         dates: ['2020-09-18', '2020-09-18', '2020-09-19'],
-    //       },
-    //     },
-    //   ],
-    // ];
-  };
 
   let message = {
     sentTime: new Date().toISOString(),

@@ -1,3 +1,5 @@
+const UNIT_TEST = 0;
+
 // This code is a wrapper around LCT socket.io server.
 // there is a corresponding file, roomClientSocket.
 // each file has its own closure for Room or Visitor events
@@ -25,9 +27,8 @@ const highlight = clc.magenta;
 
 const { getNow, printJson, socketIoServerUrl } = require('./helpers');
 
-const TESTING = 1;
 console.log(highlight(getNow(), 'Starting visitorClientSocket.js'));
-console.log(TESTING ? 'Testing' : 'Production');
+console.log(UNIT_TEST ? 'Testing' : 'Production');
 // Note completed tests for each Visitor event
 
 const leaveRoom = (clientSocket, message) => {
@@ -110,7 +111,7 @@ const exposeVisitorsRooms = (clientSocket) => {
 
 // tested 10.12.20
 const exposureWarning = (clientSocket, message, cb) => {
-  TESTING && console.table(message);
+  UNIT_TEST && console.table(message);
   clientSocket.emit('exposureWarning', message, (ack) => {
     console.groupCollapsed(
       `[${getNow()}] Client:  emitting exposureWarning, Server Acknowledged:`

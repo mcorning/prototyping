@@ -73,16 +73,16 @@ export default {
         'Event: availableRoomsExposed'
       );
     },
-    openRoomsExposed(rooms) {
-      this.openRooms = rooms;
-      console.groupCollapsed('EVENT: openRoomsExposed - Open Rooms:');
-      console.log(printJson(rooms));
-      const msg = rooms
-        ? `roomIdentityCard: ${printJson(this.openRooms)}`
-        : 'No open Rooms yet.';
-      this.log(msg, 'Event: openRoomsExposed');
-      console.groupEnd();
-    },
+    // openRoomsExposed(rooms) {
+    // this.openRooms = rooms;
+    // console.groupCollapsed('EVENT: openRoomsExposed - Open Rooms:');
+    // console.log(printJson(rooms));
+    // const msg = rooms
+    //   ? `roomIdentityCard: ${printJson(this.openRooms)}`
+    //   : 'No open Rooms yet.';
+    // this.log(msg, 'Event: openRoomsExposed');
+    // console.groupEnd();
+    // },
   },
   methods: {
     // TODO Use this method in all components tha emit events to Server
