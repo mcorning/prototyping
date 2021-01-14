@@ -66,8 +66,8 @@ import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 
 import clc from 'cli-color';
-// const success = clc.green.bold;
 // const error = clc.red.bold;
+const success = clc.green.bold;
 // const warn = clc.yellow;
 // const info = clc.cyan;
 // const notice = clc.blue;
@@ -196,56 +196,24 @@ export default {
   }),
 
   sockets: {
-    stepTwoServerNotifiesRoomX(data, ack) {
-      console.log(data);
-      data
-        .filter((v) => v)
-        .map((v) => {
-          console.log(v.exposureDates);
-          console.log(this.printJson(v));
-          const { exposureDates, visitor, reason, room } = v;
-          exposureDates.forEach((visitedOn) => {
-            const visitors = this.getMessageDates(this.visits);
-            const exposedVisitors = visitors[visitedOn].filter(
-              (v) => v.id != visitor
-            );
-
-            console.log(reason);
-            console.log(
-              `Alerting Visitors on ${visitedOn} (excluding ${visitor}) ${this.printJson(
-                exposedVisitors
-              )}`
-            );
-            this.$socket.emit(
-              'stepThreeServerFindsExposedVisitors',
-              {
-                exposedVisitors: exposedVisitors,
-                room: room,
-              },
-              this.stepTwoServerNotifiesRoomAck
-            );
-          });
-          if (ack) ack(`${v.visitor.visitor}, ${v.room.room} alerted`);
-        });
-      // }
-    },
-
     stepTwoServerNotifiesRoom(data, ack) {
       // data is coming in as an array, presumably because Server is using a Map for warnings and we are iterating that map
-      console.log(this.printJson(data));
+      console.log('stepTwoServerNotifiesRoom data:', this.printJson(data));
       const { exposureDates, visitor, reason, room } = data;
-
+      console.log(success(`reason: ${reason}`));
+      console.log(success(`exposureDates: ${exposureDates}`));
       exposureDates.forEach((visitedOn) => {
         const visitors = this.getMessageDates(this.visits);
         const exposedVisitors = visitors[visitedOn].filter(
           (v) => v.id != visitor
         );
 
-        console.log(reason);
         console.log(
-          `Alerting Visitors on ${visitedOn} (excluding ${visitor}) ${this.printJson(
-            exposedVisitors
-          )}`
+          success(
+            `Alerting Visitors on ${visitedOn} (excluding ${visitor}): ${this.printJson(
+              exposedVisitors
+            )}`
+          )
         );
         this.$socket.emit(
           'stepThreeServerFindsExposedVisitors',
@@ -461,7 +429,8 @@ export default {
     },
 
     stepTwoServerNotifiesRoomAck(data) {
-      console.log(data);
+      console.log('stepTwoServerNotifiesRoomAck');
+      console.log('Number of exposed Visitors:', data);
     },
     // end helper methods
 
