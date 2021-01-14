@@ -11,8 +11,8 @@
         }}
       </v-card-subtitle>
       <v-card-text>
-        <v-row class="child-flex" align="center" justify="space-between">
-          <v-col cols="8">
+        <v-row align="center">
+          <v-col>
             <v-text-field
               v-if="newVisitor"
               label="Enter your nickname:"
@@ -39,7 +39,7 @@
             </v-select>
           </v-col>
 
-          <v-col cols="4">
+          <v-col>
             <v-tooltip bottom>
               <template v-slot:activator="{ on, attrs }">
                 <span v-bind="attrs" v-on="on">
@@ -68,7 +68,7 @@
             </v-tooltip>
           </v-col>
         </v-row>
-        <v-row align="center" justify="space-between">
+        <v-row align="center">
           <v-col v-if="$socket.connected" class="text-center ">
             <v-tooltip bottom>
               <template v-slot:activator="{ on, attrs }">
