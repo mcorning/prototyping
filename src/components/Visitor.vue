@@ -109,7 +109,7 @@ import auditTrailCard from '@/components/cards/auditTrailCard';
 
 import clc from 'cli-color';
 // const success = clc.green.bold;
-// const error = clc.red.bold;
+const error = clc.red.bold;
 // const warn = clc.yellow;
 // const info = clc.cyan;
 // const notice = clc.blue;
@@ -263,6 +263,9 @@ export default {
 
   sockets: {
     stepFourServerAlertsVisitor(exposure) {
+      console.log(error('Handling stepFourServerAlertsVisitor'));
+      console.log(error(printJson(exposure)));
+      console.log(' ');
       const { room, exposedVisitor } = exposure;
       const message = `${exposure.exposedVisitor.visitor}, a recent visit to ${exposure.room} may have exposed you to COVID-19. Get tested, and quarantine, if necessary.`;
       this.messages = {
@@ -334,8 +337,6 @@ export default {
           sentTime: new Date().toISOString(),
         };
         this.messages = msg;
-        console.log('New message:');
-        console.log(printJson(msg));
         roomNames.push(room.room);
       });
 
@@ -467,7 +468,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     },
 
     onChangeRoom(selectedRoom) {
-      console.log('Selected:', selectedRoom);
+      console.log('Selected Room:', selectedRoom.room, selectedRoom.id);
       this.enabled.room = selectedRoom;
     },
 
