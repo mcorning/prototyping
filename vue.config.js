@@ -6,6 +6,14 @@ module.exports = {
     devtool: 'source-map',
   },
   pwa: {
-    manifestOptions: { start_url: '/' },
+    name: 'Local Contact Tracing',
+    short_name: 'LCT.Room',
+    themeColor: '#673AB7',
+    msTileColor: '#673AB7',
+    appleMobileWebAppCache: 'yes',
+    manifestOptions: {
+      background_color: '#673AB7',
+    },
+    start_url: '/',
   },
 };

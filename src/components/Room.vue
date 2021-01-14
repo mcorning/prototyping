@@ -196,8 +196,43 @@ export default {
   }),
 
   sockets: {
-    //
+    stepTwoServerNotifiesRoomX(data, ack) {
+      console.log(data);
+      data
+        .filter((v) => v)
+        .map((v) => {
+          console.log(v.exposureDates);
+          console.log(this.printJson(v));
+          const { exposureDates, visitor, reason, room } = v;
+          exposureDates.forEach((visitedOn) => {
+            const visitors = this.getMessageDates(this.visits);
+            const exposedVisitors = visitors[visitedOn].filter(
+              (v) => v.id != visitor
+            );
+
+            console.log(reason);
+            console.log(
+              `Alerting Visitors on ${visitedOn} (excluding ${visitor}) ${this.printJson(
+                exposedVisitors
+              )}`
+            );
+            this.$socket.emit(
+              'stepThreeServerFindsExposedVisitors',
+              {
+                exposedVisitors: exposedVisitors,
+                room: room,
+              },
+              this.stepTwoServerNotifiesRoomAck
+            );
+          });
+          if (ack) ack(`${v.visitor.visitor}, ${v.room.room} alerted`);
+        });
+      // }
+    },
+
     stepTwoServerNotifiesRoom(data, ack) {
+      // data is coming in as an array, presumably because Server is using a Map for warnings and we are iterating that map
+      console.log(this.printJson(data));
       const { exposureDates, visitor, reason, room } = data;
 
       exposureDates.forEach((visitedOn) => {
@@ -212,10 +247,14 @@ export default {
             exposedVisitors
           )}`
         );
-        this.$socket.emit('stepThreeServerFindsExposedVisitors', {
-          exposedVisitors: exposedVisitors,
-          room: room,
-        });
+        this.$socket.emit(
+          'stepThreeServerFindsExposedVisitors',
+          {
+            exposedVisitors: exposedVisitors,
+            room: room,
+          },
+          this.stepTwoServerNotifiesRoomAck
+        );
 
         if (ack) ack(`${visitor.visitor}, ${room.room} alerted`);
       });
@@ -421,6 +460,9 @@ export default {
       console.log(bold(highlight(this.printJson(msg))));
     },
 
+    stepTwoServerNotifiesRoomAck(data) {
+      console.log(data);
+    },
     // end helper methods
 
     //#endregion
