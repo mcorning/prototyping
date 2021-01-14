@@ -51,7 +51,6 @@
         <v-col>
           <roomCard
             ref="roomSelect"
-            :roomName="roomName"
             :occupancy="occupancy"
             :log="log"
             @changeRoom="onChangeRoom($event)"
@@ -421,6 +420,7 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
     onAct(checkedOut) {
       // set the prop for visitorIdentityCard (disable the dropdown if entering a Room)
       this.entered = !checkedOut;
+      this.panelState = [0]; // open only the 0th element of expansion-panels
 
       let msg = {
         visitor: this.enabled.visitor,
@@ -430,8 +430,8 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       };
       this.messages = msg;
 
-      if (this.$refs.visits) {
-        this.$vuetify.goTo(this.$refs.visits, {
+      if (this.$refs.roomSelect) {
+        this.$vuetify.goTo(this.$refs.roomSelect, {
           duration: 300,
           offset: 0,
           easing: this.easing,
@@ -468,7 +468,6 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
 
     onChangeRoom(selectedRoom) {
       console.log('Selected:', selectedRoom);
-      this.panelState = [0, 2];
       this.enabled.room = selectedRoom;
     },
 

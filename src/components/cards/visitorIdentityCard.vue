@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-card>
-      <v-card-title>Connect to Local Contact Tracing</v-card-title>
+      <v-card-title>Connect Local Contact Tracing</v-card-title>
       <v-card-subtitle
         >Currently, you're
         {{
@@ -67,7 +67,6 @@
               <span>Delete Visitor</span>
             </v-tooltip>
           </v-col>
-          <v-spacer></v-spacer>
         </v-row>
         <v-row align="center" justify="space-between">
           <v-col v-if="$socket.connected" class="text-center ">

@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-card>
-      <v-card-title>See Open Rooms</v-card-title>
+      <v-card-title>Pick Open Room</v-card-title>
       <v-card-subtitle>{{ subTitle }}</v-card-subtitle>
       <v-card-text>
         <!-- <v-row>
@@ -21,10 +21,10 @@
         ></v-select>
       </v-card-text>
     </v-card>
-    <div ref="logIn"></div>
     <v-card v-if="showEntryRoomCard">
       <v-card-title
-        >Log {{ checkedOut ? 'into' : 'out of' }} a {{ roomName }}</v-card-title
+        >Log {{ checkedOut ? 'into' : 'out of' }}
+        {{ roomSelected.room }}</v-card-title
       >
 
       <v-card-text>
@@ -64,6 +64,8 @@
           </v-col> </v-row
       ></v-card-text>
     </v-card>
+
+    <v-divider ref="login"></v-divider>
   </div>
 </template>
 
@@ -71,10 +73,10 @@
 // import helpers from '@/mixins/helpers.js';
 
 // const { printJson } = helpers;
+import * as easings from 'vuetify/es5/services/goto/easing-patterns';
 
 export default {
   props: {
-    roomName: { type: String },
     log: { type: Function },
     occupancy: { type: Number },
   },
@@ -122,6 +124,9 @@ export default {
 
   data() {
     return {
+      easing: 'easeInOutCubic',
+      easings: Object.keys(easings),
+
       showEntryRoomCard: false,
 
       openRooms: [],
@@ -152,7 +157,13 @@ export default {
   methods: {
     onChangeRoom() {
       this.showEntryRoomCard = true;
-
+      if (this.$refs.login) {
+        this.$vuetify.goTo(this.$refs.login, {
+          duration: 300,
+          offset: 0,
+          easing: this.easing,
+        });
+      }
       this.$emit('changeRoom', this.roomSelected);
     },
 
