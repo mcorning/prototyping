@@ -1,12 +1,12 @@
 <template>
   <v-container>
     <v-card flat>
-      <v-card-title class="text-h2">
+      <v-card-title class="text-h3">
         Safe in Sisters
       </v-card-title>
       <v-card-subtitle class="text-h5">An Oregon Initiative</v-card-subtitle>
       <!-- <span class="text-h6">Bottom Lihe Up Front</span> -->
-      <v-card-text class="text-body-1">
+      <v-card-text class="text-body-2">
         Local Contact Tracing can help communities<strong>
           reopen their economies without reopening the pandemic</strong
         >. That is, LCT lets us balance the
@@ -16,7 +16,7 @@
     </v-card>
     <!-- <v-row align="center"> -->
     <v-card>
-      <v-tabs v-model="tab" background-color="secondary">
+      <v-tabs v-model="tab" center-active background-color="secondary">
         <v-tab v-for="item in items" :key="item.tab">
           {{ item.tab }}
         </v-tab>
