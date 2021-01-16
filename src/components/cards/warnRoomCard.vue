@@ -11,7 +11,7 @@
           </v-btn></v-fab-transition
         >
       </template>
-      <v-card v-if="$socket.disconnected">
+      <!-- <v-card v-if="$socket.disconnected">
         <v-card-title class="headline">Disconnected</v-card-title>
         <v-card-subtitle>You cannot warn Rooms at the moment</v-card-subtitle>
         <v-card-text
@@ -23,11 +23,17 @@
           <v-btn color="green darken-1" text @click="connect()">Yes</v-btn>
           <v-btn color="green darken-1" text @click="dialog = false">No</v-btn>
         </v-card-actions>
-      </v-card>
-      <v-card v-else-if="items && items.length">
-        <v-card-title class="headline">Exposure Warnings</v-card-title>
-        <v-card-subtitle>Dated: {{ dated }}</v-card-subtitle>
-        <v-card-subtitle>Rooms warned: {{ items.length }}</v-card-subtitle>
+      </v-card> -->
+
+      <v-card v-if="items && items.length" color="primary" class="white--text">
+        <v-card-title class="headline ">Exposure Warnings</v-card-title>
+        <v-card-subtitle class="white--text"
+          >Dated: {{ dated }}</v-card-subtitle
+        >
+        <v-card-subtitle class="white--text"
+          >You will warn {{ items.length }}
+          {{ items.length == 1 ? 'Room' : 'Rooms' }}</v-card-subtitle
+        >
         <v-card-text>
           <v-card class="mx-auto" max-width="400">
             <v-list>
@@ -44,34 +50,46 @@
               </v-list-item-group>
             </v-list>
           </v-card>
-          <!-- <v-select
-            v-model="reason"
-            :items="warningTypes"
-            label="Select your reason to warn Rooms:"
-          ></v-select>
-          <v-treeview open-all dense hoverable rounded :items="items" /> -->
         </v-card-text>
         <v-divider class="mx-4"></v-divider>
         <v-card-title class="justify-end">Send warning?</v-card-title>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="warning darken-1" text @click="onWarnRooms">Yes</v-btn>
-          <v-btn color="green darken-1" text @click="dialog = false">No</v-btn>
+          <v-btn color="warning lighten-2" text @click="onWarnRooms(false)"
+            >Yes</v-btn
+          >
+          <v-btn color="green lighten-2" text @click="dialog = false">No</v-btn>
         </v-card-actions>
       </v-card>
 
       <v-card v-else>
         <v-card-title class="headline">Exposure Warnings</v-card-title>
-        <v-card-subtitle> There is nobody to warn.</v-card-subtitle>
-        <v-card-text>You have not entered any Rooms yet. </v-card-text
-        ><v-card-text> To use LCT, pick a Room above and enter it. </v-card-text
+        <v-card-subtitle> Oops, there is nobody to warn.</v-card-subtitle>
         ><v-card-text>
-          Then you will be able to warn others if you go into
-          quarantine.</v-card-text
+          1) Be sure you have selected the correct nickname </v-card-text
+        ><v-card-text>
+          2) Check your Visits (you need at least one Entered record before you
+          can warn a Room)</v-card-text
         >
         <v-card-actions>
-          <v-btn color="green darken-1" text @click="dialog = false"
-            >Close</v-btn
+          <v-btn text @click="dialog = false">OK</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="alert" max-width="450">
+      <v-card color="secondary" class="white--text">
+        <v-card-title>Are you sure you want to warn everybody?</v-card-title>
+        <v-card-text class="white--text"
+          >You cannot put this toothpaste back in the tube...</v-card-text
+        >
+        <v-card-actions>
+          <v-btn color="red darken-4" text @click="onWarnRooms(true)"
+            >I'm sure</v-btn
+          >
+          <v-spacer></v-spacer>
+
+          <v-btn color="green darken-4" text @click="alert = false"
+            >Never mind</v-btn
           >
         </v-card-actions>
       </v-card>
@@ -93,15 +111,6 @@ export default {
     log: { type: Function },
   },
   computed: {
-    warningTypes() {
-      return [
-        'LCT warned me of possible exposure',
-        'I tested Positive for COVID',
-        'I was near a Positive subject',
-        'I present COVID symptoms',
-      ];
-    },
-
     messages() {
       return Message.all();
     },
@@ -170,21 +179,26 @@ export default {
   },
   data() {
     return {
+      alert: false,
       WarningOptions: [
         {
-          icon: 'mdi-wifi',
-          text: 'LCT warned me of possible exposure',
+          icon: 'mdi-alert',
+          text: 'I tested positive for COVID-19',
         },
         {
-          icon: 'mdi-bluetooth',
+          icon: 'mdi-account-alert',
+          text: 'LCT warned me of exposure',
+        },
+        {
+          icon: 'mdi-account-group',
           text: 'I was near a COVID carrier',
         },
         {
-          icon: 'mdi-chart-donut',
+          icon: 'mdi-medical-bag',
           text: 'I present COVID symptoms',
         },
         {
-          icon: 'mdi-chart-donut',
+          icon: 'mdi-arm-flex',
           text: 'This is an LCT Drill...',
         },
       ],
@@ -220,9 +234,17 @@ export default {
       this.$socket.emit(payload.event, payload.message, payload.ack);
     },
 
-    onWarnRooms() {
+    onWarnRooms(confirmed) {
+      if (!confirmed) {
+        this.dialog = false;
+
+        this.alert = true;
+        return;
+      }
+
       this.overlay = true;
-      this.dialog = false;
+      this.alert = false;
+
       console.groupCollapsed(
         `[${getNow()}] EVENT: onWarnRooms (warmRoomCard.vue) Warnings sent to Server:`
       );

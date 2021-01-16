@@ -21,6 +21,25 @@
         </v-btn>
       </template>
     </v-snackbar>
+    <v-dialog v-model="dialog" max-width="360">
+      <v-card dark>
+        <v-card-title class="headline red--text">
+          Covid-19 Exposure Alert
+        </v-card-title>
+
+        <v-card-text>
+          {{ alertMessage }}
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+
+          <v-btn color="green darken-1" text @click="acknowledgeAlert">
+            Thanks for alerting me
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-container fluid>
       <v-row dense justify="space-between" class="child-flex">
@@ -33,19 +52,6 @@
           />
         </v-col>
       </v-row>
-
-      <v-alert
-        :value="alert"
-        dark
-        dismissible
-        border="left"
-        type="error"
-        elevation="10"
-        colored-border
-        prominent
-        transition="scale-transition"
-        >{{ alertMessage }}
-      </v-alert>
 
       <v-row>
         <v-col>
@@ -226,6 +232,7 @@ export default {
   },
 
   data: () => ({
+    dialog: false,
     entered: false,
     easing: 'easeInOutCubic',
     easings: Object.keys(easings),
@@ -248,7 +255,7 @@ export default {
     rating: 3,
     alertIcon: 'mdi-alert',
     alertColor: '',
-    alert: false,
+    // alert: false,
     alertMessage: '',
     occupancy: 0,
     socketId: '',
@@ -275,11 +282,12 @@ export default {
         sentTime: new Date().toISOString(),
         message: 'ALERTED',
       };
-      // prepare the Alert card content
-      this.alert = true;
+      // prepare the Alert card content -deprecated
+      // this.alert = true;
       this.alertIcon = 'mdi-alert';
       this.alertColor = 'red darken-4';
       this.alertMessage = message;
+      this.dialog = true;
     },
 
     //#region Socket.io custom events
@@ -396,10 +404,11 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
       const { event, message, visitor, room } = data;
       console.log('onExposureAlert:', event);
       // prepare the Alert card content
-      this.alert = true;
+      // this.alert = true;
       this.alertIcon = 'mdi-alert';
       this.alertColor = 'red darken-4';
       this.alertMessage = message;
+      this.dialog = true;
 
       // memorialize the wARNING
       let entry = printJson(
@@ -619,6 +628,18 @@ See similar comments in the Room.vue notifyRoom event handler as it tries to dea
         console.groupEnd();
         self.connectionMessage = msg;
         this.trace({ caption: 'ACK: exposeOpenRooms', msg: rooms });
+      });
+    },
+
+    acknowledgeAlert() {
+      this.dialog = false;
+
+      this.emit({
+        event: 'stepFiveVisitorReceivedAlert',
+        message: this.enabled.visitor.id,
+        ack: (ACK) => {
+          this.log(ACK, 'ACK: stepFiveVisitorReceivedAlert');
+        },
       });
     },
   },
