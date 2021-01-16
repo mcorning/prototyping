@@ -7,8 +7,10 @@
       <v-card-subtitle class="text-h5">An Oregon Initiative</v-card-subtitle>
       <!-- <span class="text-h6">Bottom Lihe Up Front</span> -->
       <v-card-text class="text-body-2">
-        Local Contact Tracing can help communities<strong>
-          reopen their economies without reopening the pandemic</strong
+        Local Contact Tracing can help communities like
+        <a href="https://www.ci.sisters.or.us" target="_blank"
+          >Sisters, Oregon</a
+        ><strong> reopen their economies without reopening the pandemic</strong
         >. That is, LCT lets us balance the
         <strong>risk of infection</strong> with
         <strong>the risk of bankruptcy</strong>.
