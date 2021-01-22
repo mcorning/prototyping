@@ -10,7 +10,7 @@ import store from './store';
 import vuetify from './plugins/vuetify';
 import VueSocketIO from 'vue-socket.io';
 
-import SoteriaIcon from './components/svg/SoteriaLogo.vue';
+import SoteriaIcon from './components/svg/safeInSistersLogo.vue';
 Vue.component('soteria-icon', SoteriaIcon);
 Vue.config.productionTip = false;
 
