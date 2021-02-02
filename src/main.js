@@ -27,7 +27,7 @@ import VueSocketIO from 'vue-socket.io';
 //   })
 // );
 
-import SoteriaIcon from './components/svg/SoteriaLogo.vue';
+import SoteriaIcon from './components/svg/safeInSistersLogo.vue';
 
 import Visitor from '@/models/Visitor';
 

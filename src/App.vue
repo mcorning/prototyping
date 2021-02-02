@@ -2,7 +2,7 @@
   <v-app>
     <v-app-bar app color="primary" dense dark>
       <v-row align="center" justify="end" dense>
-        <!-- <v-col cols="auto">
+        <!-- <v-col cols="auto" align="center">
           <soteria-icon />
         </v-col> -->
         <v-col cols="auto">
