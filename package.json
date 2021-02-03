@@ -1,6 +1,6 @@
 {
   "name": "room.lct",
-  "version": "02.01.20.00",
+  "version": "02.02.22.02",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -14,7 +14,7 @@
     "moment": "^2.27.0",
     "moment-timezone": "^0.5.31",
     "register-service-worker": "^1.7.1",
-    "socket.io": "^2.3.0",
+    "socket.io": "^2.4.0",
     "vue": "^2.6.11",
     "vue-clock2": "^1.1.5",
     "vue-router": "^3.2.0",

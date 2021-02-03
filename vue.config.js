@@ -1,6 +1,7 @@
 // const webpack = require('webpack');
 
 module.exports = {
+  lintOnSave: process.env.NODE_ENV !== 'production',
   transpileDependencies: ['vuetify'],
   configureWebpack: {
     devtool: 'source-map',

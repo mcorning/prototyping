@@ -66,10 +66,10 @@ import dataTableCard from '@/components/cards/dataTableCard';
 import auditTrailCard from '@/components/cards/auditTrailCard';
 
 import clc from 'cli-color';
-// const error = clc.red.bold;
+const error = clc.red.bold;
 const success = clc.green.bold;
 // const warn = clc.yellow;
-// const info = clc.cyan;
+const info = clc.cyan;
 // const notice = clc.blue;
 const highlight = clc.magenta;
 const bold = clc.bold;
@@ -110,16 +110,17 @@ export default {
         return Message.all();
       },
       set(newVal) {
+        const { room, visitor, nsp, sentTime, message } = newVal;
         // flatten newVal
         const msg = {
           id: base64id.generateId(),
-          room: newVal.room,
-          visitor: newVal.visitor.visitor,
-          roomId: newVal.room,
-          visitorId: newVal.visitor.id,
-          nsp: newVal.nsp,
-          sentTime: newVal.sentTime,
-          message: newVal.message,
+          room: room,
+          visitor: visitor.visitor,
+          roomId: room,
+          visitorId: visitor.id,
+          nsp: nsp,
+          sentTime: sentTime,
+          message: message,
         };
         // static update function on Message model
         Message.update(msg);
@@ -197,24 +198,57 @@ export default {
 
   sockets: {
     stepTwoServerNotifiesRoom(data, ack) {
+      if (!this.visits.length) {
+        console.log(
+          error(
+            "No Visits. How did somebody Warn a Room they haven't entered yet?"
+          )
+        );
+        return;
+      }
       // data is coming in as an array, presumably because Server is using a Map for warnings and we are iterating that map
       console.log('stepTwoServerNotifiesRoom data:', this.printJson(data));
       const { exposureDates, visitor, reason, room } = data;
+
       console.log(success(`reason: ${reason}`));
       console.log(success(`exposureDates: ${exposureDates}`));
+      const visitors = this.getMessageDates(this.visits);
+      if (!visitors) {
+        console.log(error('No visitors'));
+        return;
+      }
+
       exposureDates.forEach((visitedOn) => {
-        const visitors = this.getMessageDates(this.visits);
+        if (!visitors[visitedOn]) {
+          console.log(error(`No visitors on ${visitedOn}`));
+          return;
+        }
+
         const exposedVisitors = visitors[visitedOn].filter(
-          (v) => v.id != visitor
+          (v) => v.id != visitor.id
         );
+
+        if (!exposedVisitors.length) {
+          const msg = 'Visitor was alone in the Room. No alerts necessary.';
+          console.log(info(msg));
+          this.messages = {
+            room: room,
+            visitor: visitor,
+            nsp: '',
+            sentTime: new Date().toISOString(),
+            message: msg,
+          };
+          return;
+        }
 
         console.log(
           success(
-            `Alerting Visitors on ${visitedOn} (excluding ${visitor}): ${this.printJson(
-              exposedVisitors
-            )}`
+            `Alerting Visitors on ${visitedOn} (excluding ${
+              visitor.id
+            }): ${this.printJson(exposedVisitors)}`
           )
         );
+
         this.$socket.emit(
           'stepThreeServerFindsExposedVisitors',
           {
@@ -226,6 +260,17 @@ export default {
 
         if (ack) ack(`${visitor.visitor}, ${room.room} alerted`);
       });
+
+      // override visitor.visitor because Room only attaches Visitor ID to an exposure warning
+      visitor.visitor = visitor.id;
+
+      this.messages = {
+        room: room,
+        visitor: visitor,
+        nsp: '',
+        sentTime: new Date().toISOString(),
+        message: 'WARNED BY',
+      };
     },
 
     // Visitor routine events
@@ -275,7 +320,6 @@ export default {
                   other.id
                 }]`
               );
-              let party;
               let msg;
               // this is the Visitor warning of exposure...
               if (other.id == visitor) {
@@ -283,11 +327,10 @@ export default {
                   `${visitor} warns they are in quarantine and may have exposed others.`
                 );
                 msg = 'WARNED BY';
-                party = { visitor: visitor, id: visitor };
 
                 this.messages = {
                   room: room,
-                  visitor: party,
+                  visitor: visitor,
                   nsp: '',
                   sentTime: new Date().toISOString(),
                   message: msg,
@@ -320,7 +363,7 @@ export default {
   },
 
   // Emitters:   Visitor            Server        Room
-  // Handlers:   Server             Room          Serveer         Visitor
+  // Handlers:   Server             Room          Server          Visitor
   // Event path: exposureWarning -> notifyRoom -> alertVisitor -> exposureAlert
 
   // Room handles notifyRoom event from Server
@@ -429,8 +472,13 @@ export default {
     },
 
     stepTwoServerNotifiesRoomAck(data) {
-      console.log('stepTwoServerNotifiesRoomAck');
-      console.log('Number of exposed Visitors:', data);
+      console.log('stepTwoServerNotifiesRoomAck: visitors exposed:', data);
+      const msg = data === 0 ? 'No need to process further' : ' ';
+      console.log(info('\t' + msg));
+      this.log(
+        `Number of exposed Visitors: ${data}`,
+        'ACK: stepTwoServerNotifiesRoomAck'
+      );
     },
     // end helper methods
 

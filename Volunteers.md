@@ -20,4 +20,4 @@ For now, the prototype uses ngrok to provide the https:// URL
 
 ## Volunteers
 
-To join the cause, email [michael@secours.io](mailto://michael@secours.io).
+To join the cause, email [mcorning@soteriaInstitute.org](mailto://mcorning@soteriaInstitute.org).

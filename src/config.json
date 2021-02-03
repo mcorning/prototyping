@@ -1,17 +1,4 @@
 {
-    "ver": "12.01.17.00",
-    "socketUrl": "https://cb4feb04fa32.ngrok.io",
-    "ngrokUrlUbuntu": "https://cb4feb04fa32.ngrok.io",
-    "ioServerIpUrl": "http://192.168.4.22:3003/",
-    "ioServerUrl": "http://localhost:3003/",
-    "ioServerAzureUrl": "http://soterialct.westus2.cloudapp.azure.com:3000/",
-    "ngrokUrlLocal": "https://b579976476ed.ngrok.io",
-    "defaultVue": "visitor",
-    "query": {
-        "query": {
-            "visitor": "Me",
-            "id": "UniquelyMe",
-            "nsp": "/"
-        }
-    }
+    "prodUrl": "https://cb4feb04fa32.ngrok.io",
+    "devUrl": "http://localhost:3003/"
 }

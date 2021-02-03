@@ -1,4 +1,4 @@
-import config from '@/config.json';
+import { devUrl, prodUrl } from '@/config.json';
 import Room from '@/models/Room';
 import './registerServiceWorker';
 // import { ErrorService } from './ErrorService.js';
@@ -16,10 +16,7 @@ Vue.config.productionTip = false;
 
 const nullRoom = { room: '', id: '', nsp: '' };
 
-let url =
-  process.env.NODE_ENV == 'development'
-    ? config.ioServerUrl
-    : config.ngrokUrlUbuntu;
+let url = process.env.NODE_ENV == 'development' ? devUrl : prodUrl;
 
 Room.$fetch().then(() => {
   console.log('---------------main.js-----------------------');
