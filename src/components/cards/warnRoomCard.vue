@@ -77,20 +77,16 @@
       </v-card>
     </v-dialog>
     <v-dialog v-model="alert" max-width="450">
-      <v-card color="secondary" class="white--text">
+      <v-card dark class="white--text">
         <v-card-title>Are you sure you want to warn everybody?</v-card-title>
         <v-card-text class="white--text"
           >You cannot put this toothpaste back in the tube...</v-card-text
         >
         <v-card-actions>
-          <v-btn color="red darken-4" text @click="onWarnRooms(true)"
-            >I'm sure</v-btn
-          >
+          <v-btn color="red " text @click="onWarnRooms(true)">I'm sure</v-btn>
           <v-spacer></v-spacer>
 
-          <v-btn color="green darken-4" text @click="alert = false"
-            >Never mind</v-btn
-          >
+          <v-btn color="green " text @click="alert = false">Never mind</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

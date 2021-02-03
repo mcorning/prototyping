@@ -1,4 +1,4 @@
-import config from '@/config.json';
+import { devUrl, prodUrl } from '@/config.json';
 import './registerServiceWorker';
 // import { ErrorService } from './ErrorService.js';
 
@@ -33,10 +33,7 @@ import Visitor from '@/models/Visitor';
 
 const nullVisitor = { visitor: '', id: '', nsp: '' };
 
-let url =
-  process.env.NODE_ENV == 'development'
-    ? config.ioServerUrl
-    : config.ngrokUrlUbuntu;
+let url = process.env.NODE_ENV == 'development' ? devUrl : prodUrl;
 
 Visitor.$fetch().then(() => {
   console.log('---------------main.js-----------------------');
