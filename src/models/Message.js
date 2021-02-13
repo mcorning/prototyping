@@ -1,3 +1,5 @@
+// Docs: https://vuex-orm.org/guide/model/defining-models.html
+
 import { Model } from '@vuex-orm/core';
 
 export default class Message extends Model {

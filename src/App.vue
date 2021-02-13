@@ -2,10 +2,10 @@
   <v-app>
     <v-app-bar app color="primary" dense dark>
       <v-row align="center" justify="end" dense>
-        <!-- <v-col cols="auto" align="center">
+        <v-col cols="auto" align="center">
           <soteria-icon />
-        </v-col> -->
-        <v-col cols="auto">
+        </v-col>
+        <!-- <v-col cols="auto">
           <v-img
             alt="Enduring Net Logo"
             class="shrink "
@@ -14,7 +14,7 @@
             max-height="36"
             max-width="75"
           />
-        </v-col>
+        </v-col> -->
 
         <v-spacer></v-spacer>
 

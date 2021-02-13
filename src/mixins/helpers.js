@@ -4,13 +4,14 @@ export default {
   daysBack: 14,
   today: 'YYYY-MM-DD',
   visitFormat: 'HH:mm:ss:SSS on ddd, MMM DD',
+  defaultQuery: {
+    visitor: '',
+    id: '',
+    nsp: '',
+  },
 
   getQuery() {
-    let query = this.$socket.io.opts.query || {
-      visitor: '',
-      id: '',
-      nsp: '',
-    };
+    let query = this.$socket.io.opts.query || this.defaultQuery;
     return query;
   },
 
