@@ -250,7 +250,7 @@ export default {
         );
 
         this.$socket.emit(
-          'stepThreeServerFindsExposedVisitors',
+          'stepThreeRoomSendsVisitorsToServer',
           {
             exposedVisitors: exposedVisitors,
             room: room,
@@ -280,85 +280,6 @@ export default {
 
     checkOut(msg) {
       this.messages = msg;
-    },
-
-    // sent from Server after Visitor sends exposureWarning
-    // data contains the Rooms and all the dates visited by the subject Visitor
-    notifyRoom() {},
-
-    notifyRoomX(data, ack) {
-      // visitor is an ID
-      const { exposureDates, room, visitor, reason } = data;
-      console.assert(exposureDates, 'No exposure dates!');
-      try {
-        //#region notifyRoom
-        console.groupCollapsed(
-          `[${this.getNow()}] EVENT: notifyRoom from [${visitor} to ${room} because ${reason}]`
-        );
-        // filter exposureDatess for getMessageDates
-        const visitors = this.getMessageDates(this.visits);
-        //#region Logging
-        console.group(`[${this.getNow()}] Step 1) Gather the data.`);
-        console.log(`Room's exposure dates:`);
-        console.log(this.printJson(exposureDates));
-        console.log(`Room's Visitor dates:`);
-        console.log(this.printJson(visitors));
-        console.groupEnd();
-        //#endregion
-
-        // iterate the dates a risky Visitor visited this Room
-        exposureDates.forEach((visitedOn) => {
-          console.log(`Processing ${visitedOn}`);
-
-          // see who else was in the Room on this date
-          if (visitors[visitedOn]) {
-            // each Visitor in this list occupied the Room on the same day
-            visitors[visitedOn].forEach((other) => {
-              //#region Step 2
-              console.group(
-                `[${this.getNow()}] Step 2) EVENT: notifyRoom from processing alerts for ${
-                  other.id
-                }]`
-              );
-              let msg;
-              // this is the Visitor warning of exposure...
-              if (other.id == visitor) {
-                console.log(
-                  `${visitor} warns they are in quarantine and may have exposed others.`
-                );
-                msg = 'WARNED BY';
-
-                this.messages = {
-                  room: room,
-                  visitor: visitor,
-                  nsp: '',
-                  sentTime: new Date().toISOString(),
-                  message: msg,
-                };
-              }
-              // ...else build up the warning for the other occupant
-              else {
-                this.handleOtherVisitors(room, visitedOn, reason, other);
-              }
-
-              console.groupEnd();
-              //#endregion
-            });
-          }
-        });
-        console.log('Leaving notifyRoom');
-        //#endregion groupEnd() in finally() block
-
-        if (ack) ack(`${visitor.visitor}, ${room.room} alerted`);
-      } catch (error) {
-        // firewall: if, for any reason, exposureDates is not an array or visitors have no entries...
-        console.groupEnd();
-        this.log(error, 'ERROR: notifyRoom');
-        ErrorService.onError(error);
-      } finally {
-        console.groupEnd();
-        // ends notifyRoom region above
-      }
     },
   },
 

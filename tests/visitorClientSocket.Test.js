@@ -1,6 +1,6 @@
 /* Scenarios:
 The app starts in one of two states: new or used. Actually, mu is more accurate than new.
-On the Room vue, once a Room name is given, a socket opens witht eht Room query to stipulate the name, id, and selected (default) namespace.
+On the Room vue, once a Room name is given, a socket opens with the Room query to stipulate the name, id, and selected (default) namespace.
 Exactly the same thing happens on the Visitor vue, but it's Visitor socket with a Visitor query.
 If the Visitor name is an email address, the socket has an Admin query that gives the socket unlimited access to server state and activity across namespaces
 
